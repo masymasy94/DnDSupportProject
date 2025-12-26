@@ -1,0 +1,547 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # INFRASTRUCTURE LAYER
+  # ============================================
+
+  traefik:
+    image: traefik:v3.0
+    container_name: dnd-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"
+      - "8080:8080"  # Traefik Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: dnd-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: postgres
+      TZ: ${TZ}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: dnd-redis
+    command: redis-server --appendonly yes
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: dnd-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: dnd_vhost
+      TZ: ${TZ}
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - messaging
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: dnd-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=dnd-cluster
+      - TZ=${TZ}
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: dnd-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+      TZ: ${TZ}
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Console
+    volumes:
+      - minio_data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================
+  # MICROSERVICES LAYER
+  # ============================================
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: dnd-auth-service
+    environment:
+      QUARKUS_HTTP_PORT: 8081
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/auth_db
+      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8081:8081"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.services.auth.loadbalancer.server.port=8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  character-service:
+    build:
+      context: ./services/character-service
+      dockerfile: Dockerfile
+    container_name: dnd-character-service
+    environment:
+      QUARKUS_HTTP_PORT: 8082
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/character_db
+      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      AUTH_SERVICE_URL: http://auth-service:8081
+      SEARCH_SERVICE_URL: http://search-service:8087
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8082:8082"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.character.rule=PathPrefix(`/api/characters`)"
+      - "traefik.http.routers.character.entrypoints=web"
+      - "traefik.http.services.character.loadbalancer.server.port=8082"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - auth-service
+    restart: unless-stopped
+
+  campaign-service:
+    build:
+      context: ./services/campaign-service
+      dockerfile: Dockerfile
+    container_name: dnd-campaign-service
+    environment:
+      QUARKUS_HTTP_PORT: 8083
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/campaign_db
+      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      AUTH_SERVICE_URL: http://auth-service:8081
+      CHARACTER_SERVICE_URL: http://character-service:8082
+      ASSET_SERVICE_URL: http://asset-service:8085
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8083:8083"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.campaign.rule=PathPrefix(`/api/campaigns`)"
+      - "traefik.http.routers.campaign.entrypoints=web"
+      - "traefik.http.services.campaign.loadbalancer.server.port=8083"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - auth-service
+    restart: unless-stopped
+
+  combat-service:
+    build:
+      context: ./services/combat-service
+      dockerfile: Dockerfile
+    container_name: dnd-combat-service
+    environment:
+      QUARKUS_HTTP_PORT: 8084
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/combat_db
+      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      AUTH_SERVICE_URL: http://auth-service:8081
+      CHARACTER_SERVICE_URL: http://character-service:8082
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8084:8084"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.combat.rule=PathPrefix(`/api/combat`)"
+      - "traefik.http.routers.combat.entrypoints=web"
+      - "traefik.http.services.combat.loadbalancer.server.port=8084"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - auth-service
+    restart: unless-stopped
+
+  asset-service:
+    build:
+      context: ./services/asset-service
+      dockerfile: Dockerfile
+    container_name: dnd-asset-service
+    environment:
+      QUARKUS_HTTP_PORT: 8085
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/asset_db
+      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      AUTH_SERVICE_URL: http://auth-service:8081
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_USER}
+      MINIO_SECRET_KEY: ${MINIO_PASSWORD}
+      MINIO_BUCKET: dnd-assets
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8085:8085"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.asset.rule=PathPrefix(`/api/assets`)"
+      - "traefik.http.routers.asset.entrypoints=web"
+      - "traefik.http.services.asset.loadbalancer.server.port=8085"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - minio
+      - auth-service
+    restart: unless-stopped
+
+  chat-service:
+    build:
+      context: ./services/chat-service
+      dockerfile: Dockerfile
+    container_name: dnd-chat-service
+    environment:
+      QUARKUS_HTTP_PORT: 8086
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/chat_db
+      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      AUTH_SERVICE_URL: http://auth-service:8081
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8086:8086"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chat.rule=PathPrefix(`/api/chat`) || PathPrefix(`/ws/chat`)"
+      - "traefik.http.routers.chat.entrypoints=web"
+      - "traefik.http.services.chat.loadbalancer.server.port=8086"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - auth-service
+    restart: unless-stopped
+
+  search-service:
+    build:
+      context: ./services/search-service
+      dockerfile: Dockerfile
+    container_name: dnd-search-service
+    environment:
+      QUARKUS_HTTP_PORT: 8087
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+      ELASTICSEARCH_SCHEME: http
+      AUTH_SERVICE_URL: http://auth-service:8081
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8087:8087"
+    networks:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.search.rule=PathPrefix(`/api/search`)"
+      - "traefik.http.routers.search.entrypoints=web"
+      - "traefik.http.services.search.loadbalancer.server.port=8087"
+    depends_on:
+      - elasticsearch
+      - redis
+      - auth-service
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: dnd-notification-service
+    environment:
+      QUARKUS_HTTP_PORT: 8088
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/notification_db
+      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8088:8088"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.notification.rule=PathPrefix(`/api/notifications`)"
+      - "traefik.http.routers.notification.entrypoints=web"
+      - "traefik.http.services.notification.loadbalancer.server.port=8088"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    restart: unless-stopped
+
+  # ============================================
+  # MONITORING LAYER
+  # ============================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: dnd-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - backend
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: dnd-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: false
+      TZ: ${TZ}
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infrastructure/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: dnd-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+      TZ: ${TZ}
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"  # UI
+      - "14268:14268"  # Collector HTTP
+      - "14250:14250"  # Collector gRPC
+      - "9411:9411"    # Zipkin compatible
+    networks:
+      - backend
+    restart: unless-stopped
+
+# ============================================
+# NETWORKS
+# ============================================
+
+networks:
+  frontend:
+    driver: bridge
+    name: dnd-frontend
+  backend:
+    driver: bridge
+    name: dnd-backend
+  database:
+    driver: bridge
+    name: dnd-database
+  messaging:
+    driver: bridge
+    name: dnd-messaging
+
+# ============================================
+# VOLUMES
+# ============================================
+
+volumes:
+  postgres_data:
+    name: dnd-postgres-data
+  redis_data:
+    name: dnd-redis-data
+  rabbitmq_data:
+    name: dnd-rabbitmq-data
+  elasticsearch_data:
+    name: dnd-elasticsearch-data
+  minio_data:
+    name: dnd-minio-data
+  prometheus_data:
+    name: dnd-prometheus-data
+  grafana_data:
+    name: dnd-grafana-data
