@@ -226,39 +226,39 @@ fi
 
 # Build multi-module projects if Maven is available
 if [ -n "$MAVEN_CMD" ]; then
-    # Build asset-service multi-module project
-    if [ -d "services/asset-service" ] && [ -f "services/asset-service/pom.xml" ]; then
-        echo -e "${YELLOW}Building asset-service multi-module project...${NC}"
-        cd services/asset-service
-        $MAVEN_CMD clean install -DskipTests
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✓ asset-service built successfully${NC}"
+    # List of multi-module services
+    MULTI_MODULE_SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "notification-service" "search-service")
 
-            # Create target/classes directories for Quarkus hot-reload support
-            # This is needed for empty modules to work with quarkus:dev
-            echo -e "${YELLOW}Creating target/classes directories for hot-reload...${NC}"
-            mkdir -p asset-service-domain/target/classes
-            mkdir -p asset-service-view-model/target/classes
-            mkdir -p asset-service-adapter-inbound/target/classes
-            mkdir -p asset-service-adapter-outbound/target/classes
-            mkdir -p asset-service-client/target/classes
-            echo -e "${GREEN}✓ Hot-reload directories created${NC}"
-        else
-            echo -e "${RED}✗ asset-service build failed${NC}"
+    for service in "${MULTI_MODULE_SERVICES[@]}"; do
+        if [ -d "services/$service" ] && [ -f "services/$service/pom.xml" ]; then
+            echo -e "${YELLOW}Building $service multi-module project...${NC}"
+            cd services/$service
+            $MAVEN_CMD clean install -DskipTests
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}✓ $service built successfully${NC}"
+
+                # Create target/classes directories for Quarkus hot-reload support
+                # This is needed for empty modules to work with quarkus:dev
+                echo -e "${YELLOW}Creating target/classes directories for hot-reload...${NC}"
+
+                # Extract service name without "service" suffix for directory naming
+                SERVICE_PREFIX="${service%-service}"
+
+                mkdir -p ${service}-domain/target/classes
+                mkdir -p ${service}-view-model/target/classes
+                mkdir -p ${service}-adapter-inbound/target/classes
+                mkdir -p ${service}-adapter-outbound/target/classes
+                mkdir -p ${service}-client/target/classes
+                echo -e "${GREEN}✓ Hot-reload directories created${NC}"
+            else
+                echo -e "${RED}✗ $service build failed${NC}"
+                cd ../..
+                exit 1
+            fi
             cd ../..
-            exit 1
+            echo ""
         fi
-        cd ../..
-    fi
-
-    # Add other multi-module projects here as needed
-    # Example:
-    # if [ -d "services/other-service" ] && [ -f "services/other-service/pom.xml" ]; then
-    #     echo -e "${YELLOW}Building other-service multi-module project...${NC}"
-    #     cd services/other-service
-    #     $MAVEN_CMD clean install -DskipTests
-    #     cd ../..
-    # fi
+    done
 fi
 
 echo ""

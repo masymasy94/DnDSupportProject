@@ -15,7 +15,7 @@
         <module>asset-service-adapter-inbound</module>
         <module>asset-service-adapter-outbound</module>
         <module>asset-service-client</module>
-        <module>asset-service-view-model</module>
+    <module>asset-service-view-model</module>
         <module>asset-service</module>
     </modules>
 

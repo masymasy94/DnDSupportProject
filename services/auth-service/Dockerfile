@@ -5,15 +5,30 @@ FROM maven:3.9.6-eclipse-temurin-21 AS build
 
 WORKDIR /build
 
-# Copy pom.xml and download dependencies (for better layer caching)
+# Copy parent POM
 COPY pom.xml .
-RUN mvn dependency:go-offline
 
-# Copy source code
-COPY src ./src
+# Copy all module POMs
+COPY auth-service-domain/pom.xml ./auth-service-domain/
+COPY auth-service-view-model/pom.xml ./auth-service-view-model/
+COPY auth-service-adapter-inbound/pom.xml ./auth-service-adapter-inbound/
+COPY auth-service-adapter-outbound/pom.xml ./auth-service-adapter-outbound/
+COPY auth-service-client/pom.xml ./auth-service-client/
+COPY auth-service/pom.xml ./auth-service/
+
+# Download dependencies (for better layer caching)
+RUN mvn dependency:go-offline -pl auth-service -am
+
+# Copy source code for all modules
+COPY auth-service-domain/src ./auth-service-domain/src
+COPY auth-service-view-model/src ./auth-service-view-model/src
+COPY auth-service-adapter-inbound/src ./auth-service-adapter-inbound/src
+COPY auth-service-adapter-outbound/src ./auth-service-adapter-outbound/src
+COPY auth-service-client/src ./auth-service-client/src
+COPY auth-service/src ./auth-service/src
 
 # Build application
-RUN mvn package -DskipTests
+RUN mvn clean package -DskipTests
 
 ####
 # Runtime stage
@@ -22,11 +37,11 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /work/
 
-# Copy the built artifact from build stage
-COPY --from=build /build/target/quarkus-app/lib/ /work/lib/
-COPY --from=build /build/target/quarkus-app/*.jar /work/
-COPY --from=build /build/target/quarkus-app/app/ /work/app/
-COPY --from=build /build/target/quarkus-app/quarkus/ /work/quarkus/
+# Copy the built artifact from build stage (main app module)
+COPY --from=build /build/auth-service/target/quarkus-app/lib/ /work/lib/
+COPY --from=build /build/auth-service/target/quarkus-app/*.jar /work/
+COPY --from=build /build/auth-service/target/quarkus-app/app/ /work/app/
+COPY --from=build /build/auth-service/target/quarkus-app/quarkus/ /work/quarkus/
 
 # Install curl for healthchecks
 RUN apk add --no-cache curl
