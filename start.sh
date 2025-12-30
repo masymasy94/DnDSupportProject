@@ -205,6 +205,64 @@ echo ""
 echo -e "${GREEN}✓ All infrastructure services are ready!${NC}"
 echo ""
 
+# Build multi-module Maven projects
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  Building Maven Projects${NC}"
+echo -e "${BLUE}========================================${NC}"
+echo ""
+
+# Set Maven command - try to use IntelliJ's bundled Maven or system Maven
+MAVEN_CMD=""
+if [ -x "/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn" ]; then
+    MAVEN_CMD="/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn"
+    echo -e "${GREEN}✓ Using IntelliJ bundled Maven${NC}"
+elif command -v mvn &> /dev/null; then
+    MAVEN_CMD="mvn"
+    echo -e "${GREEN}✓ Using system Maven${NC}"
+else
+    echo -e "${YELLOW}⚠ Maven not found. Skipping Maven build step.${NC}"
+    echo -e "${YELLOW}  Note: Multi-module projects may fail to build without Maven.${NC}"
+fi
+
+# Build multi-module projects if Maven is available
+if [ -n "$MAVEN_CMD" ]; then
+    # Build asset-service multi-module project
+    if [ -d "services/asset-service" ] && [ -f "services/asset-service/pom.xml" ]; then
+        echo -e "${YELLOW}Building asset-service multi-module project...${NC}"
+        cd services/asset-service
+        $MAVEN_CMD clean install -DskipTests
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ asset-service built successfully${NC}"
+
+            # Create target/classes directories for Quarkus hot-reload support
+            # This is needed for empty modules to work with quarkus:dev
+            echo -e "${YELLOW}Creating target/classes directories for hot-reload...${NC}"
+            mkdir -p asset-service-domain/target/classes
+            mkdir -p asset-service-view-model/target/classes
+            mkdir -p asset-service-adapter-inbound/target/classes
+            mkdir -p asset-service-adapter-outbound/target/classes
+            mkdir -p asset-service-client/target/classes
+            echo -e "${GREEN}✓ Hot-reload directories created${NC}"
+        else
+            echo -e "${RED}✗ asset-service build failed${NC}"
+            cd ../..
+            exit 1
+        fi
+        cd ../..
+    fi
+
+    # Add other multi-module projects here as needed
+    # Example:
+    # if [ -d "services/other-service" ] && [ -f "services/other-service/pom.xml" ]; then
+    #     echo -e "${YELLOW}Building other-service multi-module project...${NC}"
+    #     cd services/other-service
+    #     $MAVEN_CMD clean install -DskipTests
+    #     cd ../..
+    # fi
+fi
+
+echo ""
+
 # Check if microservices have Dockerfiles
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Checking Microservices${NC}"
@@ -282,14 +340,5 @@ if [ ${#MISSING_DOCKERFILES[@]} -eq 0 ]; then
     echo ""
 fi
 
-echo -e "${BLUE}Useful Commands:${NC}"
-echo -e "  📋 View logs (all):       ${YELLOW}docker-compose logs -f${NC}"
-echo -e "  📋 View logs (service):   ${YELLOW}docker-compose logs -f <service-name>${NC}"
-echo -e "  ⏸️ Stop all:              ${YELLOW}docker-compose stop${NC}"
-echo -e "  🗑️ Stop and remove:       ${YELLOW}docker-compose down${NC}"
-echo -e "  🗑️ Remove volumes:        ${YELLOW}docker-compose down -v${NC}"
-echo -e "  🔄 Restart service:       ${YELLOW}docker-compose restart <service-name>${NC}"
-echo -e "  📊 Service status:        ${YELLOW}docker-compose ps${NC}"
-echo ""
 echo -e "${GREEN}Happy coding! 🚀${NC}"
 echo ""

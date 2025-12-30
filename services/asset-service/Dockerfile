@@ -18,11 +18,12 @@ COPY asset-service/pom.xml asset-service/
 RUN mvn dependency:go-offline
 
 # Copy source code for all modules
-COPY asset-service-domain/src asset-service-domain/src
-COPY asset-service-view-model/src asset-service-view-model/src
-COPY asset-service-adapter-inbound/src asset-service-adapter-inbound/src
-COPY asset-service-adapter-outbound/src asset-service-adapter-outbound/src
-COPY asset-service-client/src asset-service-client/src
+# Note: Commented out modules don't have src directories yet (empty placeholders)
+# COPY asset-service-domain/src asset-service-domain/src
+# COPY asset-service-view-model/src asset-service-view-model/src
+# COPY asset-service-adapter-inbound/src asset-service-adapter-inbound/src
+# COPY asset-service-adapter-outbound/src asset-service-adapter-outbound/src
+# COPY asset-service-client/src asset-service-client/src
 COPY asset-service/src asset-service/src
 
 # Build application
