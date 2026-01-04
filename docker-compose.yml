@@ -138,8 +138,8 @@ services:
 
   auth-service:
     build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: auth-service/Dockerfile
     container_name: dnd-auth-service
     environment:
       QUARKUS_HTTP_PORT: 8081

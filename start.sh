@@ -226,6 +226,23 @@ fi
 
 # Build multi-module projects if Maven is available
 if [ -n "$MAVEN_CMD" ]; then
+    # First, build and install the common module
+    if [ -d "services/common" ] && [ -f "services/common/pom.xml" ]; then
+        echo -e "${YELLOW}Building common module (required by all services)...${NC}"
+        cd services/common
+        "$MAVEN_CMD" clean install -DskipTests
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ common module built and installed successfully${NC}"
+        else
+            echo -e "${RED}✗ common module build failed${NC}"
+            echo -e "${RED}Cannot continue without common module${NC}"
+            cd ../..
+            exit 1
+        fi
+        cd ../..
+        echo ""
+    fi
+
     # List of multi-module services
     MULTI_MODULE_SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "notification-service" "search-service")
 
@@ -233,7 +250,7 @@ if [ -n "$MAVEN_CMD" ]; then
         if [ -d "services/$service" ] && [ -f "services/$service/pom.xml" ]; then
             echo -e "${YELLOW}Building $service multi-module project...${NC}"
             cd services/$service
-            $MAVEN_CMD clean install -DskipTests
+            "$MAVEN_CMD" clean install -DskipTests
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}✓ $service built successfully${NC}"
 
