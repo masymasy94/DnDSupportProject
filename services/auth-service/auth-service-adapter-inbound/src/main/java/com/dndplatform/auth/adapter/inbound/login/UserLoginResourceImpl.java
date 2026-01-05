@@ -39,7 +39,7 @@ public class UserLoginResourceImpl implements UserLoginResource {
     @Override
     //@SecurityRequirement(name = "token")
     //@RolesAllowed({"PLAYER", "DM", "ADMIN"})
-    public int login(UserLoginViewModel userLoginViewModel) {
+    public String login(UserLoginViewModel userLoginViewModel) {
 
         // todo - add validation
         return delegate.login(userLoginViewModel);

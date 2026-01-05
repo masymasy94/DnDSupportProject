@@ -4,6 +4,6 @@ import com.dndplatform.auth.view.model.vm.UserLoginViewModel;
 
 public interface UserLoginResource {
 
-    int login(UserLoginViewModel loginCredentialsViewModel);
+    String login(UserLoginViewModel loginCredentialsViewModel);
 
 }

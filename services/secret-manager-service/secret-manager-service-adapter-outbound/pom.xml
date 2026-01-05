@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>auth-service-multi-module</artifactId>
+        <artifactId>secret-manager-service-multi-module</artifactId>
         <groupId>com.dndplatform</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>auth-service-domain</artifactId>
+    <artifactId>secret-manager-service-adapter-outbound</artifactId>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
@@ -19,27 +19,45 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.dndplatform</groupId>
-            <artifactId>common</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <!-- =============== -->
-        <!-- =   HASHING   = -->
-        <!-- =============== -->
-
-        <dependency>
-            <groupId>at.favre.lib</groupId>
-            <artifactId>bcrypt</artifactId>
-            <version>0.10.2</version>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>secret-manager-service-domain</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <!-- ============== -->
         <!-- = JAKARTA EE = -->
         <!-- ============== -->
         <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.enterprise</groupId>
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.json.bind</groupId>
+            <artifactId>jakarta.json.bind-api</artifactId>
+        </dependency>
+
+        <!-- ================ -->
+        <!-- = MICROPROFILE = -->
+        <!-- ================ -->
+        <dependency>
+            <groupId>org.eclipse.microprofile.config</groupId>
+            <artifactId>microprofile-config-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.fault-tolerance</groupId>
+            <artifactId>microprofile-fault-tolerance-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.metrics</groupId>
+            <artifactId>microprofile-metrics-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.rest.client</groupId>
+            <artifactId>microprofile-rest-client-api</artifactId>
         </dependency>
 
         <!-- ==================== -->
@@ -72,6 +90,23 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- =================== -->
+        <!-- =    HIBERNATE    = -->
+        <!-- =================== -->
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
 
     </dependencies>

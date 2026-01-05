@@ -24,7 +24,7 @@ public class UserLoginDelegate implements UserLoginResource {
     }
 
     @Override
-    public int login(UserLoginViewModel userLoginViewModel) {
+    public String login(UserLoginViewModel userLoginViewModel) {
         var model = UserLoginBuilder.toBuilder(mapper.apply(userLoginViewModel)).build();
         return service.login(model);
     }
