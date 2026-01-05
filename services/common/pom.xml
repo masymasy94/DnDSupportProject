@@ -29,6 +29,14 @@
             <artifactId>javapoet</artifactId>
             <version>1.13.0</version>
         </dependency>
+
+        <!-- Jakarta WS-RS API for ExceptionMapper -->
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>4.0.0</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

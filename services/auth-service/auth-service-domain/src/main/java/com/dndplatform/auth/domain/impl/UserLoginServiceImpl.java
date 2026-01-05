@@ -8,6 +8,8 @@ import com.dndplatform.auth.domain.model.User;
 import com.dndplatform.auth.domain.model.UserLogin;
 import com.dndplatform.auth.domain.repository.UserFindByCredentialsRepository;
 import com.dndplatform.auth.domain.util.CryptUtil;
+import com.dndplatform.common.exception.ForbiddenException;
+import com.dndplatform.common.exception.UnauthorizedException;
 import jakarta.annotation.Nonnull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -68,10 +70,10 @@ public class UserLoginServiceImpl implements UserLoginService {
 
         var passwordHash = CryptUtil.hashPassword(userLogin.password());
         var user = userFindByCredentialsRepository.findUserByCredentials(userLogin.username(), passwordHash)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials")); // TODO - custom exception 401
+                .orElseThrow(() ->  new UnauthorizedException("Invalid credentials"));
 
         if (!user.active())
-            throw new IllegalArgumentException("User not active");// TODO - custom exception 403
+            throw new ForbiddenException("User account is not active");
 
         return user;
     }
