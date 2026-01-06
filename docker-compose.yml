@@ -444,6 +444,47 @@ services:
       - rabbitmq
     restart: unless-stopped
 
+  user-service:
+    build:
+      context: ./services
+      dockerfile: user-service/Dockerfile
+    container_name: dnd-user-service
+    environment:
+      QUARKUS_HTTP_PORT: 8089
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/user_db
+      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      AUTH_SERVICE_URL: http://auth-service:8081
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8089:8089"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.routers.user.entrypoints=web"
+      - "traefik.http.services.user.loadbalancer.server.port=8089"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
   # ============================================
   # MONITORING LAYER
   # ============================================

@@ -71,6 +71,7 @@ CREATE DATABASE combat_db;
 CREATE DATABASE asset_db;
 CREATE DATABASE chat_db;
 CREATE DATABASE notification_db;
+CREATE DATABASE user_db;
 
 -- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE auth_db TO dnd_user;
@@ -80,6 +81,7 @@ GRANT ALL PRIVILEGES ON DATABASE combat_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE asset_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE chat_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE notification_db TO dnd_user;
+GRANT ALL PRIVILEGES ON DATABASE user_db TO dnd_user;
 EOF
     echo -e "${GREEN}✓ PostgreSQL init script created${NC}"
 fi
@@ -136,6 +138,12 @@ scrape_configs:
     metrics_path: '/q/metrics'
     static_configs:
       - targets: ['notification-service:8088']
+
+  - job_name: 'user-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['user-service:8089']
+
 EOF
     echo -e "${GREEN}✓ Prometheus configuration created${NC}"
 fi
@@ -148,7 +156,7 @@ echo ""
 
 # Stop any existing containers
 echo -e "${YELLOW}Stopping any existing containers...${NC}"
-docker-compose down 2>/dev/null
+docker-compose down -v 2>/dev/null
 echo -e "${GREEN}✓ Cleanup complete${NC}"
 echo ""
 
@@ -163,7 +171,7 @@ echo -e "${YELLOW}This may take 30-60 seconds...${NC}"
 
 # Wait for PostgreSQL
 echo -n "Waiting for PostgreSQL... "
-until docker exec dnd-postgres pg_isready -U dnd_user > /dev/null 2>&1; do
+until docker exec dnd-postgres pg_isready -U postgres > /dev/null 2>&1; do
     echo -n "."
     sleep 2
 done
@@ -244,7 +252,7 @@ if [ -n "$MAVEN_CMD" ]; then
     fi
 
     # List of multi-module services
-    MULTI_MODULE_SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "notification-service" "search-service")
+    MULTI_MODULE_SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "notification-service" "search-service" "user-service")
 
     for service in "${MULTI_MODULE_SERVICES[@]}"; do
         if [ -d "services/$service" ] && [ -f "services/$service/pom.xml" ]; then
@@ -286,7 +294,7 @@ echo -e "${BLUE}  Checking Microservices${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service" "notification-service")
+SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service" "notification-service" "user-service" )
 MISSING_DOCKERFILES=()
 
 for service in "${SERVICES[@]}"; do
@@ -347,13 +355,14 @@ echo ""
 if [ ${#MISSING_DOCKERFILES[@]} -eq 0 ]; then
     echo -e "${BLUE}Microservices API Endpoints:${NC}"
     echo -e "  🔐 Auth Service:         ${GREEN}http://localhost:8081/q/swagger-ui/${NC}"
-    echo -e "  ⚔️  Character Service:   ${GREEN}http://localhost:8082/q/swagger-ui/${NC}"
-    echo -e "  🗺️  Campaign Service:    ${GREEN}http://localhost:8083/q/swagger-ui/${NC}"
-    echo -e "  ⚔️  Combat Service:      ${GREEN}http://localhost:8084/q/swagger-ui/${NC}"
+    echo -e "  ⚔️ Character Service:   ${GREEN}http://localhost:8082/q/swagger-ui/${NC}"
+    echo -e "  🗺️ Campaign Service:    ${GREEN}http://localhost:8083/q/swagger-ui/${NC}"
+    echo -e "  ⚔️ Combat Service:      ${GREEN}http://localhost:8084/q/swagger-ui/${NC}"
     echo -e "  📁 Asset Service:        ${GREEN}http://localhost:8085/q/swagger-ui/${NC}"
     echo -e "  💬 Chat Service:         ${GREEN}http://localhost:8086/q/swagger-ui/${NC}"
     echo -e "  🔍 Search Service:       ${GREEN}http://localhost:8087/q/swagger-ui/${NC}"
     echo -e "  🔔 Notification Service: ${GREEN}http://localhost:8088/q/swagger-ui/${NC}"
+    echo -e "  👤 User Service:         ${GREEN}http://localhost:8089/q/swagger-ui/${NC}"
     echo ""
 fi
 
