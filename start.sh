@@ -162,8 +162,8 @@ echo ""
 
 # Start infrastructure services first (without microservices)
 echo -e "${YELLOW}Starting infrastructure services (this may take a few minutes)...${NC}"
-echo -e "${YELLOW}Services: PostgreSQL, Redis, RabbitMQ, Elasticsearch, MinIO, Monitoring${NC}"
-docker-compose up -d traefik postgres redis rabbitmq elasticsearch minio prometheus grafana jaeger
+echo -e "${YELLOW}Services: PostgreSQL, Redis, RabbitMQ, Elasticsearch, MinIO, Vault, Monitoring${NC}"
+docker-compose up -d traefik postgres redis rabbitmq elasticsearch minio vault prometheus grafana jaeger
 
 echo ""
 echo -e "${YELLOW}Waiting for infrastructure services to be ready...${NC}"
@@ -207,6 +207,20 @@ until curl -s http://localhost:9000/minio/health/live > /dev/null 2>&1; do
     echo -n "."
     sleep 2
 done
+echo -e " ${GREEN}✓${NC}"
+
+# Wait for Vault
+echo -n "Waiting for Vault... "
+until curl -s http://localhost:8200/v1/sys/health > /dev/null 2>&1; do
+    echo -n "."
+    sleep 2
+done
+echo -e " ${GREEN}✓${NC}"
+
+# Initialize Vault secrets
+echo -n "Initializing Vault secrets... "
+docker-compose up -d vault-init
+sleep 5
 echo -e " ${GREEN}✓${NC}"
 
 echo ""
@@ -345,6 +359,7 @@ echo -e "  🔴 Redis:                ${GREEN}localhost:6379${NC}"
 echo -e "  🐰 RabbitMQ Management:  ${GREEN}http://localhost:15672${NC} (user: dnd_user, pass: dnd_password)"
 echo -e "  🔍 Elasticsearch:        ${GREEN}http://localhost:9200${NC}"
 echo -e "  📦 MinIO Console:        ${GREEN}http://localhost:9001${NC} (user: dnd_user, pass: dnd_password)"
+echo -e "  🔐 Vault:                ${GREEN}http://localhost:8200${NC} (token: dnd-dev-token)"
 echo ""
 echo -e "${BLUE}Monitoring Services:${NC}"
 echo -e "  📊 Prometheus:           ${GREEN}http://localhost:9090${NC}"

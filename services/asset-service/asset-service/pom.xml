@@ -110,6 +110,13 @@
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
+        <!-- Vault -->
+        <dependency>
+            <groupId>io.quarkiverse.vault</groupId>
+            <artifactId>quarkus-vault</artifactId>
+            <version>4.4.0</version>
+        </dependency>
+
         <!-- =================== -->
         <!-- = TEST FRAMEWORKS = -->
         <!-- =================== -->
