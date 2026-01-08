@@ -24,15 +24,12 @@ public class UserCredentialsValidateServiceImpl implements UserCredentialsValida
     @Override
     public User validateCredentials(UserCredentialsValidate credentials) {
 
-        var user = userFindByUsernameRepository.findByUsername(credentials.username())
-                .orElseThrow(() -> new NotFoundException("Invalid credentials"));
-
-        if (!CryptUtil.verifyPassword(credentials.password(), user.passwordHash())) {
-            throw new UnauthorizedException("Invalid credentials");
-        }
+        User user = userFindByUsernameRepository.findByUsername(credentials.username())
+                .filter(u -> CryptUtil.verifyPassword(credentials.password(), u.passwordHash()))
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
         if (!user.active()) {
-            throw new ForbiddenException("User account is not active");
+            throw new ForbiddenException("User is not active");
         }
 
         return user;

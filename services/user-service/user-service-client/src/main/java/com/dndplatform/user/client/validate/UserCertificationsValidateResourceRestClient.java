@@ -1,6 +1,6 @@
 package com.dndplatform.user.client.validate;
 
-import com.dndplatform.user.client.RestClientExceptionMapper;
+import com.dndplatform.common.client.RestClientExceptionMapper;
 import com.dndplatform.user.client.authorization.AuthorizationFilter;
 import com.dndplatform.user.view.model.UserCredentialsValidateResource;
 import com.dndplatform.user.view.model.vm.UserCredentialsValidateViewModel;
