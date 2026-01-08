@@ -3,7 +3,7 @@ package com.dndplatform.user.domain.impl;
 import com.dndplatform.common.exception.ForbiddenException;
 import com.dndplatform.common.exception.NotFoundException;
 import com.dndplatform.common.exception.UnauthorizedException;
-import com.dndplatform.user.domain.UserVerifyCredentialsService;
+import com.dndplatform.user.domain.UserCredentialsValidateService;
 import com.dndplatform.user.domain.model.User;
 import com.dndplatform.user.domain.model.UserCredentialsValidate;
 import com.dndplatform.user.domain.repository.UserFindByUsernameRepository;
@@ -12,12 +12,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class UserVerifyCredentialsServiceImpl implements UserVerifyCredentialsService {
+public class UserCredentialsValidateServiceImpl implements UserCredentialsValidateService {
 
     private final UserFindByUsernameRepository userFindByUsernameRepository;
 
     @Inject
-    public UserVerifyCredentialsServiceImpl(UserFindByUsernameRepository userFindByUsernameRepository) {
+    public UserCredentialsValidateServiceImpl(UserFindByUsernameRepository userFindByUsernameRepository) {
         this.userFindByUsernameRepository = userFindByUsernameRepository;
     }
 
@@ -25,7 +25,7 @@ public class UserVerifyCredentialsServiceImpl implements UserVerifyCredentialsSe
     public User validateCredentials(UserCredentialsValidate credentials) {
 
         var user = userFindByUsernameRepository.findByUsername(credentials.username())
-                .orElseThrow(() -> new NotFoundException("No user found with the given username"));
+                .orElseThrow(() -> new NotFoundException("Invalid credentials"));
 
         if (!CryptUtil.verifyPassword(credentials.password(), user.passwordHash())) {
             throw new UnauthorizedException("Invalid credentials");

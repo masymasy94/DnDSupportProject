@@ -1,7 +1,7 @@
 package com.dndplatform.auth.domain.impl;
 
 import com.dndplatform.auth.domain.UserLoginService;
-import com.dndplatform.auth.domain.model.TokenPair;
+import com.dndplatform.auth.domain.model.LoginResponse;
 import com.dndplatform.auth.domain.model.UserLogin;
 import com.dndplatform.auth.domain.repository.RefreshTokenCreateRepository;
 import com.dndplatform.auth.domain.repository.UserCredentialsValidateRepository;
@@ -26,15 +26,10 @@ public class UserLoginServiceImpl implements UserLoginService {
     }
 
     @Override
-    public TokenPair login(UserLogin userLogin) {
+    public LoginResponse login(UserLogin userLogin) {
 
-        var user = userCredentialsValidateRepository.validateCredentials(
-                userLogin.username(),
-                userLogin.password()
-        );
-
+        var user = userCredentialsValidateRepository.validateCredentials(userLogin);
         var refreshToken = refreshTokenCreateRepository.createRefreshToken(user.id());
-
         return jwtTokenService.generateTokenPair(user, refreshToken);
     }
 }

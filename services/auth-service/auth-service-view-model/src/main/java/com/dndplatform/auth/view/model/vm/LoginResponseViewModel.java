@@ -1,5 +1,8 @@
 package com.dndplatform.auth.view.model.vm;
 
+import com.dndplatform.common.annotations.Builder;
+
+@Builder
 public record LoginResponseViewModel(
         String accessToken,
         String refreshToken,
@@ -7,8 +10,4 @@ public record LoginResponseViewModel(
         long refreshTokenExpiresAt,
         String tokenType
 ) {
-    public LoginResponseViewModel(String accessToken, String refreshToken,
-                                  long accessTokenExpiresAt, long refreshTokenExpiresAt) {
-        this(accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt, "Bearer");
-    }
 }

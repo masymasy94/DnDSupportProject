@@ -1,7 +1,7 @@
 package com.dndplatform.auth.adapter.outbound.jwt;
 
 import com.dndplatform.auth.domain.model.RefreshToken;
-import com.dndplatform.auth.domain.model.TokenPair;
+import com.dndplatform.auth.domain.model.LoginResponse;
 import com.dndplatform.auth.domain.model.User;
 import com.dndplatform.auth.domain.service.JwtTokenService;
 import io.smallrye.jwt.build.Jwt;
@@ -25,7 +25,7 @@ public class JwtTokenServiceImpl implements JwtTokenService {
     long refreshTokenExpiryDays;
 
     @Override
-    public TokenPair generateTokenPair(User user, RefreshToken refreshToken) {
+    public LoginResponse generateTokenPair(User user, RefreshToken refreshToken) {
         Instant now = Instant.now();
 
         Instant accessTokenExpiry = now.plusSeconds(accessTokenExpirySeconds);
@@ -51,7 +51,7 @@ public class JwtTokenServiceImpl implements JwtTokenService {
                 .expiresAt(refreshTokenExpiry)
                 .sign();
 
-        return new TokenPair(
+        return new LoginResponse(
                 accessToken,
                 refreshTokenJwt,
                 accessTokenExpiry.toEpochMilli(),

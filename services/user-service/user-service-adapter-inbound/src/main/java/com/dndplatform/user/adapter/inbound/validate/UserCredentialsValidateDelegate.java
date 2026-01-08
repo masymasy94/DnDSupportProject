@@ -3,7 +3,7 @@ package com.dndplatform.user.adapter.inbound.validate;
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.user.adapter.inbound.register.mapper.UserViewModelMapper;
 import com.dndplatform.user.adapter.inbound.validate.mapper.UserCredentialsValidateMapper;
-import com.dndplatform.user.domain.UserVerifyCredentialsService;
+import com.dndplatform.user.domain.UserCredentialsValidateService;
 import com.dndplatform.user.view.model.UserCredentialsValidateResource;
 import com.dndplatform.user.view.model.vm.UserCredentialsValidateViewModel;
 import com.dndplatform.user.view.model.vm.UserViewModel;
@@ -16,12 +16,12 @@ public class UserCredentialsValidateDelegate implements UserCredentialsValidateR
 
     private final UserCredentialsValidateMapper credentialsMapper;
     private final UserViewModelMapper viewModelMapper;
-    private final UserVerifyCredentialsService service;
+    private final UserCredentialsValidateService service;
 
     @Inject
     public UserCredentialsValidateDelegate(UserCredentialsValidateMapper credentialsMapper,
                                            UserViewModelMapper viewModelMapper,
-                                           UserVerifyCredentialsService service) {
+                                           UserCredentialsValidateService service) {
         this.credentialsMapper = credentialsMapper;
         this.viewModelMapper = viewModelMapper;
         this.service = service;

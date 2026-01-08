@@ -1,7 +1,8 @@
 package com.dndplatform.auth.domain.repository;
 
 import com.dndplatform.auth.domain.model.User;
+import com.dndplatform.auth.domain.model.UserLogin;
 
 public interface UserCredentialsValidateRepository {
-    User validateCredentials(String username, String password);
+    User validateCredentials(UserLogin userLogin);
 }

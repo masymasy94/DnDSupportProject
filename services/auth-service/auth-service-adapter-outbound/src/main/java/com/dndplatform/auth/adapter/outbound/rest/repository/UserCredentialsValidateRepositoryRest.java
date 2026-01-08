@@ -2,6 +2,7 @@ package com.dndplatform.auth.adapter.outbound.rest.repository;
 
 import com.dndplatform.auth.adapter.outbound.rest.mapper.UserCredentialsValidateViewModelMapper;
 import com.dndplatform.auth.domain.model.User;
+import com.dndplatform.auth.domain.model.UserLogin;
 import com.dndplatform.auth.domain.repository.UserCredentialsValidateRepository;
 import com.dndplatform.user.client.validate.UserCertificationsValidateResourceRestClient;
 import com.dndplatform.user.view.model.vm.UserCredentialsValidateViewModel;
@@ -23,9 +24,10 @@ public class UserCredentialsValidateRepositoryRest implements UserCredentialsVal
     }
 
     @Override
-    public User validateCredentials(String username, String password) {
+    public User validateCredentials(UserLogin userLogin) {
 
-        var request = new UserCredentialsValidateViewModel(username, password);
+        //todo mapper
+        var request = new UserCredentialsValidateViewModel(userLogin.username(), userLogin.password());
         var response = userServiceClient.validateUserCredentials(request);
         return mapper.apply(response);
 
