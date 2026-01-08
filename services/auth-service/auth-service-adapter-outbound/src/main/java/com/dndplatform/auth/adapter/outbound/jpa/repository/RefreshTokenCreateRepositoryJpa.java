@@ -9,6 +9,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,6 +20,9 @@ public class RefreshTokenCreateRepositoryJpa implements RefreshTokenCreateReposi
 
     private final RefreshTokenMapper mapper;
 
+    @ConfigProperty(name = "jwt.refresh-token-expiry-days", defaultValue = "30")
+    long refreshTokenExpiryDays;
+
     @Inject
     public RefreshTokenCreateRepositoryJpa(RefreshTokenMapper mapper) {
         this.mapper = mapper;
@@ -26,8 +30,12 @@ public class RefreshTokenCreateRepositoryJpa implements RefreshTokenCreateReposi
 
     @Override
     public RefreshToken createRefreshToken(long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = now.plusDays(refreshTokenExpiryDays);
+
         var entity = RefreshTokenEntityBuilder.builder()
-                .withCreatedAt(LocalDateTime.now())
+                .withCreatedAt(now)
+                .withExpiresAt(expiresAt)
                 .withUserId(userId)
                 .withToken(UUID.randomUUID().toString())
                 .withRevoked(false)

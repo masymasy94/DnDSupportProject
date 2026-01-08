@@ -9,7 +9,7 @@ import jakarta.ws.rs.client.ClientResponseFilter;
 import java.io.IOException;
 
 @ApplicationScoped
-public class RestClientExceptionMapper implements ClientResponseFilter {
+public class    RestClientExceptionMapper implements ClientResponseFilter {
 
     @Override
     public void filter(ClientRequestContext clientRequestContext, ClientResponseContext clientResponseContext) throws IOException {

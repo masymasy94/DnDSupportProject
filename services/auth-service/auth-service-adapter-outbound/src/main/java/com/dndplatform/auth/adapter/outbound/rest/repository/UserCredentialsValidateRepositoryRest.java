@@ -3,12 +3,10 @@ package com.dndplatform.auth.adapter.outbound.rest.repository;
 import com.dndplatform.auth.adapter.outbound.rest.mapper.UserCredentialsValidateViewModelMapper;
 import com.dndplatform.auth.domain.model.User;
 import com.dndplatform.auth.domain.repository.UserCredentialsValidateRepository;
-import com.dndplatform.common.exception.BadGatewayException;
 import com.dndplatform.user.client.validate.UserCertificationsValidateResourceRestClient;
 import com.dndplatform.user.view.model.vm.UserCredentialsValidateViewModel;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.WebApplicationException;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 @ApplicationScoped
