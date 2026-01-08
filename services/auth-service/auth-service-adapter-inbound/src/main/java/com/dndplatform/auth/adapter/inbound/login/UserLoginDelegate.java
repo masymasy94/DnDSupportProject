@@ -9,6 +9,7 @@ import com.dndplatform.auth.view.model.vm.UserLoginViewModel;
 import com.dndplatform.common.annotations.Delegate;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
 
 
 @Delegate
@@ -25,14 +26,18 @@ public class UserLoginDelegate implements UserLoginResource {
     }
 
     @Override
-    public LoginResponseViewModel login(UserLoginViewModel userLoginViewModel) {
+    public Response login(UserLoginViewModel userLoginViewModel) {
+
         var model = UserLoginBuilder.toBuilder(mapper.apply(userLoginViewModel)).build();
         var tokenPair = service.login(model);
-        return new LoginResponseViewModel(
+
+        var responseBody = new LoginResponseViewModel(
                 tokenPair.accessToken(),
                 tokenPair.refreshToken(),
                 tokenPair.accessTokenExpiresAt(),
                 tokenPair.refreshTokenExpiresAt()
         );
+        return Response.status(Response.Status.CREATED).entity(responseBody).build();
+
     }
 }

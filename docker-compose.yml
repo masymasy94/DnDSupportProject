@@ -190,6 +190,7 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      USER_SERVICE_URL: http://user-service:8089
       VAULT_URL: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
       QUARKUS_LOG_LEVEL: INFO
@@ -617,6 +618,37 @@ services:
       - backend
     restart: unless-stopped
 
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: dnd-portainer
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "9443:9443"  # HTTPS UI
+      - "9002:9000"  # HTTP UI
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+    networks:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  portainer-init:
+    image: curlimages/curl:latest
+    container_name: dnd-portainer-init
+    environment:
+      PORTAINER_ADMIN_USER: ${PORTAINER_ADMIN_USER:-admin}
+      PORTAINER_ADMIN_PASSWORD: ${PORTAINER_ADMIN_PASSWORD:-portainer_admin_password}
+    volumes:
+      - ./infrastructure/portainer/init-scripts:/scripts:ro
+    entrypoint: ["/bin/sh", "/scripts/01-setup-admin.sh"]
+    depends_on:
+      - portainer
+    networks:
+      - backend
+    restart: "no"
+
 # ============================================
 # NETWORKS
 # ============================================
@@ -656,3 +688,5 @@ volumes:
     name: dnd-prometheus-data
   grafana_data:
     name: dnd-grafana-data
+  portainer_data:
+    name: dnd-portainer-data

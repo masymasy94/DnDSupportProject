@@ -1,0 +1,36 @@
+package com.dndplatform.user.adapter.inbound.validate;
+
+import com.dndplatform.common.annotations.Delegate;
+import com.dndplatform.user.adapter.inbound.register.mapper.UserViewModelMapper;
+import com.dndplatform.user.adapter.inbound.validate.mapper.UserCredentialsValidateMapper;
+import com.dndplatform.user.domain.UserVerifyCredentialsService;
+import com.dndplatform.user.view.model.UserCredentialsValidateResource;
+import com.dndplatform.user.view.model.vm.UserCredentialsValidateViewModel;
+import com.dndplatform.user.view.model.vm.UserViewModel;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
+
+@Delegate
+@RequestScoped
+public class UserCredentialsValidateDelegate implements UserCredentialsValidateResource {
+
+    private final UserCredentialsValidateMapper credentialsMapper;
+    private final UserViewModelMapper viewModelMapper;
+    private final UserVerifyCredentialsService service;
+
+    @Inject
+    public UserCredentialsValidateDelegate(UserCredentialsValidateMapper credentialsMapper,
+                                           UserViewModelMapper viewModelMapper,
+                                           UserVerifyCredentialsService service) {
+        this.credentialsMapper = credentialsMapper;
+        this.viewModelMapper = viewModelMapper;
+        this.service = service;
+    }
+
+    @Override
+    public UserViewModel validateUserCredentials(UserCredentialsValidateViewModel userCredentialsValidateViewModel) {
+        var model = credentialsMapper.apply(userCredentialsValidateViewModel);
+        var user = service.validateCredentials(model);
+        return viewModelMapper.apply(user);
+    }
+}

@@ -42,6 +42,10 @@ MINIO_PASSWORD=dnd_password
 GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=admin
 
+# Portainer
+PORTAINER_ADMIN_USER=admin
+PORTAINER_ADMIN_PASSWORD=portainer_admin_password
+
 # Timezone
 TZ=Europe/Rome
 EOF
@@ -163,7 +167,7 @@ echo ""
 # Start infrastructure services first (without microservices)
 echo -e "${YELLOW}Starting infrastructure services (this may take a few minutes)...${NC}"
 echo -e "${YELLOW}Services: PostgreSQL, Redis, RabbitMQ, Elasticsearch, MinIO, Vault, Monitoring${NC}"
-docker-compose up -d traefik postgres redis rabbitmq elasticsearch minio vault prometheus grafana jaeger
+docker-compose up -d traefik postgres redis rabbitmq elasticsearch minio vault prometheus grafana jaeger portainer
 
 echo ""
 echo -e "${YELLOW}Waiting for infrastructure services to be ready...${NC}"
@@ -223,6 +227,20 @@ docker-compose up -d vault-init
 sleep 5
 echo -e " ${GREEN}✓${NC}"
 
+# Wait for Portainer
+echo -n "Waiting for Portainer... "
+until curl -s http://localhost:9002/api/status > /dev/null 2>&1; do
+    echo -n "."
+    sleep 2
+done
+echo -e " ${GREEN}✓${NC}"
+
+# Initialize Portainer admin
+echo -n "Initializing Portainer admin... "
+docker-compose up -d portainer-init
+sleep 5
+echo -e " ${GREEN}✓${NC}"
+
 echo ""
 echo -e "${GREEN}✓ All infrastructure services are ready!${NC}"
 echo ""
@@ -266,7 +284,8 @@ if [ -n "$MAVEN_CMD" ]; then
     fi
 
     # List of multi-module services
-    MULTI_MODULE_SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "notification-service" "search-service" "user-service")
+    # Note: user-service must be built before auth-service since auth-service depends on user-service-client
+    MULTI_MODULE_SERVICES=("user-service" "auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "notification-service" "search-service")
 
     for service in "${MULTI_MODULE_SERVICES[@]}"; do
         if [ -d "services/$service" ] && [ -f "services/$service/pom.xml" ]; then
@@ -345,6 +364,65 @@ else
     docker-compose up -d --build
     echo ""
     echo -e "${GREEN}✓ All microservices started!${NC}"
+    echo ""
+
+    # Wait for Swagger UIs to be available
+    echo -e "${BLUE}========================================${NC}"
+    echo -e "${BLUE}  Waiting for Swagger UIs${NC}"
+    echo -e "${BLUE}========================================${NC}"
+    echo ""
+
+    SWAGGER_TIMEOUT=120
+    SWAGGER_INTERVAL=3
+    SWAGGER_FAILED=""
+
+    SWAGGER_SERVICES="auth-service:8081 character-service:8082 campaign-service:8083 combat-service:8084 asset-service:8085 chat-service:8086 search-service:8087 notification-service:8088 user-service:8089"
+
+    for entry in $SWAGGER_SERVICES; do
+        service="${entry%%:*}"
+        port="${entry##*:}"
+        url="http://localhost:${port}/q/swagger-ui/"
+        echo -n "Waiting for ${service} Swagger UI (port ${port})... "
+
+        elapsed=0
+        while [ $elapsed -lt $SWAGGER_TIMEOUT ]; do
+            if curl -s -o /dev/null -w "%{http_code}" "$url" | grep -q "200"; then
+                echo -e "${GREEN}✓${NC}"
+                break
+            fi
+            echo -n "."
+            sleep $SWAGGER_INTERVAL
+            elapsed=$((elapsed + SWAGGER_INTERVAL))
+        done
+
+        if [ $elapsed -ge $SWAGGER_TIMEOUT ]; then
+            echo -e " ${RED}✗ TIMEOUT${NC}"
+            SWAGGER_FAILED="${SWAGGER_FAILED}${service}:${port} "
+        fi
+    done
+
+    echo ""
+
+    if [ -n "$SWAGGER_FAILED" ]; then
+        echo -e "${RED}========================================${NC}"
+        echo -e "${RED}  ERROR: Swagger UIs Not Available${NC}"
+        echo -e "${RED}========================================${NC}"
+        echo -e "${RED}The following services failed to start their Swagger UI:${NC}"
+        for failed in $SWAGGER_FAILED; do
+            failed_service="${failed%%:*}"
+            failed_port="${failed##*:}"
+            echo -e "  ${RED}✗${NC} ${failed_service} (port ${failed_port})"
+        done
+        echo ""
+        echo -e "${YELLOW}Troubleshooting tips:${NC}"
+        echo -e "  - Check service logs: ${BLUE}docker-compose logs <service-name>${NC}"
+        echo -e "  - Verify the service is running: ${BLUE}docker-compose ps${NC}"
+        echo -e "  - Check if ports are already in use${NC}"
+        echo ""
+        exit 1
+    fi
+
+    echo -e "${GREEN}✓ All Swagger UIs are available!${NC}"
 fi
 
 echo ""
@@ -365,6 +443,7 @@ echo -e "${BLUE}Monitoring Services:${NC}"
 echo -e "  📊 Prometheus:           ${GREEN}http://localhost:9090${NC}"
 echo -e "  📈 Grafana:              ${GREEN}http://localhost:3000${NC} (user: admin, pass: admin)"
 echo -e "  🔎 Jaeger:               ${GREEN}http://localhost:16686${NC}"
+echo -e "  🐳 Portainer:            ${GREEN}http://localhost:9002${NC} or ${GREEN}https://localhost:9443${NC} (user: admin, pass: portainer_admin_password)"
 echo ""
 
 if [ ${#MISSING_DOCKERFILES[@]} -eq 0 ]; then
