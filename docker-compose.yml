@@ -39,6 +39,10 @@ services:
       - ./infrastructure/postgres/init-scripts:/docker-entrypoint-initdb.d
     networks:
       - database
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d postgres"]
       interval: 10s
@@ -58,6 +62,10 @@ services:
       - redis_data:/data
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -80,6 +88,10 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - messaging
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
@@ -103,6 +115,10 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
@@ -125,6 +141,10 @@ services:
       - minio_data:/data
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -148,6 +168,10 @@ services:
       - vault_data:/vault/data
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD", "vault", "status"]
       interval: 10s
@@ -206,6 +230,9 @@ services:
       - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
       - "traefik.http.routers.auth.entrypoints=web"
       - "traefik.http.services.auth.loadbalancer.server.port=8081"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -250,6 +277,9 @@ services:
       - "traefik.http.routers.character.rule=PathPrefix(`/api/characters`)"
       - "traefik.http.routers.character.entrypoints=web"
       - "traefik.http.services.character.loadbalancer.server.port=8082"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -294,6 +324,9 @@ services:
       - "traefik.http.routers.campaign.rule=PathPrefix(`/api/campaigns`)"
       - "traefik.http.routers.campaign.entrypoints=web"
       - "traefik.http.services.campaign.loadbalancer.server.port=8083"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -336,6 +369,9 @@ services:
       - "traefik.http.routers.combat.rule=PathPrefix(`/api/combat`)"
       - "traefik.http.routers.combat.entrypoints=web"
       - "traefik.http.services.combat.loadbalancer.server.port=8084"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -381,6 +417,9 @@ services:
       - "traefik.http.routers.asset.rule=PathPrefix(`/api/assets`)"
       - "traefik.http.routers.asset.entrypoints=web"
       - "traefik.http.services.asset.loadbalancer.server.port=8085"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -426,6 +465,9 @@ services:
       - "traefik.http.routers.chat.rule=PathPrefix(`/api/chat`) || PathPrefix(`/ws/chat`)"
       - "traefik.http.routers.chat.entrypoints=web"
       - "traefik.http.services.chat.loadbalancer.server.port=8086"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -464,6 +506,9 @@ services:
       - "traefik.http.routers.search.rule=PathPrefix(`/api/search`)"
       - "traefik.http.routers.search.entrypoints=web"
       - "traefik.http.services.search.loadbalancer.server.port=8087"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -504,6 +549,9 @@ services:
       - "traefik.http.routers.notification.rule=PathPrefix(`/api/notifications`)"
       - "traefik.http.routers.notification.entrypoints=web"
       - "traefik.http.services.notification.loadbalancer.server.port=8088"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -545,6 +593,9 @@ services:
       - "traefik.http.routers.user.rule=PathPrefix(`/api/users`)"
       - "traefik.http.routers.user.entrypoints=web"
       - "traefik.http.services.user.loadbalancer.server.port=8089"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -577,6 +628,10 @@ services:
       - prometheus_data:/prometheus
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
     restart: unless-stopped
 
   grafana:
@@ -596,8 +651,13 @@ services:
     networks:
       - backend
       - frontend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
     depends_on:
       - prometheus
+      - loki
     restart: unless-stopped
 
   jaeger:
@@ -618,6 +678,55 @@ services:
       - "9411:9411"    # Zipkin compatible
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: dnd-loki
+    command: -config.file=/etc/loki/loki-config.yml
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./infrastructure/monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    networks:
+      - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    container_name: dnd-promtail
+    command: -config.file=/etc/promtail/promtail-config.yml
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ./infrastructure/monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
+    depends_on:
+      loki:
+        condition: service_healthy
     restart: unless-stopped
 
   portainer:
@@ -634,6 +743,10 @@ services:
     networks:
       - backend
       - frontend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
     restart: unless-stopped
 
   portainer-init:
@@ -692,3 +805,5 @@ volumes:
     name: dnd-grafana-data
   portainer_data:
     name: dnd-portainer-data
+  loki_data:
+    name: dnd-loki-data

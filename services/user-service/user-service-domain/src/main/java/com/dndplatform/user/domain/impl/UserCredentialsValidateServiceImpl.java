@@ -26,7 +26,7 @@ public class UserCredentialsValidateServiceImpl implements UserCredentialsValida
 
         User user = userFindByUsernameRepository.findByUsername(credentials.username())
                 .filter(u -> CryptUtil.verifyPassword(credentials.password(), u.passwordHash()))
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials for username %s".formatted(credentials.username())));
 
         if (!user.active()) {
             throw new ForbiddenException("User is not active");
