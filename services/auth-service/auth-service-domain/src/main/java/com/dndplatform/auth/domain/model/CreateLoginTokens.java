@@ -4,7 +4,7 @@ import com.dndplatform.common.annotations.Builder;
 
 
 @Builder
-public record UserLogin(String username,
-                        String password) {
+public record CreateLoginTokens(String username,
+                                String password) {
 }
 

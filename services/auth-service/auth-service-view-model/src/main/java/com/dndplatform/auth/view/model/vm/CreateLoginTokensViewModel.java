@@ -6,7 +6,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonbPropertyOrder({"username","password"})
 @Builder
-public record UserLoginViewModel(@Schema(description = "username", examples = "masy") String username,
-                                 @Schema(description = "password", examples = "psw123!") String password) {
+public record CreateLoginTokensViewModel(@Schema(description = "username", examples = "masy") String username,
+                                         @Schema(description = "password", examples = "psw123!") String password) {
 }
 

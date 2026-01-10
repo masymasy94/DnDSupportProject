@@ -19,7 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
-@Path("/users/validate-credentials")
+@Path("/users/credentials-validation")
 @Tag(name = "User Credentials Verification", description = "Internal endpoint for credential verification")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)

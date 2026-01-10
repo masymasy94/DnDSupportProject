@@ -1,13 +1,13 @@
 package com.dndplatform.auth.adapter.inbound.login.mapper;
 
-import com.dndplatform.auth.domain.model.LoginResponse;
-import com.dndplatform.auth.view.model.vm.LoginResponseViewModel;
+import com.dndplatform.auth.domain.model.CreateLoginTokenResponse;
+import com.dndplatform.auth.view.model.vm.CreateLoginTokensResponseViewModel;
 import org.mapstruct.Mapper;
 
 import java.util.function.Function;
 
 @Mapper
-public interface LoginResponseViewModelMapper extends Function<LoginResponse, LoginResponseViewModel> {
+public interface LoginResponseViewModelMapper extends Function<CreateLoginTokenResponse, CreateLoginTokensResponseViewModel> {
     @Override
-    LoginResponseViewModel apply(LoginResponse loginResponse);
+    CreateLoginTokensResponseViewModel apply(CreateLoginTokenResponse createLoginTokenResponse);
 }

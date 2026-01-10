@@ -11,11 +11,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record UserCredentialsValidateViewModel(
 
         @NotBlank(message = "Username is required")
-        @Schema(description = "Username", example = "gandalf_grey")
+        @Schema(description = "Username", examples = "gandalf_grey")
         String username,
 
         @NotBlank(message = "Password is required")
-        @Schema(description = "Password", example = "YouShallNotPass1!")
+        @Schema(description = "Password", examples = "YouShallNotPass1!")
         String password
 ) {
 }

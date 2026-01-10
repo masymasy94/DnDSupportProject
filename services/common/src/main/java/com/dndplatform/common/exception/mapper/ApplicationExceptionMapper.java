@@ -9,18 +9,22 @@ import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
-/**
- * JAX-RS ExceptionMapper that converts ApplicationException instances
- * to proper HTTP responses with standardized error format.
- */
+import java.util.logging.Logger;
+
+
 @Provider
 public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationException> {
+
+    private final Logger log = Logger.getLogger(getClass().getName());
 
     @Context
     UriInfo uriInfo;
 
     @Override
     public Response toResponse(ApplicationException exception) {
+
+        log.warning(() -> "Handling ApplicationException: %s".formatted(exception));
+
         int statusCode = exception.getStatusCode();
         String path = uriInfo != null ? uriInfo.getPath() : "unknown";
 

@@ -1,8 +1,7 @@
 package com.dndplatform.auth.adapter.inbound.login;
 
-import com.dndplatform.auth.view.model.UserLoginResource;
-import com.dndplatform.auth.view.model.vm.LoginResponseViewModel;
-import com.dndplatform.auth.view.model.vm.UserLoginViewModel;
+import com.dndplatform.auth.view.model.CreateLoginTokensResource;
+import com.dndplatform.auth.view.model.vm.CreateLoginTokensViewModel;
 import com.dndplatform.common.annotations.Delegate;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -15,23 +14,23 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
-@Path("/auth/login")
+@Path("/auth/login-tokens")
 @Tag(name = "Login")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class UserLoginResourceImpl implements UserLoginResource {
+public class CreateLoginTokensResourceImpl implements CreateLoginTokensResource {
 
-    private final UserLoginResource delegate;
+    private final CreateLoginTokensResource delegate;
 
     @Inject
-    public UserLoginResourceImpl(@Delegate UserLoginResource delegate) {
+    public CreateLoginTokensResourceImpl(@Delegate CreateLoginTokensResource delegate) {
         this.delegate = delegate;
     }
 
     @POST
     @Override
-    public Response login(UserLoginViewModel userLoginViewModel) {
-        return delegate.login(userLoginViewModel);
+    public Response createLoginTokens(CreateLoginTokensViewModel createLoginTokensViewModel) {
+        return delegate.createLoginTokens(createLoginTokensViewModel);
     }
 
 }

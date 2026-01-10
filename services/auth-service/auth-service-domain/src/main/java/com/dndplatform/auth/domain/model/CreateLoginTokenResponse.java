@@ -1,6 +1,6 @@
 package com.dndplatform.auth.domain.model;
 
-public record LoginResponse(
+public record CreateLoginTokenResponse(
         String accessToken,
         String refreshToken,
         long accessTokenExpiresAt,

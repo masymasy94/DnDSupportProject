@@ -13,13 +13,14 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 @Transactional
 @ApplicationScoped
 public class RefreshTokenCreateRepositoryJpa implements RefreshTokenCreateRepository, PanacheRepository<RefreshTokenEntity> {
 
+    private final Logger log = Logger.getLogger(getClass().getName());
     private final RefreshTokenMapper mapper;
-
     @ConfigProperty(name = "jwt.refresh-token-expiry-days", defaultValue = "30")
     long refreshTokenExpiryDays;
 
@@ -30,18 +31,23 @@ public class RefreshTokenCreateRepositoryJpa implements RefreshTokenCreateReposi
 
     @Override
     public RefreshToken createRefreshToken(long userId) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiresAt = now.plusDays(refreshTokenExpiryDays);
 
-        var entity = RefreshTokenEntityBuilder.builder()
+        log.info(() -> "Creating refresh token for user %s".formatted(userId));
+
+        LocalDateTime now =  LocalDateTime.now();
+        var entity = buildRefreshTokenEntity(userId, now, now.plusDays(refreshTokenExpiryDays));
+        persist(entity);
+
+        return mapper.apply(entity);
+    }
+
+    private static RefreshTokenEntity buildRefreshTokenEntity(long userId, LocalDateTime now, LocalDateTime expiresAt) {
+        return RefreshTokenEntityBuilder.builder()
                 .withCreatedAt(now)
                 .withExpiresAt(expiresAt)
                 .withUserId(userId)
                 .withToken(UUID.randomUUID().toString())
                 .withRevoked(false)
                 .build();
-
-        persist(entity);
-        return mapper.apply(entity);
     }
 }
