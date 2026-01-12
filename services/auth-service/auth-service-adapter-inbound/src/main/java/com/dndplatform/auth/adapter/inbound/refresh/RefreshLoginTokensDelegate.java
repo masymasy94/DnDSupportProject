@@ -36,5 +36,4 @@ public class RefreshLoginTokensDelegate implements RefreshLoginTokensResource {
         return Response.status(Response.Status.CREATED).entity(responseBody).build();
     }
 
-
 }
