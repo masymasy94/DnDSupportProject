@@ -2,7 +2,6 @@ package com.dndplatform.auth.adapter.inbound.logout;
 
 import com.dndplatform.auth.domain.LogoutService;
 import com.dndplatform.auth.view.model.LogoutResource;
-import com.dndplatform.auth.view.model.vm.LogoutViewModel;
 import com.dndplatform.common.annotations.Delegate;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -23,10 +22,10 @@ public class LogoutDelegate implements LogoutResource {
     }
 
     @Override
-    public Response logout(LogoutViewModel logoutViewModel) {
-        log.info(() -> "Logout request received for user id %s".formatted(logoutViewModel.userId()));
+    public Response logout(String refreshToken, long userId) {
+        log.info(() -> "Logout request received for user id %s".formatted(userId));
 
-        service.logout(logoutViewModel.refreshToken(), logoutViewModel.userId());
+        service.logout(refreshToken, userId);
         return Response.status(Response.Status.NO_CONTENT).build();
     }
 
