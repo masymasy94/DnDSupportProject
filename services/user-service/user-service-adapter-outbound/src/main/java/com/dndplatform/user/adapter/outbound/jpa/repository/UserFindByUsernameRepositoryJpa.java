@@ -22,7 +22,7 @@ public class UserFindByUsernameRepositoryJpa implements UserFindByUsernameReposi
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return find("username", username)
+        return find("username = ?1 or email = ?2", username, username)
                 .firstResultOptional()
                 .map(mapper);
     }

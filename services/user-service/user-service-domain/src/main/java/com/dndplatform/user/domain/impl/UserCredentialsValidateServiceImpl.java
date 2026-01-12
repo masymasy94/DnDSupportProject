@@ -1,7 +1,6 @@
 package com.dndplatform.user.domain.impl;
 
 import com.dndplatform.common.exception.ForbiddenException;
-import com.dndplatform.common.exception.NotFoundException;
 import com.dndplatform.common.exception.UnauthorizedException;
 import com.dndplatform.user.domain.UserCredentialsValidateService;
 import com.dndplatform.user.domain.model.User;

@@ -34,8 +34,8 @@ public class RefreshLoginTokensServiceImpl implements RefreshLoginTokensService 
 
         var refreshToken = refreshTokenFindRepository.findByTokenAndId(token, userId)
                 .orElseThrow(()-> new UnauthorizedException("Invalid refresh token! Please login again."));
-
-        var user = userFindByIdRepository.findById(userId);
+        var user = userFindByIdRepository.findById(userId)
+                .orElseThrow(()-> new UnauthorizedException("Invalid refresh token! Please login again."));
 
 
         return jwtGenerationRepository.generateTokenPair(user, refreshToken);

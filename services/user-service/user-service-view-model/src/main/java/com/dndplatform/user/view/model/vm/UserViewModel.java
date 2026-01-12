@@ -6,7 +6,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
-@JsonbPropertyOrder({"id", "username", "email", "role", "active", "createdAt"})
+@JsonbPropertyOrder({"id", "usernameOrEmail", "email", "role", "active", "createdAt"})
 @Schema(description = "User response")
 @Builder
 public record UserViewModel(

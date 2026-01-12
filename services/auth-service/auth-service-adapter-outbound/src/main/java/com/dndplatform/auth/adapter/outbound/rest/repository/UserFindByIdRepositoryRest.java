@@ -8,9 +8,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import java.util.Optional;
+import java.util.logging.Logger;
+
 @ApplicationScoped
 public class UserFindByIdRepositoryRest implements UserFindByIdRepository {
 
+    private final Logger log = Logger.getLogger(getClass().getName());
     private final UserFindByIdResourceRestClient userFindByIdResourceRestClient;
     private final UserMapper userMapper;
 
@@ -22,8 +26,10 @@ public class UserFindByIdRepositoryRest implements UserFindByIdRepository {
 
 
     @Override
-    public User findById(long userId) {
-        var viewModel = userFindByIdResourceRestClient.findById(userId);
-        return userMapper.apply(viewModel);
+    public Optional<User> findById(long userId) {
+        log.info(() -> "Calling user service for user with id %s".formatted(userId));
+
+        return Optional.ofNullable(userFindByIdResourceRestClient.findById(userId))
+                .map(userMapper);
     }
 }
