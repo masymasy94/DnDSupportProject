@@ -1,11 +1,11 @@
 package com.dndplatform.auth.domain.impl;
 
 import com.dndplatform.auth.domain.CreateLoginTokensService;
+import com.dndplatform.auth.domain.JwtGenerationRepository;
 import com.dndplatform.auth.domain.model.CreateLoginTokenResponse;
 import com.dndplatform.auth.domain.model.CreateLoginTokens;
 import com.dndplatform.auth.domain.repository.RefreshTokenCreateRepository;
 import com.dndplatform.auth.domain.repository.UserCredentialsValidateRepository;
-import com.dndplatform.auth.domain.service.JwtTokenService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -14,10 +14,12 @@ public class CreateLoginTokensServiceImpl implements CreateLoginTokensService {
 
     private final UserCredentialsValidateRepository userCredentialsValidateRepository;
     private final RefreshTokenCreateRepository refreshTokenCreateRepository;
-    private final JwtTokenService jwtTokenService;
+    private final JwtGenerationRepository jwtTokenService;
 
     @Inject
-    public CreateLoginTokensServiceImpl(UserCredentialsValidateRepository userCredentialsValidateRepository, RefreshTokenCreateRepository refreshTokenCreateRepository, JwtTokenService jwtTokenService) {
+    public CreateLoginTokensServiceImpl(UserCredentialsValidateRepository userCredentialsValidateRepository,
+                                        RefreshTokenCreateRepository refreshTokenCreateRepository,
+                                        JwtGenerationRepository jwtTokenService) {
         this.userCredentialsValidateRepository = userCredentialsValidateRepository;
         this.refreshTokenCreateRepository = refreshTokenCreateRepository;
         this.jwtTokenService = jwtTokenService;

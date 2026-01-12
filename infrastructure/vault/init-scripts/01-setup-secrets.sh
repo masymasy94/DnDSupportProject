@@ -107,12 +107,11 @@ vault kv put secret/dnd-platform/auth-service/jwt-config \
     access-token-expiry-seconds="3600" \
     refresh-token-expiry-days="30"
 
-# Store REST client configuration for user-service
-echo "Storing REST client configuration for user-service..."
-vault kv put secret/dnd-platform/auth-service/rest-client \
-    url="http://user-service:8089" \
-    auth-token="auth-service-secret-token-12345" \
-    auth-header="x-service-token"
+# Store service-to-service authentication tokens
+echo "Storing service-to-service authentication tokens..."
+vault kv put secret/dnd-platform/common/service-token \
+    rest_client_user_service_auth="dev-service-token-change-in-production" \
+    rest_client_user_service_auth_http_header="x-service-token"
 
 echo "========================================"
 echo "Vault secrets initialized successfully!"
@@ -123,8 +122,8 @@ echo "  - secret/dnd-platform/common/database"
 echo "  - secret/dnd-platform/common/rabbitmq"
 echo "  - secret/dnd-platform/common/minio"
 echo "  - secret/dnd-platform/common/redis"
+echo "  - secret/dnd-platform/common/service-token"
 echo "  - secret/dnd-platform/grafana"
 echo "  - secret/dnd-platform/portainer"
 echo "  - secret/dnd-platform/jwt"
 echo "  - secret/dnd-platform/auth-service/jwt-config"
-echo "  - secret/dnd-platform/auth-service/rest-client"

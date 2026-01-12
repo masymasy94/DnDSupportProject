@@ -1,4 +1,4 @@
-package com.dndplatform.user.adapter.inbound.validate;
+package com.dndplatform.user.adapter.inbound.internal;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.user.view.model.UserCredentialsValidateResource;
@@ -19,22 +19,22 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
-@Path("/users/credentials-validation")
-@Tag(name = "User Credentials Verification", description = "Internal endpoint for credential verification")
+@Path("/internal/users/credentials-validation")
+@Tag(name = "Internal", description = "Internal service-to-service endpoints")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class UserCredentialsValidateResourceImpl implements UserCredentialsValidateResource {
+public class InternalUserCredentialsValidateResourceImpl implements UserCredentialsValidateResource {
 
     private final UserCredentialsValidateResource delegate;
 
     @Inject
-    public UserCredentialsValidateResourceImpl(@Delegate UserCredentialsValidateResource delegate) {
+    public InternalUserCredentialsValidateResourceImpl(@Delegate UserCredentialsValidateResource delegate) {
         this.delegate = delegate;
     }
 
     @POST
     @Override
-    @Operation(summary = "Verify user credentials", description = "Internal endpoint to verify user credentials for authentication")
+    @Operation(summary = "Verify user credentials (internal)", description = "Internal endpoint for service-to-service credential verification")
     @APIResponses({
             @APIResponse(
                     responseCode = "200",
