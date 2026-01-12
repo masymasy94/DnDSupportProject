@@ -65,11 +65,70 @@ vault kv put secret/dnd-platform/common/database \
     username="dnd_user" \
     password="dnd_password"
 
-# Store RabbitMQ credentials
-echo "Storing RabbitMQ credentials..."
+# Store auth-service specific database configuration
+echo "Storing auth-service database configuration..."
+vault kv put secret/dnd-platform/auth-service/database \
+    url="jdbc:postgresql://postgres:5432/auth_db"
+
+# Store user-service specific database configuration
+echo "Storing user-service database configuration..."
+vault kv put secret/dnd-platform/user-service/database \
+    url="jdbc:postgresql://postgres:5432/user_db"
+
+# Store character-service specific database configuration
+echo "Storing character-service database configuration..."
+vault kv put secret/dnd-platform/character-service/database \
+    url="jdbc:postgresql://postgres:5432/character_db" \
+    auth-service-url="http://auth-service:8081" \
+    search-service-url="http://search-service:8087"
+
+# Store campaign-service specific database configuration
+echo "Storing campaign-service database configuration..."
+vault kv put secret/dnd-platform/campaign-service/database \
+    url="jdbc:postgresql://postgres:5432/campaign_db" \
+    auth-service-url="http://auth-service:8081" \
+    character-service-url="http://character-service:8082" \
+    asset-service-url="http://asset-service:8085"
+
+# Store combat-service specific database configuration
+echo "Storing combat-service database configuration..."
+vault kv put secret/dnd-platform/combat-service/database \
+    url="jdbc:postgresql://postgres:5432/combat_db" \
+    auth-service-url="http://auth-service:8081" \
+    character-service-url="http://character-service:8082"
+
+# Store chat-service specific database configuration
+echo "Storing chat-service database configuration..."
+vault kv put secret/dnd-platform/chat-service/database \
+    url="jdbc:postgresql://postgres:5432/chat_db" \
+    auth-service-url="http://auth-service:8081"
+
+# Store asset-service specific database configuration
+echo "Storing asset-service database configuration..."
+vault kv put secret/dnd-platform/asset-service/database \
+    url="jdbc:postgresql://postgres:5432/asset_db"
+
+# Store notification-service specific database configuration
+echo "Storing notification-service database configuration..."
+vault kv put secret/dnd-platform/notification-service/database \
+    url="jdbc:postgresql://postgres:5432/notification_db"
+
+# Store search-service specific configuration
+echo "Storing search-service configuration..."
+vault kv put secret/dnd-platform/search-service/config \
+    elasticsearch-scheme="http" \
+    elasticsearch-host="elasticsearch" \
+    elasticsearch-port="9200" \
+    auth-service-url="http://auth-service:8081"
+
+# Store RabbitMQ credentials and configuration
+echo "Storing RabbitMQ credentials and configuration..."
 vault kv put secret/dnd-platform/common/rabbitmq \
     username="dnd_user" \
-    password="dnd_password"
+    password="dnd_password" \
+    host="rabbitmq" \
+    port="5672" \
+    virtual-host="dnd_vhost"
 
 # Store MinIO credentials
 echo "Storing MinIO credentials..."
@@ -77,9 +136,10 @@ vault kv put secret/dnd-platform/common/minio \
     access-key="dnd_user" \
     secret-key="dnd_password"
 
-# Store Redis configuration (for future use if auth is needed)
+# Store Redis configuration
 echo "Storing Redis configuration..."
 vault kv put secret/dnd-platform/common/redis \
+    hosts="redis://redis:6379" \
     password=""
 
 # Store Grafana admin credentials
@@ -113,6 +173,17 @@ vault kv put secret/dnd-platform/common/service-token \
     rest_client_user_service_auth="dev-service-token-change-in-production" \
     rest_client_user_service_auth_http_header="x-service-token"
 
+# Store REST client URLs for service-to-service communication
+echo "Storing REST client URLs..."
+vault kv put secret/dnd-platform/auth-service/rest-client \
+    url="http://user-service:8089"
+
+# Store Vault connection configuration
+echo "Storing Vault configuration..."
+vault kv put secret/dnd-platform/common/vault \
+    url="http://vault:8200" \
+    token="dnd-dev-token"
+
 echo "========================================"
 echo "Vault secrets initialized successfully!"
 echo "========================================"
@@ -123,7 +194,18 @@ echo "  - secret/dnd-platform/common/rabbitmq"
 echo "  - secret/dnd-platform/common/minio"
 echo "  - secret/dnd-platform/common/redis"
 echo "  - secret/dnd-platform/common/service-token"
+echo "  - secret/dnd-platform/common/vault"
 echo "  - secret/dnd-platform/grafana"
 echo "  - secret/dnd-platform/portainer"
 echo "  - secret/dnd-platform/jwt"
 echo "  - secret/dnd-platform/auth-service/jwt-config"
+echo "  - secret/dnd-platform/auth-service/database"
+echo "  - secret/dnd-platform/auth-service/rest-client"
+echo "  - secret/dnd-platform/user-service/database"
+echo "  - secret/dnd-platform/character-service/database"
+echo "  - secret/dnd-platform/campaign-service/database"
+echo "  - secret/dnd-platform/combat-service/database"
+echo "  - secret/dnd-platform/chat-service/database"
+echo "  - secret/dnd-platform/asset-service/database"
+echo "  - secret/dnd-platform/notification-service/database"
+echo "  - secret/dnd-platform/search-service/config"
