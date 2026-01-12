@@ -20,6 +20,7 @@ public class LogoutServiceImpl implements LogoutService {
 
     @Override
     public void logout(String token, long userId) {
+        log.info(() -> "Logging out user id %s".formatted(userId));
         refreshTokenRevokeRepository.revokeToken(token, userId);
     }
 }

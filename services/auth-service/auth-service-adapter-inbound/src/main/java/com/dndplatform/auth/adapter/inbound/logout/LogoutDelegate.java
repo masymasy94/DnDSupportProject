@@ -14,18 +14,18 @@ import java.util.logging.Logger;
 public class LogoutDelegate implements LogoutResource {
 
     private final Logger log = Logger.getLogger(getClass().getName());
-    private final LogoutService service;
+    private final LogoutService logoutService;
 
     @Inject
-    public LogoutDelegate(LogoutService service) {
-        this.service = service;
+    public LogoutDelegate(LogoutService logoutService) {
+        this.logoutService = logoutService;
     }
 
     @Override
     public Response logout(String refreshToken, long userId) {
         log.info(() -> "Logout request received for user id %s".formatted(userId));
 
-        service.logout(refreshToken, userId);
+        logoutService.logout(refreshToken, userId);
         return Response.status(Response.Status.NO_CONTENT).build();
     }
 
