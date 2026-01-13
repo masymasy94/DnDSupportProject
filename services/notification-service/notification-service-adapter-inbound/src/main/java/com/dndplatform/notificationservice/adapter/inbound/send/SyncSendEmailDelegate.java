@@ -37,9 +37,10 @@ public class SyncSendEmailDelegate implements SendEmailResource {
 
         var email = requestMapper.apply(request);
         var result = sendEmailService.send(email);
-        var response = responseMapper.apply(result);
 
-        log.info(() -> "Email sent with messageId: " + response.messageId());
-        return Response.status(Response.Status.CREATED).entity(response).build();
+        return Response
+                .status(Response.Status.CREATED)
+                .entity(responseMapper.apply(result))
+                .build();
     }
 }

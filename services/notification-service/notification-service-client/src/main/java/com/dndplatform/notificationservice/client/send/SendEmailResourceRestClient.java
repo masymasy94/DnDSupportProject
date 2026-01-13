@@ -3,7 +3,6 @@ package com.dndplatform.notificationservice.client.send;
 import com.dndplatform.common.client.RestClientExceptionMapper;
 import com.dndplatform.notificationservice.view.model.SendEmailResource;
 import com.dndplatform.notificationservice.view.model.vm.SendEmailRequestViewModel;
-import com.dndplatform.notificationservice.view.model.vm.SendEmailResponseViewModel;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;

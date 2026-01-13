@@ -3,7 +3,6 @@ package com.dndplatform.notificationservice.domain.model;
 import com.dndplatform.common.annotations.Builder;
 
 import java.util.List;
-import java.util.Map;
 
 @Builder
 public record Email(
@@ -13,8 +12,7 @@ public record Email(
         String subject,
         String textBody,
         String htmlBody,
-        String templateName,
-        Map<String, Object> templateData,
+        Long templateId,
         List<EmailAttachment> attachments
 ) {
 }

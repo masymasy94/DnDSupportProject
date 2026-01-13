@@ -3,12 +3,12 @@ package com.dndplatform.notificationservice.view.model.vm;
 import jakarta.json.bind.annotation.JsonbPropertyOrder;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.List;
-import java.util.Map;
 
-@JsonbPropertyOrder({"to", "cc", "bcc", "subject", "textBody", "htmlBody", "templateName", "templateData", "attachments", "priority", "replyTo"})
+@JsonbPropertyOrder({"to", "cc", "bcc", "templateId", "textBody", "attachments"})
 @Schema(description = "Email send request")
 public record SendEmailRequestViewModel(
 
@@ -23,21 +23,12 @@ public record SendEmailRequestViewModel(
         @Schema(description = "BCC recipients")
         List<String> bcc,
 
-        @NotBlank(message = "Subject is required")
-        @Schema(description = "Email subject", example = "Welcome to DnD Platform")
-        String subject,
+        @NotNull(message = "Template ID is required")
+        @Schema(description = "Template ID for email subject and body", example = "1")
+        Long templateId,
 
-        @Schema(description = "Plain text body")
+        @Schema(description = "Plain text body (optional override)")
         String textBody,
-
-        @Schema(description = "HTML body (mutually exclusive with templateName)")
-        String htmlBody,
-
-        @Schema(description = "Template name for rendering HTML body", example = "generic")
-        String templateName,
-
-        @Schema(description = "Template variables for rendering")
-        Map<String, Object> templateData,
 
         @Schema(description = "File attachments")
         List<EmailAttachmentViewModel> attachments
