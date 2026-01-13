@@ -425,6 +425,33 @@ else
     echo -e "${GREEN}✓ All Swagger UIs are available!${NC}"
 fi
 
+# ============================================
+# FRONTEND (EXTERNAL REPO)
+# Remove this entire section to disable external frontend
+# ============================================
+FRONTEND_DEPLOY_DIR="services/frontend-deploy"
+if [ -d "$FRONTEND_DEPLOY_DIR" ] && [ -f "$FRONTEND_DEPLOY_DIR/docker-compose.yml" ]; then
+    echo ""
+    echo -e "${BLUE}========================================${NC}"
+    echo -e "${BLUE}  Starting Frontend (External Repo)${NC}"
+    echo -e "${BLUE}========================================${NC}"
+    echo ""
+
+    # Pull latest and start frontend
+    echo -e "${YELLOW}Pulling latest from release branch and starting frontend...${NC}"
+    docker-compose -f "$FRONTEND_DEPLOY_DIR/docker-compose.yml" up -d
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Frontend deployed successfully${NC}"
+    else
+        echo -e "${RED}✗ Frontend deployment failed${NC}"
+        echo -e "${YELLOW}  Check logs: docker-compose -f $FRONTEND_DEPLOY_DIR/docker-compose.yml logs${NC}"
+    fi
+fi
+# ============================================
+# END FRONTEND
+# ============================================
+
 echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  D&D Platform Started Successfully!${NC}"
@@ -457,6 +484,13 @@ if [ ${#MISSING_DOCKERFILES[@]} -eq 0 ]; then
     echo -e "  🔍 Search Service:       ${GREEN}http://localhost:8087/q/swagger-ui/${NC}"
     echo -e "  🔔 Notification Service: ${GREEN}http://localhost:8088/q/swagger-ui/${NC}"
     echo -e "  👤 User Service:         ${GREEN}http://localhost:8089/q/swagger-ui/${NC}"
+    echo ""
+fi
+
+# Frontend info (if running)
+if [ -d "$FRONTEND_DEPLOY_DIR" ] && docker ps --format '{{.Names}}' | grep -q "dnd-frontend"; then
+    echo -e "${BLUE}Frontend (External Repo):${NC}"
+    echo -e "  🌐 Frontend:             ${GREEN}http://localhost:4000${NC}"
     echo ""
 fi
 

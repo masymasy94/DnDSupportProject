@@ -2,6 +2,7 @@ package com.dndplatform.notificationservice.domain.impl;
 
 import com.dndplatform.notificationservice.domain.SendEmailService;
 import com.dndplatform.notificationservice.domain.model.Email;
+import com.dndplatform.notificationservice.domain.model.EmailBuilder;
 import com.dndplatform.notificationservice.domain.model.EmailResult;
 import com.dndplatform.notificationservice.domain.repository.EmailSendRepository;
 import com.dndplatform.notificationservice.domain.repository.EmailTemplateRenderRepository;
@@ -42,17 +43,10 @@ public class SendEmailServiceImpl implements SendEmailService {
                     email.templateName(),
                     email.templateData()
             );
-            return new Email(
-                    email.to(),
-                    email.cc(),
-                    email.bcc(),
-                    email.subject(),
-                    email.textBody(),
-                    htmlContent,
-                    email.templateName(),
-                    email.templateData(),
-                    email.attachments()
-            );
+            return EmailBuilder
+                    .toBuilder(email)
+                    .withHtmlBody(htmlContent)
+                    .build();
         }
         return email;
     }
