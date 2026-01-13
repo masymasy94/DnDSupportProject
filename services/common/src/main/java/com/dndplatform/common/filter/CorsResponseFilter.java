@@ -13,7 +13,6 @@ import jakarta.ws.rs.ext.Provider;
 @Provider
 public class CorsResponseFilter implements ContainerResponseFilter {
 
-    private static final String ALLOWED_ORIGINS = "http://localhost:3000";
     private static final String ALLOWED_METHODS = "GET,POST,PUT,DELETE,OPTIONS,PATCH";
     private static final String ALLOWED_HEADERS = "accept,authorization,content-type,x-requested-with";
 
@@ -25,11 +24,9 @@ public class CorsResponseFilter implements ContainerResponseFilter {
             return;
         }
 
-        // Only add headers if not already present
+        // Only add headers if not already present - allow all origins
         if (responseContext.getHeaders().get("Access-Control-Allow-Origin") == null) {
-            if (ALLOWED_ORIGINS.contains(origin)) {
-                responseContext.getHeaders().add("Access-Control-Allow-Origin", origin);
-            }
+            responseContext.getHeaders().add("Access-Control-Allow-Origin", origin);
         }
 
         if (responseContext.getHeaders().get("Access-Control-Allow-Methods") == null) {
