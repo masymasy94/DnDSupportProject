@@ -61,6 +61,18 @@
         </dependency>
 
         <!-- ==================== -->
+        <!-- = REACTIVE MESSAGING = -->
+        <!-- ==================== -->
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-rabbitmq</artifactId>
+        </dependency>
+
+        <!-- ==================== -->
         <!-- = MAPPER GENERATOR = -->
         <!-- ==================== -->
         <dependency>
