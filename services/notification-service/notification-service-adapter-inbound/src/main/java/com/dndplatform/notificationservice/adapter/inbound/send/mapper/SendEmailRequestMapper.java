@@ -16,6 +16,8 @@ public interface SendEmailRequestMapper extends Function<SendEmailRequestViewMod
 
     @Override
     @Mapping(target = "attachments", source = "attachments")
+    @Mapping(target = "subject", ignore = true)
+    @Mapping(target = "htmlBody", ignore = true)
     Email apply(SendEmailRequestViewModel request);
 
 

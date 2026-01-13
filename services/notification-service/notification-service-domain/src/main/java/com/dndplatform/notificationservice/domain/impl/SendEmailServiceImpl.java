@@ -4,8 +4,10 @@ import com.dndplatform.notificationservice.domain.SendEmailService;
 import com.dndplatform.notificationservice.domain.model.Email;
 import com.dndplatform.notificationservice.domain.model.EmailBuilder;
 import com.dndplatform.notificationservice.domain.model.EmailResult;
+import com.dndplatform.notificationservice.domain.model.EmailTemplateDetails;
 import com.dndplatform.notificationservice.domain.repository.EmailSendRepository;
-import com.dndplatform.notificationservice.domain.repository.EmailTemplateRenderRepository;
+import com.dndplatform.notificationservice.domain.repository.FindEmailTemplateByIdRepository;
+import jakarta.annotation.Nonnull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -16,38 +18,30 @@ public class SendEmailServiceImpl implements SendEmailService {
 
     private final Logger log = Logger.getLogger(getClass().getName());
     private final EmailSendRepository emailSendRepository;
-    private final EmailTemplateRenderRepository emailTemplateRenderRepository;
+    private final FindEmailTemplateByIdRepository findEmailTemplateByIdRepository;
 
     @Inject
     public SendEmailServiceImpl(EmailSendRepository emailSendRepository,
-                                EmailTemplateRenderRepository emailTemplateRenderRepository) {
+                                FindEmailTemplateByIdRepository findEmailTemplateByIdRepository) {
         this.emailSendRepository = emailSendRepository;
-        this.emailTemplateRenderRepository = emailTemplateRenderRepository;
+        this.findEmailTemplateByIdRepository = findEmailTemplateByIdRepository;
     }
 
     @Override
     public EmailResult send(Email email) {
         log.info(() -> "Sending email to: " + email.to());
 
-        // log mail to db
-        // choose template on db
-        // send
-        Email emailToSend = processTemplate(email);
-        return emailSendRepository.send(emailToSend);
+        var template = findEmailTemplateByIdRepository.findById(email.templateId());
+        return emailSendRepository.send(getEmail(email, template));
     }
 
-    private Email processTemplate(Email email) {
-        if (email.templateName() != null && !email.templateName().isBlank()) {
-            log.info(() -> "Rendering template: " + email.templateName());
-            String htmlContent = emailTemplateRenderRepository.render(
-                    email.templateName(),
-                    email.templateData()
-            );
-            return EmailBuilder
-                    .toBuilder(email)
-                    .withHtmlBody(htmlContent)
-                    .build();
-        }
-        return email;
+
+    @Nonnull
+    private static Email getEmail(Email email, EmailTemplateDetails template) {
+        return EmailBuilder
+                .toBuilder(email)
+                .withSubject(template.subject())
+                .withHtmlBody(template.htmlContent())
+                .build();
     }
 }

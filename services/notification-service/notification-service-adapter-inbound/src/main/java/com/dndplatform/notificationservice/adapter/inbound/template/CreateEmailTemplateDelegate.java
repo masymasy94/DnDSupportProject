@@ -38,7 +38,6 @@ public class CreateEmailTemplateDelegate implements CreateEmailTemplateResource 
         var result = createEmailTemplateService.create(emailTemplate);
         var response = responseMapper.apply(result);
 
-        log.info(() -> "Email template created with id: " + response.id());
         return Response.status(Response.Status.CREATED).entity(response).build();
     }
 }

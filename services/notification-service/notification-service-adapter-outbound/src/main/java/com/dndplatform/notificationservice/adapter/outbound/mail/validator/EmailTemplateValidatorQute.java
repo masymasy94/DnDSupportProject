@@ -25,7 +25,7 @@ public class EmailTemplateValidatorQute implements EmailTemplateValidator {
         log.info("Validating template syntax");
         try {
             engine.parse(htmlContent);
-            log.info("Template syntax is valid");
+            log.info(() -> "Template syntax is valid");
         } catch (TemplateException e) {
             log.warning(() -> "Template syntax validation failed: " + e.getMessage());
             throw new InvalidTemplateException("Invalid template syntax: " + e.getMessage(), e);
