@@ -1,8 +1,12 @@
 target/
+.mvn/
+mvnw
+mvnw.cmd
 .idea/
-.vscode/
 *.iml
-.DS_Store
-.git/
-.gitignore
-README.md
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.vscode/
