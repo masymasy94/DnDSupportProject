@@ -1,17 +1,12 @@
 -- Create databases for each microservice
-CREATE DATABASE auth_db;
-CREATE DATABASE character_db;
-CREATE DATABASE campaign_db;
-CREATE DATABASE combat_db;
-CREATE DATABASE asset_db;
-CREATE DATABASE chat_db;
-CREATE DATABASE notification_db;
+CREATE DATABASE auth_db OWNER dnd_user;
+CREATE DATABASE character_db OWNER dnd_user;
+CREATE DATABASE campaign_db OWNER dnd_user;
+CREATE DATABASE combat_db OWNER dnd_user;
+CREATE DATABASE asset_db OWNER dnd_user;
+CREATE DATABASE chat_db OWNER dnd_user;
+CREATE DATABASE notification_db OWNER dnd_user;
+CREATE DATABASE user_db OWNER dnd_user;
 
--- Grant privileges
-GRANT ALL PRIVILEGES ON DATABASE auth_db TO dnd_user;
-GRANT ALL PRIVILEGES ON DATABASE character_db TO dnd_user;
-GRANT ALL PRIVILEGES ON DATABASE campaign_db TO dnd_user;
-GRANT ALL PRIVILEGES ON DATABASE combat_db TO dnd_user;
-GRANT ALL PRIVILEGES ON DATABASE asset_db TO dnd_user;
-GRANT ALL PRIVILEGES ON DATABASE chat_db TO dnd_user;
-GRANT ALL PRIVILEGES ON DATABASE notification_db TO dnd_user;
+-- List all databases (optional, for verification)
+SELECT datname FROM pg_database WHERE datistemplate = false;
