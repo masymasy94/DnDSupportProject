@@ -5,12 +5,15 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import com.dndplatform.common.annotations.Builder;
 
 import java.util.List;
 
+
+@Builder
 @JsonbPropertyOrder({"to", "cc", "bcc", "templateId", "textBody", "attachments"})
 @Schema(description = "Email send request")
-public record SendEmailRequestViewModel(
+public record EmailSendRequestViewModel(
 
         @NotBlank(message = "Recipient email is required")
         @Email(message = "Invalid recipient email format")

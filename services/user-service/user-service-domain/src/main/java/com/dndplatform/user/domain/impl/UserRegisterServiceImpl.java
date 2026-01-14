@@ -1,8 +1,7 @@
 package com.dndplatform.user.domain.impl;
 
-import com.dndplatform.common.exception.ConflictException;
 import com.dndplatform.user.domain.UserRegisterService;
-import com.dndplatform.user.domain.event.UserEventPublisher;
+import com.dndplatform.user.domain.event.EmailSendRepository;
 import com.dndplatform.user.domain.event.UserRegisteredEventMapper;
 import com.dndplatform.user.domain.model.User;
 import com.dndplatform.user.domain.model.UserBuilder;
@@ -23,17 +22,17 @@ public class UserRegisterServiceImpl implements UserRegisterService {
 
     private final UserValidationRepository userValidationRepository;
     private final UserCreateRepository userCreateRepository;
-    private final UserEventPublisher userEventPublisher;
+    private final EmailSendRepository emailSendRepository;
     private final UserRegisteredEventMapper userRegisteredEventMapper;
 
     @Inject
     public UserRegisterServiceImpl(UserValidationRepository userValidationRepository,
                                    UserCreateRepository userCreateRepository,
-                                   UserEventPublisher userEventPublisher,
+                                   EmailSendRepository emailSendRepository,
                                    UserRegisteredEventMapper userRegisteredEventMapper) {
         this.userValidationRepository = userValidationRepository;
         this.userCreateRepository = userCreateRepository;
-        this.userEventPublisher = userEventPublisher;
+        this.emailSendRepository = emailSendRepository;
         this.userRegisteredEventMapper = userRegisteredEventMapper;
     }
 
@@ -42,7 +41,7 @@ public class UserRegisterServiceImpl implements UserRegisterService {
 
         userValidationRepository.existsByUsernameOrEmail(userRegister.username(), userRegister.email());
         var user = userCreateRepository.create(getUser(userRegister, CryptUtil.hashPassword(userRegister.password())));
-        userEventPublisher.publishUserRegistered(userRegisteredEventMapper.apply(user));
+        emailSendRepository.sendEmail(userRegisteredEventMapper.apply(user));
 
         return user;
     }

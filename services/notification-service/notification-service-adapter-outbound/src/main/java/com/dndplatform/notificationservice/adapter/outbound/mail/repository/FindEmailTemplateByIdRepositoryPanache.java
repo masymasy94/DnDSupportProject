@@ -6,6 +6,7 @@ import com.dndplatform.notificationservice.domain.repository.FindEmailTemplateBy
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.util.Optional;
 import java.util.logging.Logger;
 
 @ApplicationScoped
@@ -20,7 +21,7 @@ public class FindEmailTemplateByIdRepositoryPanache implements FindEmailTemplate
     }
 
     @Override
-    public EmailTemplateDetails findById(Long id) {
+    public Optional<EmailTemplateDetails> findById(Long id) {
         log.info(() -> "Finding email template by id: " + id);
 
         return panacheRepository.findByIdOptional(id)
@@ -29,7 +30,6 @@ public class FindEmailTemplateByIdRepositoryPanache implements FindEmailTemplate
                         entity.getName(),
                         entity.getSubject(),
                         entity.getHtmlContent()
-                ))
-                .orElseThrow(() -> new NotFoundException("Email template with id '" + id + "' not found"));
+                ));
     }
 }
