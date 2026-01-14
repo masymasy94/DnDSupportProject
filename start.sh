@@ -285,7 +285,8 @@ if [ -n "$MAVEN_CMD" ]; then
 
     # List of multi-module services
     # Note: user-service must be built before auth-service since auth-service depends on user-service-client
-    MULTI_MODULE_SERVICES=("user-service" "auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "notification-service" "search-service")
+    # Note: notification-service must be built before user-service since user-service depends on notification-service-vm
+    MULTI_MODULE_SERVICES=("notification-service" "user-service" "auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service")
 
     for service in "${MULTI_MODULE_SERVICES[@]}"; do
         if [ -d "services/$service" ] && [ -f "services/$service/pom.xml" ]; then

@@ -2,8 +2,7 @@ package com.dndplatform.notificationservice.adapter.inbound.send;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.notificationservice.view.model.SendEmailResource;
-import com.dndplatform.notificationservice.view.model.vm.SendEmailRequestViewModel;
-import com.dndplatform.notificationservice.view.model.vm.SendEmailResponseViewModel;
+import com.dndplatform.notificationservice.view.model.vm.EmailSendRequestViewModel;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -37,7 +36,7 @@ public class SyncSendEmailResourceImpl implements SendEmailResource {
     @APIResponse(responseCode = "201", description = "Email sent successfully")
     @APIResponse(responseCode = "400", description = "Invalid request")
     @APIResponse(responseCode = "500", description = "Email sending failed")
-    public Response syncSend(@Valid SendEmailRequestViewModel request) {
+    public Response syncSend(@Valid EmailSendRequestViewModel request) {
         return delegate.syncSend(request);
     }
 }

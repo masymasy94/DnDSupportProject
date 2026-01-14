@@ -5,8 +5,7 @@ import com.dndplatform.notificationservice.adapter.inbound.send.mapper.SendEmail
 import com.dndplatform.notificationservice.adapter.inbound.send.mapper.SendEmailResponseMapper;
 import com.dndplatform.notificationservice.domain.SendEmailService;
 import com.dndplatform.notificationservice.view.model.SendEmailResource;
-import com.dndplatform.notificationservice.view.model.vm.SendEmailRequestViewModel;
-import com.dndplatform.notificationservice.view.model.vm.SendEmailResponseViewModel;
+import com.dndplatform.notificationservice.view.model.vm.EmailSendRequestViewModel;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
@@ -32,7 +31,7 @@ public class SyncSendEmailDelegate implements SendEmailResource {
     }
 
     @Override
-    public Response syncSend(SendEmailRequestViewModel request) {
+    public Response syncSend(EmailSendRequestViewModel request) {
         log.info(() -> "Sending email to: " + request.to());
 
         var email = requestMapper.apply(request);

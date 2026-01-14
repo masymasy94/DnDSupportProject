@@ -1,5 +1,6 @@
 package com.dndplatform.notificationservice.domain.impl;
 
+import com.dndplatform.common.exception.NotFoundException;
 import com.dndplatform.notificationservice.domain.SendEmailService;
 import com.dndplatform.notificationservice.domain.model.Email;
 import com.dndplatform.notificationservice.domain.model.EmailBuilder;
@@ -31,7 +32,8 @@ public class SendEmailServiceImpl implements SendEmailService {
     public EmailResult send(Email email) {
         log.info(() -> "Sending email to: " + email.to());
 
-        var template = findEmailTemplateByIdRepository.findById(email.templateId());
+        var template = findEmailTemplateByIdRepository.findById(email.templateId())
+                .orElseThrow(() -> new NotFoundException("Email template with id %s not found".formatted(email.templateId())));
         return emailSendRepository.send(getEmail(email, template));
     }
 

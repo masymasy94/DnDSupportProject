@@ -3,7 +3,7 @@ package com.dndplatform.notificationservice.adapter.inbound.send.mapper;
 import com.dndplatform.notificationservice.domain.model.Email;
 import com.dndplatform.notificationservice.domain.model.EmailAttachment;
 import com.dndplatform.notificationservice.view.model.vm.EmailAttachmentViewModel;
-import com.dndplatform.notificationservice.view.model.vm.SendEmailRequestViewModel;
+import com.dndplatform.notificationservice.view.model.vm.EmailSendRequestViewModel;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -12,13 +12,13 @@ import java.util.Base64;
 import java.util.function.Function;
 
 @Mapper
-public interface SendEmailRequestMapper extends Function<SendEmailRequestViewModel, Email> {
+public interface SendEmailRequestMapper extends Function<EmailSendRequestViewModel, Email> {
 
     @Override
     @Mapping(target = "attachments", source = "attachments")
     @Mapping(target = "subject", ignore = true)
     @Mapping(target = "htmlBody", ignore = true)
-    Email apply(SendEmailRequestViewModel request);
+    Email apply(EmailSendRequestViewModel request);
 
 
     @Mapping(target = "data", source = "data", qualifiedByName = "decodeBase64")
