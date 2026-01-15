@@ -1,0 +1,59 @@
+services:
+  # Initial clone/pull service (runs once on startup)
+  init-clone:
+    image: alpine/git
+    container_name: dnd-fe-init
+    volumes:
+      - frontend-static:/app/static
+      - frontend-repo:/app/repo
+    environment:
+      - REPO_URL=https://github.com/MaryHsn93/DnD-platform-FE.git
+      - BRANCH=release
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        echo "=========================================="
+        echo "  Frontend - Pulling release branch"
+        echo "=========================================="
+
+        # Clean up static directory
+        rm -rf /app/static/* 2>/dev/null || true
+
+        if [ -d "/app/repo/.git" ]; then
+          echo "Repository exists, fetching latest..."
+          cd /app/repo
+          git fetch origin
+          git checkout $${BRANCH}
+          git reset --hard origin/$${BRANCH}
+        else
+          echo "Cloning repository (branch: $${BRANCH})..."
+          rm -rf /app/repo/* /app/repo/.[!.]* 2>/dev/null || true
+          git clone --branch $${BRANCH} --single-branch $${REPO_URL} /app/repo
+        fi
+
+        echo "Copying files to web root..."
+        cp -r /app/repo/* /app/static/
+
+        echo "=========================================="
+        echo "  Frontend deployed! Files:"
+        ls -la /app/static/
+        echo "=========================================="
+
+  # Frontend served by nginx
+  frontend:
+    image: nginx:alpine
+    container_name: dnd-frontend
+    volumes:
+      - frontend-static:/usr/share/nginx/html:ro
+    ports:
+      - "4000:80"
+    restart: unless-stopped
+    depends_on:
+      init-clone:
+        condition: service_completed_successfully
+
+volumes:
+  frontend-static:
+  frontend-repo:

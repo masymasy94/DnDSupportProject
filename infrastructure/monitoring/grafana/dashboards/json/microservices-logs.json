@@ -1,0 +1,93 @@
+{
+  "dashboard": {
+    "title": "DnD Platform - Microservices Logs",
+    "tags": ["logs", "loki", "microservices"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "title": "Log Volume by Service",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "datasource": {"type": "loki", "uid": "loki"},
+            "expr": "sum by (service_name) (rate({service_type=\"microservice\"}[5m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "fillOpacity": 10
+            },
+            "unit": "logs/s"
+          }
+        }
+      },
+      {
+        "title": "Error Logs",
+        "type": "logs",
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+        "targets": [
+          {
+            "datasource": {"type": "loki", "uid": "loki"},
+            "expr": "{service_type=\"microservice\"} | json | level=\"ERROR\"",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": true,
+          "showCommonLabels": false,
+          "wrapLogMessage": true,
+          "sortOrder": "Descending"
+        }
+      },
+      {
+        "title": "Logs by Service",
+        "type": "logs",
+        "gridPos": {"h": 12, "w": 24, "x": 0, "y": 18},
+        "targets": [
+          {
+            "datasource": {"type": "loki", "uid": "loki"},
+            "expr": "{service_name=~\"$service\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": true,
+          "showCommonLabels": false,
+          "wrapLogMessage": true,
+          "sortOrder": "Descending"
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "query",
+          "label": "Service",
+          "datasource": {"type": "loki", "uid": "loki"},
+          "query": "label_values(service_name)",
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+    }
+  }
+}
