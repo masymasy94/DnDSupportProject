@@ -7,6 +7,12 @@ import com.dndplatform.notificationservice.domain.SendEmailService;
 import com.dndplatform.notificationservice.view.model.vm.EmailSendRequestViewModel;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import static java.util.Objects.requireNonNull;
 
 @Delegate
 @RequestScoped
@@ -16,14 +22,18 @@ public class EmailSendRequestConsumerDelegate implements EmailSendRequestConsume
     private final SendEmailService sendEmailService;
 
     @Inject
-    public EmailSendRequestConsumerDelegate(SendEmailRequestMapper mapper, SendEmailService sendEmailService) {
+    public EmailSendRequestConsumerDelegate(SendEmailRequestMapper mapper,
+                                            SendEmailService sendEmailService) {
         this.mapper = mapper;
         this.sendEmailService = sendEmailService;
     }
 
     @Override
-    public void consumeEmailRequest(EmailSendRequestViewModel emailSendRequestViewModel) {
-        var model = mapper.apply(emailSendRequestViewModel);
-        sendEmailService.send(model);
+    public CompletionStage<Void> consumeEmailRequest(Message<EmailSendRequestViewModel> message) {
+        var payload = message.getPayload();
+        requireNonNull(payload, "payload of EmailSendRequestViewModel is null");
+
+        sendEmailService.send(mapper.apply(payload));
+        return CompletableFuture.completedFuture(null);
     }
 }
