@@ -39,8 +39,12 @@ services:
       - ./infrastructure/postgres/init-scripts:/docker-entrypoint-initdb.d
     networks:
       - database
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,6 +62,10 @@ services:
       - redis_data:/data
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -80,6 +88,10 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - messaging
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
@@ -103,6 +115,10 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
@@ -125,6 +141,10 @@ services:
       - minio_data:/data
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -132,28 +152,71 @@ services:
       retries: 3
     restart: unless-stopped
 
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: dnd-vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://127.0.0.1:8200
+      TZ: ${TZ}
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault_data:/vault/data
+    networks:
+      - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  vault-init:
+    image: hashicorp/vault:1.15
+    container_name: dnd-vault-init
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
+    volumes:
+      - ./infrastructure/vault/init-scripts:/scripts:ro
+    entrypoint: ["/bin/sh", "/scripts/01-setup-secrets.sh"]
+    depends_on:
+      vault:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: "no"
+
   # ============================================
   # MICROSERVICES LAYER
   # ============================================
 
   auth-service:
     build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: auth-service/Dockerfile
     container_name: dnd-auth-service
     environment:
       QUARKUS_HTTP_PORT: 8081
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/auth_db
-      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      USER_SERVICE_URL: http://user-service:8089
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
@@ -167,6 +230,9 @@ services:
       - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
       - "traefik.http.routers.auth.entrypoints=web"
       - "traefik.http.services.auth.loadbalancer.server.port=8081"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -174,6 +240,10 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      vault:
+        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   character-service:
@@ -184,18 +254,16 @@ services:
     environment:
       QUARKUS_HTTP_PORT: 8082
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/character_db
-      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       RABBITMQ_VIRTUAL_HOST: dnd_vhost
       AUTH_SERVICE_URL: http://auth-service:8081
       SEARCH_SERVICE_URL: http://search-service:8087
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
@@ -209,11 +277,20 @@ services:
       - "traefik.http.routers.character.rule=PathPrefix(`/api/characters`)"
       - "traefik.http.routers.character.entrypoints=web"
       - "traefik.http.services.character.loadbalancer.server.port=8082"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-      - auth-service
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
     restart: unless-stopped
 
   campaign-service:
@@ -224,18 +301,16 @@ services:
     environment:
       QUARKUS_HTTP_PORT: 8083
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/campaign_db
-      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       RABBITMQ_VIRTUAL_HOST: dnd_vhost
       AUTH_SERVICE_URL: http://auth-service:8081
       CHARACTER_SERVICE_URL: http://character-service:8082
       ASSET_SERVICE_URL: http://asset-service:8085
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
@@ -249,10 +324,18 @@ services:
       - "traefik.http.routers.campaign.rule=PathPrefix(`/api/campaigns`)"
       - "traefik.http.routers.campaign.entrypoints=web"
       - "traefik.http.services.campaign.loadbalancer.server.port=8083"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
-      - postgres
-      - rabbitmq
-      - auth-service
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
     restart: unless-stopped
 
   combat-service:
@@ -263,18 +346,16 @@ services:
     environment:
       QUARKUS_HTTP_PORT: 8084
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/combat_db
-      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       RABBITMQ_VIRTUAL_HOST: dnd_vhost
       AUTH_SERVICE_URL: http://auth-service:8081
       CHARACTER_SERVICE_URL: http://character-service:8082
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
@@ -288,11 +369,20 @@ services:
       - "traefik.http.routers.combat.rule=PathPrefix(`/api/combat`)"
       - "traefik.http.routers.combat.entrypoints=web"
       - "traefik.http.services.combat.loadbalancer.server.port=8084"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-      - auth-service
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
     restart: unless-stopped
 
   asset-service:
@@ -303,21 +393,17 @@ services:
     environment:
       QUARKUS_HTTP_PORT: 8085
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/asset_db
-      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       RABBITMQ_VIRTUAL_HOST: dnd_vhost
       AUTH_SERVICE_URL: http://auth-service:8081
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_USER}
-      MINIO_SECRET_KEY: ${MINIO_PASSWORD}
       MINIO_BUCKET: dnd-assets
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
@@ -331,12 +417,22 @@ services:
       - "traefik.http.routers.asset.rule=PathPrefix(`/api/assets`)"
       - "traefik.http.routers.asset.entrypoints=web"
       - "traefik.http.services.asset.loadbalancer.server.port=8085"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-      - minio
-      - auth-service
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
     restart: unless-stopped
 
   chat-service:
@@ -347,17 +443,15 @@ services:
     environment:
       QUARKUS_HTTP_PORT: 8086
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/chat_db
-      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       RABBITMQ_VIRTUAL_HOST: dnd_vhost
       AUTH_SERVICE_URL: http://auth-service:8081
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
@@ -371,11 +465,20 @@ services:
       - "traefik.http.routers.chat.rule=PathPrefix(`/api/chat`) || PathPrefix(`/ws/chat`)"
       - "traefik.http.routers.chat.entrypoints=web"
       - "traefik.http.services.chat.loadbalancer.server.port=8086"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-      - auth-service
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
     restart: unless-stopped
 
   search-service:
@@ -390,6 +493,8 @@ services:
       ELASTICSEARCH_PORT: 9200
       ELASTICSEARCH_SCHEME: http
       AUTH_SERVICE_URL: http://auth-service:8081
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
@@ -401,10 +506,18 @@ services:
       - "traefik.http.routers.search.rule=PathPrefix(`/api/search`)"
       - "traefik.http.routers.search.entrypoints=web"
       - "traefik.http.services.search.loadbalancer.server.port=8087"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
-      - elasticsearch
-      - redis
-      - auth-service
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
     restart: unless-stopped
 
   notification-service:
@@ -412,19 +525,19 @@ services:
       context: ./services/notification-service
       dockerfile: Dockerfile
     container_name: dnd-notification-service
+    env_file:
+      - .env.mailer
     environment:
       QUARKUS_HTTP_PORT: 8088
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/notification_db
-      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
@@ -438,10 +551,62 @@ services:
       - "traefik.http.routers.notification.rule=PathPrefix(`/api/notifications`)"
       - "traefik.http.routers.notification.entrypoints=web"
       - "traefik.http.services.notification.loadbalancer.server.port=8088"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ./services
+      dockerfile: user-service/Dockerfile
+    container_name: dnd-user-service
+    environment:
+      QUARKUS_HTTP_PORT: 8089
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/user_db
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      AUTH_SERVICE_URL: http://auth-service:8081
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8089:8089"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.routers.user.entrypoints=web"
+      - "traefik.http.services.user.loadbalancer.server.port=8089"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
     restart: unless-stopped
 
   # ============================================
@@ -465,6 +630,10 @@ services:
       - prometheus_data:/prometheus
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
     restart: unless-stopped
 
   grafana:
@@ -484,8 +653,13 @@ services:
     networks:
       - backend
       - frontend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
     depends_on:
       - prometheus
+      - loki
     restart: unless-stopped
 
   jaeger:
@@ -506,7 +680,91 @@ services:
       - "9411:9411"    # Zipkin compatible
     networks:
       - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
     restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: dnd-loki
+    command: -config.file=/etc/loki/loki-config.yml
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./infrastructure/monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    networks:
+      - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    container_name: dnd-promtail
+    command: -config.file=/etc/promtail/promtail-config.yml
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ./infrastructure/monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
+    depends_on:
+      loki:
+        condition: service_healthy
+    restart: unless-stopped
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: dnd-portainer
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "9443:9443"  # HTTPS UI
+      - "9002:9000"  # HTTP UI
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+    networks:
+      - backend
+      - frontend
+    labels:
+      - "logging=promtail"
+      - "service_type=monitoring"
+      - "environment=dev"
+    restart: unless-stopped
+
+  portainer-init:
+    image: curlimages/curl:latest
+    container_name: dnd-portainer-init
+    environment:
+      PORTAINER_ADMIN_USER: ${PORTAINER_ADMIN_USER:-admin}
+      PORTAINER_ADMIN_PASSWORD: ${PORTAINER_ADMIN_PASSWORD:-portainer_admin_password}
+    volumes:
+      - ./infrastructure/portainer/init-scripts:/scripts:ro
+    entrypoint: ["/bin/sh", "/scripts/01-setup-admin.sh"]
+    depends_on:
+      - portainer
+    networks:
+      - backend
+    restart: "no"
 
 # ============================================
 # NETWORKS
@@ -541,7 +799,13 @@ volumes:
     name: dnd-elasticsearch-data
   minio_data:
     name: dnd-minio-data
+  vault_data:
+    name: dnd-vault-data
   prometheus_data:
     name: dnd-prometheus-data
   grafana_data:
     name: dnd-grafana-data
+  portainer_data:
+    name: dnd-portainer-data
+  loki_data:
+    name: dnd-loki-data

@@ -42,6 +42,10 @@ MINIO_PASSWORD=dnd_password
 GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=admin
 
+# Portainer
+PORTAINER_ADMIN_USER=admin
+PORTAINER_ADMIN_PASSWORD=portainer_admin_password
+
 # Timezone
 TZ=Europe/Rome
 EOF
@@ -71,6 +75,7 @@ CREATE DATABASE combat_db;
 CREATE DATABASE asset_db;
 CREATE DATABASE chat_db;
 CREATE DATABASE notification_db;
+CREATE DATABASE user_db;
 
 -- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE auth_db TO dnd_user;
@@ -80,6 +85,7 @@ GRANT ALL PRIVILEGES ON DATABASE combat_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE asset_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE chat_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE notification_db TO dnd_user;
+GRANT ALL PRIVILEGES ON DATABASE user_db TO dnd_user;
 EOF
     echo -e "${GREEN}✓ PostgreSQL init script created${NC}"
 fi
@@ -136,6 +142,12 @@ scrape_configs:
     metrics_path: '/q/metrics'
     static_configs:
       - targets: ['notification-service:8088']
+
+  - job_name: 'user-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['user-service:8089']
+
 EOF
     echo -e "${GREEN}✓ Prometheus configuration created${NC}"
 fi
@@ -148,14 +160,14 @@ echo ""
 
 # Stop any existing containers
 echo -e "${YELLOW}Stopping any existing containers...${NC}"
-docker-compose down 2>/dev/null
+docker-compose down -v 2>/dev/null
 echo -e "${GREEN}✓ Cleanup complete${NC}"
 echo ""
 
 # Start infrastructure services first (without microservices)
 echo -e "${YELLOW}Starting infrastructure services (this may take a few minutes)...${NC}"
-echo -e "${YELLOW}Services: PostgreSQL, Redis, RabbitMQ, Elasticsearch, MinIO, Monitoring${NC}"
-docker-compose up -d traefik postgres redis rabbitmq elasticsearch minio prometheus grafana jaeger
+echo -e "${YELLOW}Services: PostgreSQL, Redis, RabbitMQ, Elasticsearch, MinIO, Vault, Monitoring${NC}"
+docker-compose up -d traefik postgres redis rabbitmq elasticsearch minio vault prometheus grafana jaeger portainer
 
 echo ""
 echo -e "${YELLOW}Waiting for infrastructure services to be ready...${NC}"
@@ -163,7 +175,7 @@ echo -e "${YELLOW}This may take 30-60 seconds...${NC}"
 
 # Wait for PostgreSQL
 echo -n "Waiting for PostgreSQL... "
-until docker exec dnd-postgres pg_isready -U dnd_user > /dev/null 2>&1; do
+until docker exec dnd-postgres pg_isready -U postgres > /dev/null 2>&1; do
     echo -n "."
     sleep 2
 done
@@ -201,8 +213,113 @@ until curl -s http://localhost:9000/minio/health/live > /dev/null 2>&1; do
 done
 echo -e " ${GREEN}✓${NC}"
 
+# Wait for Vault
+echo -n "Waiting for Vault... "
+until curl -s http://localhost:8200/v1/sys/health > /dev/null 2>&1; do
+    echo -n "."
+    sleep 2
+done
+echo -e " ${GREEN}✓${NC}"
+
+# Initialize Vault secrets
+echo -n "Initializing Vault secrets... "
+docker-compose up -d vault-init
+sleep 5
+echo -e " ${GREEN}✓${NC}"
+
+# Wait for Portainer
+echo -n "Waiting for Portainer... "
+until curl -s http://localhost:9002/api/status > /dev/null 2>&1; do
+    echo -n "."
+    sleep 2
+done
+echo -e " ${GREEN}✓${NC}"
+
+# Initialize Portainer admin
+echo -n "Initializing Portainer admin... "
+docker-compose up -d portainer-init
+sleep 5
+echo -e " ${GREEN}✓${NC}"
+
 echo ""
 echo -e "${GREEN}✓ All infrastructure services are ready!${NC}"
+echo ""
+
+# Build multi-module Maven projects
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  Building Maven Projects${NC}"
+echo -e "${BLUE}========================================${NC}"
+echo ""
+
+# Set Maven command - try to use IntelliJ's bundled Maven or system Maven
+MAVEN_CMD=""
+if [ -x "/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn" ]; then
+    MAVEN_CMD="/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn"
+    echo -e "${GREEN}✓ Using IntelliJ bundled Maven${NC}"
+elif command -v mvn &> /dev/null; then
+    MAVEN_CMD="mvn"
+    echo -e "${GREEN}✓ Using system Maven${NC}"
+else
+    echo -e "${YELLOW}⚠ Maven not found. Skipping Maven build step.${NC}"
+    echo -e "${YELLOW}  Note: Multi-module projects may fail to build without Maven.${NC}"
+fi
+
+# Build multi-module projects if Maven is available
+if [ -n "$MAVEN_CMD" ]; then
+    # First, build and install the common module
+    if [ -d "services/common" ] && [ -f "services/common/pom.xml" ]; then
+        echo -e "${YELLOW}Building common module (required by all services)...${NC}"
+        cd services/common
+        "$MAVEN_CMD" clean install -DskipTests
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ common module built and installed successfully${NC}"
+        else
+            echo -e "${RED}✗ common module build failed${NC}"
+            echo -e "${RED}Cannot continue without common module${NC}"
+            cd ../..
+            exit 1
+        fi
+        cd ../..
+        echo ""
+    fi
+
+    # List of multi-module services
+    # Note: user-service must be built before auth-service since auth-service depends on user-service-client
+    # Note: notification-service must be built before user-service since user-service depends on notification-service-vm
+    MULTI_MODULE_SERVICES=("notification-service" "user-service" "auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service")
+
+    for service in "${MULTI_MODULE_SERVICES[@]}"; do
+        if [ -d "services/$service" ] && [ -f "services/$service/pom.xml" ]; then
+            echo -e "${YELLOW}Building $service multi-module project...${NC}"
+            cd services/$service
+            "$MAVEN_CMD" clean install -DskipTests
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}✓ $service built successfully${NC}"
+
+                # Create target/classes directories for Quarkus hot-reload support
+                # This is needed for empty modules to work with quarkus:dev
+                echo -e "${YELLOW}Creating target/classes directories for hot-reload...${NC}"
+
+                # Extract service name without "service" suffix for directory naming
+                SERVICE_PREFIX="${service%-service}"
+
+                mkdir -p ${service}-domain/target/classes
+                mkdir -p ${service}-view-model/target/classes
+                mkdir -p ${service}-adapter-inbound/target/classes
+                mkdir -p ${service}-adapter-outbound/target/classes
+                mkdir -p ${service}-client/target/classes
+                echo -e "${GREEN}✓ Hot-reload directories created${NC}"
+            else
+                echo -e "${RED}✗ $service build failed${NC}"
+                cd ../..
+                exit 1
+            fi
+            cd ../..
+            echo ""
+        fi
+    done
+fi
+
 echo ""
 
 # Check if microservices have Dockerfiles
@@ -211,7 +328,7 @@ echo -e "${BLUE}  Checking Microservices${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service" "notification-service")
+SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service" "notification-service" "user-service" )
 MISSING_DOCKERFILES=()
 
 for service in "${SERVICES[@]}"; do
@@ -248,7 +365,93 @@ else
     docker-compose up -d --build
     echo ""
     echo -e "${GREEN}✓ All microservices started!${NC}"
+    echo ""
+
+    # Wait for Swagger UIs to be available
+    echo -e "${BLUE}========================================${NC}"
+    echo -e "${BLUE}  Waiting for Swagger UIs${NC}"
+    echo -e "${BLUE}========================================${NC}"
+    echo ""
+
+    SWAGGER_TIMEOUT=120
+    SWAGGER_INTERVAL=3
+    SWAGGER_FAILED=""
+
+    SWAGGER_SERVICES="auth-service:8081 character-service:8082 campaign-service:8083 combat-service:8084 asset-service:8085 chat-service:8086 search-service:8087 notification-service:8088 user-service:8089"
+
+    for entry in $SWAGGER_SERVICES; do
+        service="${entry%%:*}"
+        port="${entry##*:}"
+        url="http://localhost:${port}/q/swagger-ui/"
+        echo -n "Waiting for ${service} Swagger UI (port ${port})... "
+
+        elapsed=0
+        while [ $elapsed -lt $SWAGGER_TIMEOUT ]; do
+            if curl -s -o /dev/null -w "%{http_code}" "$url" | grep -q "200"; then
+                echo -e "${GREEN}✓${NC}"
+                break
+            fi
+            echo -n "."
+            sleep $SWAGGER_INTERVAL
+            elapsed=$((elapsed + SWAGGER_INTERVAL))
+        done
+
+        if [ $elapsed -ge $SWAGGER_TIMEOUT ]; then
+            echo -e " ${RED}✗ TIMEOUT${NC}"
+            SWAGGER_FAILED="${SWAGGER_FAILED}${service}:${port} "
+        fi
+    done
+
+    echo ""
+
+    if [ -n "$SWAGGER_FAILED" ]; then
+        echo -e "${RED}========================================${NC}"
+        echo -e "${RED}  ERROR: Swagger UIs Not Available${NC}"
+        echo -e "${RED}========================================${NC}"
+        echo -e "${RED}The following services failed to start their Swagger UI:${NC}"
+        for failed in $SWAGGER_FAILED; do
+            failed_service="${failed%%:*}"
+            failed_port="${failed##*:}"
+            echo -e "  ${RED}✗${NC} ${failed_service} (port ${failed_port})"
+        done
+        echo ""
+        echo -e "${YELLOW}Troubleshooting tips:${NC}"
+        echo -e "  - Check service logs: ${BLUE}docker-compose logs <service-name>${NC}"
+        echo -e "  - Verify the service is running: ${BLUE}docker-compose ps${NC}"
+        echo -e "  - Check if ports are already in use${NC}"
+        echo ""
+        exit 1
+    fi
+
+    echo -e "${GREEN}✓ All Swagger UIs are available!${NC}"
 fi
+
+# ============================================
+# FRONTEND (EXTERNAL REPO)
+# Remove this entire section to disable external frontend
+# ============================================
+FRONTEND_DEPLOY_DIR="services/frontend-deploy"
+if [ -d "$FRONTEND_DEPLOY_DIR" ] && [ -f "$FRONTEND_DEPLOY_DIR/docker-compose.yml" ]; then
+    echo ""
+    echo -e "${BLUE}========================================${NC}"
+    echo -e "${BLUE}  Starting Frontend (External Repo)${NC}"
+    echo -e "${BLUE}========================================${NC}"
+    echo ""
+
+    # Pull latest and start frontend
+    echo -e "${YELLOW}Pulling latest from release branch and starting frontend...${NC}"
+    docker-compose -f "$FRONTEND_DEPLOY_DIR/docker-compose.yml" up -d
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Frontend deployed successfully${NC}"
+    else
+        echo -e "${RED}✗ Frontend deployment failed${NC}"
+        echo -e "${YELLOW}  Check logs: docker-compose -f $FRONTEND_DEPLOY_DIR/docker-compose.yml logs${NC}"
+    fi
+fi
+# ============================================
+# END FRONTEND
+# ============================================
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -262,34 +465,35 @@ echo -e "  🔴 Redis:                ${GREEN}localhost:6379${NC}"
 echo -e "  🐰 RabbitMQ Management:  ${GREEN}http://localhost:15672${NC} (user: dnd_user, pass: dnd_password)"
 echo -e "  🔍 Elasticsearch:        ${GREEN}http://localhost:9200${NC}"
 echo -e "  📦 MinIO Console:        ${GREEN}http://localhost:9001${NC} (user: dnd_user, pass: dnd_password)"
+echo -e "  🔐 Vault:                ${GREEN}http://localhost:8200${NC} (token: dnd-dev-token)"
 echo ""
 echo -e "${BLUE}Monitoring Services:${NC}"
 echo -e "  📊 Prometheus:           ${GREEN}http://localhost:9090${NC}"
 echo -e "  📈 Grafana:              ${GREEN}http://localhost:3000${NC} (user: admin, pass: admin)"
 echo -e "  🔎 Jaeger:               ${GREEN}http://localhost:16686${NC}"
+echo -e "  🐳 Portainer:            ${GREEN}http://localhost:9002${NC} or ${GREEN}https://localhost:9443${NC} (user: admin, pass: portainer_admin_password)"
 echo ""
 
 if [ ${#MISSING_DOCKERFILES[@]} -eq 0 ]; then
     echo -e "${BLUE}Microservices API Endpoints:${NC}"
-    echo -e "  🔐 Auth Service:         ${GREEN}http://localhost/api/auth${NC} (port 8081)"
-    echo -e "  ⚔️  Character Service:    ${GREEN}http://localhost/api/characters${NC} (port 8082)"
-    echo -e "  🗺️  Campaign Service:     ${GREEN}http://localhost/api/campaigns${NC} (port 8083)"
-    echo -e "  ⚔️  Combat Service:       ${GREEN}http://localhost/api/combat${NC} (port 8084)"
-    echo -e "  📁 Asset Service:        ${GREEN}http://localhost/api/assets${NC} (port 8085)"
-    echo -e "  💬 Chat Service:         ${GREEN}http://localhost/api/chat${NC} (port 8086)"
-    echo -e "  🔍 Search Service:       ${GREEN}http://localhost/api/search${NC} (port 8087)"
-    echo -e "  🔔 Notification Service: ${GREEN}http://localhost/api/notifications${NC} (port 8088)"
+    echo -e "  🔐 Auth Service:         ${GREEN}http://localhost:8081/q/swagger-ui/${NC}"
+    echo -e "  ⚔️ Character Service:   ${GREEN}http://localhost:8082/q/swagger-ui/${NC}"
+    echo -e "  🗺️ Campaign Service:    ${GREEN}http://localhost:8083/q/swagger-ui/${NC}"
+    echo -e "  ⚔️ Combat Service:      ${GREEN}http://localhost:8084/q/swagger-ui/${NC}"
+    echo -e "  📁 Asset Service:        ${GREEN}http://localhost:8085/q/swagger-ui/${NC}"
+    echo -e "  💬 Chat Service:         ${GREEN}http://localhost:8086/q/swagger-ui/${NC}"
+    echo -e "  🔍 Search Service:       ${GREEN}http://localhost:8087/q/swagger-ui/${NC}"
+    echo -e "  🔔 Notification Service: ${GREEN}http://localhost:8088/q/swagger-ui/${NC}"
+    echo -e "  👤 User Service:         ${GREEN}http://localhost:8089/q/swagger-ui/${NC}"
     echo ""
 fi
 
-echo -e "${BLUE}Useful Commands:${NC}"
-echo -e "  📋 View logs (all):       ${YELLOW}docker-compose logs -f${NC}"
-echo -e "  📋 View logs (service):   ${YELLOW}docker-compose logs -f <service-name>${NC}"
-echo -e "  ⏸️  Stop all:              ${YELLOW}docker-compose stop${NC}"
-echo -e "  🗑️  Stop and remove:       ${YELLOW}docker-compose down${NC}"
-echo -e "  🗑️  Remove volumes:        ${YELLOW}docker-compose down -v${NC}"
-echo -e "  🔄 Restart service:       ${YELLOW}docker-compose restart <service-name>${NC}"
-echo -e "  📊 Service status:        ${YELLOW}docker-compose ps${NC}"
-echo ""
+# Frontend info (if running)
+if [ -d "$FRONTEND_DEPLOY_DIR" ] && docker ps --format '{{.Names}}' | grep -q "dnd-frontend"; then
+    echo -e "${BLUE}Frontend (External Repo):${NC}"
+    echo -e "  🌐 Frontend:             ${GREEN}http://localhost:4000${NC}"
+    echo ""
+fi
+
 echo -e "${GREEN}Happy coding! 🚀${NC}"
 echo ""

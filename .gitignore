@@ -27,3 +27,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Environment files ###
+.env.mailer
+.env.local
+.env.*.local
