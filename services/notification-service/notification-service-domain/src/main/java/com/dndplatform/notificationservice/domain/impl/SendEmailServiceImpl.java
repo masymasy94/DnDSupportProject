@@ -4,7 +4,6 @@ import com.dndplatform.common.exception.NotFoundException;
 import com.dndplatform.notificationservice.domain.SendEmailService;
 import com.dndplatform.notificationservice.domain.model.Email;
 import com.dndplatform.notificationservice.domain.model.EmailBuilder;
-import com.dndplatform.notificationservice.domain.model.EmailResult;
 import com.dndplatform.notificationservice.domain.model.EmailTemplateDetails;
 import com.dndplatform.notificationservice.domain.repository.EmailSendRepository;
 import com.dndplatform.notificationservice.domain.repository.FindEmailTemplateByIdRepository;
@@ -29,12 +28,12 @@ public class SendEmailServiceImpl implements SendEmailService {
     }
 
     @Override
-    public EmailResult send(Email email) {
+    public void send(Email email) {
         log.info(() -> "Sending email to: " + email.to());
 
         var template = findEmailTemplateByIdRepository.findById(email.templateId())
                 .orElseThrow(() -> new NotFoundException("Email template with id %s not found".formatted(email.templateId())));
-        return emailSendRepository.send(getEmail(email, template));
+        emailSendRepository.send(getEmail(email, template));
     }
 
 
