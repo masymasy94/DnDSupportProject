@@ -607,6 +607,44 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  compendium-service:
+    build:
+      context: ./services
+      dockerfile: compendium-service/Dockerfile
+    container_name: dnd-compendium-service
+    environment:
+      QUARKUS_HTTP_PORT: 8090
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/compendium_db
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      AUTH_SERVICE_URL: http://auth-service:8081
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8090:8090"
+    networks:
+      - backend
+      - database
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.compendium.rule=PathPrefix(`/api/compendium`)"
+      - "traefik.http.routers.compendium.entrypoints=web"
+      - "traefik.http.services.compendium.loadbalancer.server.port=8090"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    restart: unless-stopped
+
   # ============================================
   # MONITORING LAYER
   # ============================================
