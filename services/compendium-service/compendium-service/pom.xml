@@ -110,10 +110,10 @@
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
-        <!-- Cache -->
+        <!-- Cache (Redis) -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-cache</artifactId>
+            <artifactId>quarkus-redis-cache</artifactId>
         </dependency>
 
         <!-- OpenAPI / Swagger -->

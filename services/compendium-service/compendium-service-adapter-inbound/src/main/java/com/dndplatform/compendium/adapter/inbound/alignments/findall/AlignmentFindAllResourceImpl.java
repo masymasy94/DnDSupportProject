@@ -3,6 +3,7 @@ package com.dndplatform.compendium.adapter.inbound.alignments.findall;
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.compendium.view.model.AlignmentFindAllResource;
 import com.dndplatform.compendium.view.model.vm.AlignmentViewModel;
+import io.quarkus.cache.CacheResult;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -44,9 +45,10 @@ public class AlignmentFindAllResourceImpl implements AlignmentFindAllResource {
     @GET
     @Override
     @SecurityRequirement(name = "token")
-    //@RolesAllowed("masy")
+    @RolesAllowed("PLAYER")
     @Operation(summary = "Get all alignments", description = "Retrieve all D&D alignments")
     @APIResponse(responseCode = "200", description = "Alignments list retrieved successfully")
+    @CacheResult(cacheName = "alignments-cache")
     public List<AlignmentViewModel> findAll() {
         return delegate.findAll();
     }

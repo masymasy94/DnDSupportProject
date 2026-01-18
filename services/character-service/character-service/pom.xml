@@ -33,15 +33,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- =================== -->
-        <!-- = SERVICE CLIENTS = -->
-        <!-- =================== -->
-        <dependency>
-            <groupId>com.dndplatform</groupId>
-            <artifactId>compendium-service-client</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
         <!-- ================ -->
         <!-- = MICROPROFILE = -->
         <!-- ================ -->
@@ -119,6 +110,18 @@
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
+        <!-- REST Client -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
+        </dependency>
+
+        <!-- Fault Tolerance (for @Retry in REST clients) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+        </dependency>
+
         <!-- Redis -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -159,12 +162,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-logging-json</artifactId>
-        </dependency>
-
-        <!-- Caching -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-cache</artifactId>
         </dependency>
 
         <!-- JWT -->

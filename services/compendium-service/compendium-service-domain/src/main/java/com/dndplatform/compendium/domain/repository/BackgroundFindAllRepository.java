@@ -1,8 +1,9 @@
 package com.dndplatform.compendium.domain.repository;
 
-import com.dndplatform.compendium.domain.model.PagedBackgroundResult;
-import com.dndplatform.compendium.domain.model.SourceType;
+import com.dndplatform.compendium.domain.model.Background;
+
+import java.util.List;
 
 public interface BackgroundFindAllRepository {
-    PagedBackgroundResult findAll(int page, int size, String search, SourceType source, Long userId);
+    List<Background> findAllBackgrounds();
 }
