@@ -70,6 +70,14 @@
             <artifactId>microprofile-jwt-auth-api</artifactId>
         </dependency>
 
+        <!-- ========= -->
+        <!-- = CACHE = -->
+        <!-- ========= -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-cache</artifactId>
+        </dependency>
+
         <!-- ==================== -->
         <!-- = MAPPER GENERATOR = -->
         <!-- ==================== -->
