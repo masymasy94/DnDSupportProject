@@ -1,12 +1,11 @@
-package com.dndplatform.compendium.domain;
+package com.dndplatform.compendium.domain.impl;
 
 import com.dndplatform.common.exception.NotFoundException;
+import com.dndplatform.compendium.domain.CharacterClassFindByIdService;
 import com.dndplatform.compendium.domain.model.CharacterClass;
 import com.dndplatform.compendium.domain.repository.CharacterClassFindByIdRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
-import java.util.Optional;
 
 @ApplicationScoped
 public class CharacterClassFindByIdServiceImpl implements CharacterClassFindByIdService {

@@ -1,5 +1,6 @@
-package com.dndplatform.compendium.domain;
+package com.dndplatform.compendium.domain.impl;
 
+import com.dndplatform.compendium.domain.SpeciesFindAllService;
 import com.dndplatform.compendium.domain.model.Species;
 import com.dndplatform.compendium.domain.repository.SpeciesFindAllRepository;
 import jakarta.enterprise.context.ApplicationScoped;

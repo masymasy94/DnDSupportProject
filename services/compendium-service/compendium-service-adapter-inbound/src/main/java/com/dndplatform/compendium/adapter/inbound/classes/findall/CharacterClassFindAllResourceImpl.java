@@ -20,8 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
 
-import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeIn.HEADER;
-import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.APIKEY;
+import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
 @Path("/api/compendium/classes")
@@ -29,11 +28,11 @@ import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeT
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @SecurityScheme(
-        description = "token authorization",
-        securitySchemeName = "token",
-        type = APIKEY,
-        apiKeyName = "x-service-token",
-        in = HEADER
+        description = "JWT Bearer token authorization",
+        securitySchemeName = "bearer",
+        type = HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
 )
 public class CharacterClassFindAllResourceImpl implements CharacterClassFindAllResource {
 
@@ -49,7 +48,7 @@ public class CharacterClassFindAllResourceImpl implements CharacterClassFindAllR
     @Operation(summary = "Get all classes", description = "Retrieve all character classes")
     @APIResponse(responseCode = "200", description = "Classes list retrieved successfully")
     @CacheResult(cacheName = "classes-cache")
-    @SecurityRequirement(name = "token")
+    @SecurityRequirement(name = "bearer")
     @RolesAllowed("PLAYER")
     public List<CharacterClassViewModel> findAll() {
         return delegate.findAll();

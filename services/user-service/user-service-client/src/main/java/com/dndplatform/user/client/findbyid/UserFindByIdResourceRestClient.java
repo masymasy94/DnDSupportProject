@@ -17,7 +17,7 @@ import java.time.temporal.ChronoUnit;
 
 import static com.dndplatform.user.client.ClientConfig.CLIENT_CONFIG_KEY;
 
-@Path("/internal/users/")
+@Path("/users/")
 @Produces(MediaType.APPLICATION_JSON)
 @RegisterRestClient(configKey = CLIENT_CONFIG_KEY)
 @RegisterProvider(RestClientExceptionMapper.class)

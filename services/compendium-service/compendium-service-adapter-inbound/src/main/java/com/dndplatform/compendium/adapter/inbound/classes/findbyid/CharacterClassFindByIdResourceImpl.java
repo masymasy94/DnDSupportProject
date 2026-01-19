@@ -15,8 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeIn.HEADER;
-import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.APIKEY;
+import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
 @Path("/api/compendium/classes")
@@ -24,11 +23,11 @@ import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeT
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @SecurityScheme(
-        description = "token authorization",
-        securitySchemeName = "token",
-        type = APIKEY,
-        apiKeyName = "x-service-token",
-        in = HEADER
+        description = "JWT Bearer token authorization",
+        securitySchemeName = "bearer",
+        type = HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
 )
 public class CharacterClassFindByIdResourceImpl implements CharacterClassFindByIdResource {
 
@@ -45,7 +44,7 @@ public class CharacterClassFindByIdResourceImpl implements CharacterClassFindByI
     @Operation(summary = "Get class by ID", description = "Retrieve a specific character class by its ID")
     @APIResponse(responseCode = "200", description = "Class found")
     @APIResponse(responseCode = "404", description = "Class not found")
-    @SecurityRequirement(name = "token")
+    @SecurityRequirement(name = "bearer")
     @RolesAllowed("PLAYER")
     public CharacterClassViewModel findById(
             @Parameter(description = "Class ID", required = true, example = "1")
