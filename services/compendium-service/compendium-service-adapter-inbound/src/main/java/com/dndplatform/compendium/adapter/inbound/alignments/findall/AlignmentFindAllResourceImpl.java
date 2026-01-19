@@ -17,8 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
 
-import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeIn.HEADER;
-import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.APIKEY;
+import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
 @Path("/api/compendium/alignments")
@@ -26,11 +25,11 @@ import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeT
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @SecurityScheme(
-        description = "token authorization",
-        securitySchemeName = "token",
-        type = APIKEY,
-        apiKeyName = "x-service-token",
-        in = HEADER
+        description = "JWT Bearer token authorization",
+        securitySchemeName = "bearer",
+        type = HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
 )
 public class AlignmentFindAllResourceImpl implements AlignmentFindAllResource {
 
@@ -44,7 +43,7 @@ public class AlignmentFindAllResourceImpl implements AlignmentFindAllResource {
 
     @GET
     @Override
-    @SecurityRequirement(name = "token")
+    @SecurityRequirement(name = "bearer")
     @RolesAllowed("PLAYER")
     @Operation(summary = "Get all alignments", description = "Retrieve all D&D alignments")
     @APIResponse(responseCode = "200", description = "Alignments list retrieved successfully")

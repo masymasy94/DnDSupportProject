@@ -1,4 +1,4 @@
-package com.dndplatform.user.adapter.inbound.internal;
+package com.dndplatform.user.adapter.inbound.validate;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.user.view.model.UserCredentialsValidateResource;
@@ -19,16 +19,16 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
-@Path("/internal/users/credentials-validation")
+@Path("/users/credentials-validation")
 @Tag(name = "Internal", description = "Internal service-to-service endpoints")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class InternalUserCredentialsValidateResourceImpl implements UserCredentialsValidateResource {
+public class UserCredentialsValidateResourceImpl implements UserCredentialsValidateResource {
 
     private final UserCredentialsValidateResource delegate;
 
     @Inject
-    public InternalUserCredentialsValidateResourceImpl(@Delegate UserCredentialsValidateResource delegate) {
+    public UserCredentialsValidateResourceImpl(@Delegate UserCredentialsValidateResource delegate) {
         this.delegate = delegate;
     }
 

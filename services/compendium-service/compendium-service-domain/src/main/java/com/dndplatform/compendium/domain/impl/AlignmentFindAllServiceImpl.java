@@ -1,5 +1,6 @@
-package com.dndplatform.compendium.domain;
+package com.dndplatform.compendium.domain.impl;
 
+import com.dndplatform.compendium.domain.AlignmentFindAllService;
 import com.dndplatform.compendium.domain.model.Alignment;
 import com.dndplatform.compendium.domain.repository.AlignmentFindAllRepository;
 import jakarta.enterprise.context.ApplicationScoped;

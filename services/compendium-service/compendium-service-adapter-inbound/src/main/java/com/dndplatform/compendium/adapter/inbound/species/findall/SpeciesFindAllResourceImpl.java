@@ -20,8 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
 
-import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeIn.HEADER;
-import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.APIKEY;
+import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
 @Path("/api/compendium/species")
@@ -29,11 +28,11 @@ import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeT
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @SecurityScheme(
-        description = "token authorization",
-        securitySchemeName = "token",
-        type = APIKEY,
-        apiKeyName = "x-service-token",
-        in = HEADER
+        description = "JWT Bearer token authorization",
+        securitySchemeName = "bearer",
+        type = HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
 )
 public class SpeciesFindAllResourceImpl implements SpeciesFindAllResource {
 
@@ -49,7 +48,7 @@ public class SpeciesFindAllResourceImpl implements SpeciesFindAllResource {
     @Operation(summary = "Get all species", description = "Retrieve all species/races")
     @APIResponse(responseCode = "200", description = "Species list retrieved successfully")
     @CacheResult(cacheName = "species-cache")
-    @SecurityRequirement(name = "token")
+    @SecurityRequirement(name = "bearer")
     @RolesAllowed("PLAYER")
     public List<SpeciesViewModel> findAll() {
         return delegate.findAll();

@@ -1,5 +1,6 @@
-package com.dndplatform.compendium.domain;
+package com.dndplatform.compendium.domain.impl;
 
+import com.dndplatform.compendium.domain.CharacterClassFindAllService;
 import com.dndplatform.compendium.domain.model.CharacterClass;
 import com.dndplatform.compendium.domain.repository.CharacterClassFindAllRepository;
 import jakarta.enterprise.context.ApplicationScoped;

@@ -1,18 +1,8 @@
 -- =============================================
 -- Populate D&D 5E Reference Tables
+-- Note: alignments, species, character_classes, backgrounds
+-- are managed by compendium-service
 -- =============================================
-
--- Alignments (9)
-INSERT INTO alignments (code, name) VALUES
-    ('LG', 'Lawful Good'),
-    ('NG', 'Neutral Good'),
-    ('CG', 'Chaotic Good'),
-    ('LN', 'Lawful Neutral'),
-    ('TN', 'True Neutral'),
-    ('CN', 'Chaotic Neutral'),
-    ('LE', 'Lawful Evil'),
-    ('NE', 'Neutral Evil'),
-    ('CE', 'Chaotic Evil');
 
 -- Abilities (6)
 INSERT INTO abilities (code, name) VALUES
@@ -43,51 +33,6 @@ INSERT INTO skills (name, ability_id) VALUES
     ('Intimidation', (SELECT id FROM abilities WHERE code = 'CHA')),
     ('Performance', (SELECT id FROM abilities WHERE code = 'CHA')),
     ('Persuasion', (SELECT id FROM abilities WHERE code = 'CHA'));
-
--- Species/Races (D&D 5E 2024 PHB core races)
-INSERT INTO species (name, description) VALUES
-    ('Aasimar', 'Celestial heritage with divine power'),
-    ('Dragonborn', 'Draconic humanoids with breath weapons'),
-    ('Dwarf', 'Stout folk known for craftsmanship'),
-    ('Elf', 'Graceful people with keen senses'),
-    ('Gnome', 'Small, clever inventors and illusionists'),
-    ('Goliath', 'Towering warriors of the mountains'),
-    ('Halfling', 'Small, nimble, and lucky folk'),
-    ('Human', 'Versatile and ambitious people'),
-    ('Orc', 'Fierce warriors with primal strength'),
-    ('Tiefling', 'Infernal heritage with fiendish traits');
-
--- Character Classes (13)
-INSERT INTO character_classes (name, hit_die, description) VALUES
-    ('Barbarian', 'd12', 'Fierce warriors who channel primal rage'),
-    ('Bard', 'd8', 'Inspiring performers and jack-of-all-trades'),
-    ('Cleric', 'd8', 'Divine spellcasters serving their deity'),
-    ('Druid', 'd8', 'Nature magic wielders and shapeshifters'),
-    ('Fighter', 'd10', 'Masters of martial combat'),
-    ('Monk', 'd8', 'Martial artists harnessing ki energy'),
-    ('Paladin', 'd10', 'Holy warriors bound by sacred oaths'),
-    ('Ranger', 'd10', 'Skilled hunters and trackers'),
-    ('Rogue', 'd8', 'Stealthy experts in precise strikes'),
-    ('Sorcerer', 'd6', 'Innate spellcasters with raw magic'),
-    ('Warlock', 'd8', 'Spellcasters empowered by patrons'),
-    ('Wizard', 'd6', 'Scholarly masters of arcane magic'),
-    ('Artificer', 'd8', 'Inventors who infuse magic into items');
-
--- Backgrounds (13 classic backgrounds)
-INSERT INTO backgrounds (name, description) VALUES
-    ('Acolyte', 'Served in a temple, gaining religious knowledge'),
-    ('Charlatan', 'Master of deception and false identities'),
-    ('Criminal', 'Experienced in breaking the law'),
-    ('Entertainer', 'Performer who thrives in the spotlight'),
-    ('Folk Hero', 'Common person who became a local legend'),
-    ('Guild Artisan', 'Member of an artisan guild'),
-    ('Hermit', 'Lived in seclusion, seeking enlightenment'),
-    ('Noble', 'Born into wealth and privilege'),
-    ('Outlander', 'Grew up in the wilds, far from civilization'),
-    ('Sage', 'Dedicated scholar and researcher'),
-    ('Sailor', 'Experienced on ships and the sea'),
-    ('Soldier', 'Trained military combatant'),
-    ('Urchin', 'Grew up on the streets, surviving by wits');
 
 -- Proficiency Types (4)
 INSERT INTO proficiency_types (name) VALUES
