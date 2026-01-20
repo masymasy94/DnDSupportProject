@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
-@Path("/internal/users/{id}")
+@Path("/users/{id}")
 @Tag(name = "User", description = "User management operations")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)

@@ -121,6 +121,12 @@ vault kv put secret/dnd-platform/search-service/config \
     elasticsearch-port="9200" \
     auth-service-url="http://auth-service:8081"
 
+# Store compendium-service specific database configuration
+echo "Storing compendium-service database configuration..."
+vault kv put secret/dnd-platform/compendium-service/database \
+    url="jdbc:postgresql://postgres:5432/compendium_db" \
+    auth-service-url="http://auth-service:8081"
+
 # Store RabbitMQ credentials and configuration
 echo "Storing RabbitMQ credentials and configuration..."
 vault kv put secret/dnd-platform/common/rabbitmq \
@@ -209,3 +215,4 @@ echo "  - secret/dnd-platform/chat-service/database"
 echo "  - secret/dnd-platform/asset-service/database"
 echo "  - secret/dnd-platform/notification-service/database"
 echo "  - secret/dnd-platform/search-service/config"
+echo "  - secret/dnd-platform/compendium-service/database"
