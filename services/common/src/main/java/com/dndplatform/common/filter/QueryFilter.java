@@ -19,9 +19,21 @@ public class QueryFilter {
     }
 
     public QueryFilter add(String field, String paramName, Object value) {
+        return add(field, paramName, value, Param.Operator.EQUALS);
+    }
+
+    public QueryFilter add(String field, String paramName, Object value, Param.Operator operator) {
         if (value != null) {
-            conditions.add(field + " = :" + paramName);
-            params.put(paramName, value);
+            switch (operator) {
+                case LIKE -> {
+                    conditions.add("lower(" + field + ") LIKE :" + paramName);
+                    params.put(paramName, "%" + value.toString().toLowerCase() + "%");
+                }
+                case EQUALS -> {
+                    conditions.add(field + " = :" + paramName);
+                    params.put(paramName, value);
+                }
+            }
         }
         return this;
     }
