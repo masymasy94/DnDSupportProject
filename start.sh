@@ -76,6 +76,7 @@ CREATE DATABASE asset_db;
 CREATE DATABASE chat_db;
 CREATE DATABASE notification_db;
 CREATE DATABASE user_db;
+CREATE DATABASE compendium_db;
 
 -- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE auth_db TO dnd_user;
@@ -86,6 +87,7 @@ GRANT ALL PRIVILEGES ON DATABASE asset_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE chat_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE notification_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE user_db TO dnd_user;
+GRANT ALL PRIVILEGES ON DATABASE compendium_db TO dnd_user;
 EOF
     echo -e "${GREEN}✓ PostgreSQL init script created${NC}"
 fi
@@ -147,6 +149,11 @@ scrape_configs:
     metrics_path: '/q/metrics'
     static_configs:
       - targets: ['user-service:8089']
+
+  - job_name: 'compendium-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['compendium-service:8090']
 
 EOF
     echo -e "${GREEN}✓ Prometheus configuration created${NC}"
@@ -286,7 +293,7 @@ if [ -n "$MAVEN_CMD" ]; then
     # List of multi-module services
     # Note: user-service must be built before auth-service since auth-service depends on user-service-client
     # Note: notification-service must be built before user-service since user-service depends on notification-service-vm
-    MULTI_MODULE_SERVICES=("notification-service" "user-service" "auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service")
+    MULTI_MODULE_SERVICES=("notification-service" "user-service" "auth-service" "compendium-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service")
 
     for service in "${MULTI_MODULE_SERVICES[@]}"; do
         if [ -d "services/$service" ] && [ -f "services/$service/pom.xml" ]; then
@@ -328,7 +335,7 @@ echo -e "${BLUE}  Checking Microservices${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service" "notification-service" "user-service" )
+SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service" "notification-service" "user-service" "compendium-service")
 MISSING_DOCKERFILES=()
 
 for service in "${SERVICES[@]}"; do
@@ -485,6 +492,7 @@ if [ ${#MISSING_DOCKERFILES[@]} -eq 0 ]; then
     echo -e "  🔍 Search Service:       ${GREEN}http://localhost:8087/q/swagger-ui/${NC}"
     echo -e "  🔔 Notification Service: ${GREEN}http://localhost:8088/q/swagger-ui/${NC}"
     echo -e "  👤 User Service:         ${GREEN}http://localhost:8089/q/swagger-ui/${NC}"
+    echo -e "  📚 Compendium Service:   ${GREEN}http://localhost:8090/q/swagger-ui/${NC}"
     echo ""
 fi
 

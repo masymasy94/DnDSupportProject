@@ -19,7 +19,7 @@ import java.time.temporal.ChronoUnit;
 import static com.dndplatform.user.client.ClientConfig.CLIENT_CONFIG_KEY;
 
 
-@Path("/internal/users/credentials-validation")
+@Path("/users/credentials-validation")
 @Produces(MediaType.APPLICATION_JSON)
 @RegisterProvider(AuthorizationFilter.class)
 @RegisterRestClient(configKey = CLIENT_CONFIG_KEY)

@@ -110,6 +110,18 @@
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
+        <!-- REST Client -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
+        </dependency>
+
+        <!-- Fault Tolerance (for @Retry in REST clients) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+        </dependency>
+
         <!-- Redis -->
         <dependency>
             <groupId>io.quarkus</groupId>
