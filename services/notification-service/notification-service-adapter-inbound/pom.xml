@@ -20,6 +20,11 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>common</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>notification-service-domain</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
@@ -66,6 +71,18 @@
         </dependency>
 
         <!-- ==================== -->
+        <!-- = REACTIVE MESSAGING = -->
+        <!-- ==================== -->
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-core</artifactId>
+        </dependency>
+
+        <!-- ==================== -->
         <!-- = MAPPER GENERATOR = -->
         <!-- ==================== -->
         <dependency>
@@ -95,6 +112,10 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-instrumentation-annotations</artifactId>
         </dependency>
 
     </dependencies>

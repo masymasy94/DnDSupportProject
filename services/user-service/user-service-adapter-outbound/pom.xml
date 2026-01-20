@@ -61,6 +61,18 @@
         </dependency>
 
         <!-- ==================== -->
+        <!-- = REACTIVE MESSAGING = -->
+        <!-- ==================== -->
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-rabbitmq</artifactId>
+        </dependency>
+
+        <!-- ==================== -->
         <!-- = MAPPER GENERATOR = -->
         <!-- ==================== -->
         <dependency>
@@ -107,6 +119,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dndplatform</groupId>
+            <artifactId>notification-service-view-model</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>
