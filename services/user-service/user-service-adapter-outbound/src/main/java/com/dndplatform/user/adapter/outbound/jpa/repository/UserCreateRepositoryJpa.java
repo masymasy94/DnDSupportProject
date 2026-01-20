@@ -10,9 +10,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import java.util.logging.Logger;
+
 @ApplicationScoped
 public class UserCreateRepositoryJpa implements UserCreateRepository, PanacheRepository<UserEntity> {
 
+    private final Logger log = Logger.getLogger(getClass().getName());
     private final UserEntityMapper entityMapper;
     private final UserMapper domainMapper;
 
@@ -25,6 +28,8 @@ public class UserCreateRepositoryJpa implements UserCreateRepository, PanacheRep
     @Override
     @Transactional
     public User create(User user) {
+        log.info(() -> "Creating user %s".formatted(user));
+
         var entity = entityMapper.apply(user);
         persist(entity);
         return domainMapper.apply(entity);
