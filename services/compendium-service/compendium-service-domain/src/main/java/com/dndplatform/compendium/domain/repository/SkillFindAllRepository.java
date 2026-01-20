@@ -5,5 +5,5 @@ import com.dndplatform.compendium.domain.model.Skill;
 import java.util.List;
 
 public interface SkillFindAllRepository {
-    List<Skill> findAll();
+    List<Skill> findAllSkills();
 }

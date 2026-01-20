@@ -10,7 +10,7 @@ public final class QueryFilterUtils {
     private static final Collector<Param, QueryFilter, QueryFilter> QUERY_FILTER_COLLECTOR =
             Collector.of(
                     QueryFilter::new,
-                    (filter, param) -> filter.add(param.field(), param.paramName(), param.value()),
+                    (filter, param) -> filter.add(param.field(), param.paramName(), param.value(), param.operator()),
                     QueryFilter::merge
             );
 
