@@ -1,6 +1,5 @@
 package com.dndplatform.auth.adapter.inbound.refresh;
 
-import com.dndplatform.auth.adapter.inbound.login.mapper.LoginResponseViewModelMapper;
 import com.dndplatform.auth.adapter.inbound.refresh.mapper.RefreshLoginTokenResponseViewModelMapper;
 import com.dndplatform.auth.domain.RefreshLoginTokensService;
 import com.dndplatform.auth.view.model.RefreshLoginTokensResource;

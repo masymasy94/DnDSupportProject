@@ -8,6 +8,7 @@ public record CreateLoginTokensResponseViewModel(
         String refreshToken,
         long accessTokenExpiresAt,
         long refreshTokenExpiresAt,
-        String tokenType
+        String tokenType,
+        long userId
 ) {
 }

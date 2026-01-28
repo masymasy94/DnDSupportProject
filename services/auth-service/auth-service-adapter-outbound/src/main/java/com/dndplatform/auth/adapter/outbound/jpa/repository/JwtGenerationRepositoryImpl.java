@@ -8,7 +8,6 @@ import io.smallrye.jwt.build.Jwt;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Set;
@@ -36,18 +35,19 @@ public class JwtGenerationRepositoryImpl implements JwtGenerationRepository {
         String accessToken = createAccessToken(user, now, accessTokenExpiry);
         String refreshTokenJwt = refreshToken.token();
 
-        return createResponse(accessToken, refreshTokenJwt, accessTokenExpiry, refreshTokenExpiry);
+        return createResponse(accessToken, refreshTokenJwt, accessTokenExpiry, refreshTokenExpiry, user.id());
     }
 
 
 
 
-    private static CreateLoginTokenResponse createResponse(String accessToken, String refreshTokenJwt, Instant accessTokenExpiry, Instant refreshTokenExpiry) {
+    private static CreateLoginTokenResponse createResponse(String accessToken, String refreshTokenJwt, Instant accessTokenExpiry, Instant refreshTokenExpiry, Long id) {
         return new CreateLoginTokenResponse(
                 accessToken,
                 refreshTokenJwt,
                 accessTokenExpiry.toEpochMilli(),
-                refreshTokenExpiry.toEpochMilli()
+                refreshTokenExpiry.toEpochMilli(),
+                id
         );
     }
 
