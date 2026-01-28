@@ -20,6 +20,11 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>common</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>chat-service-domain</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
@@ -27,6 +32,18 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>chat-service-view-model</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- ============== -->
+        <!-- =  SECURITY  = -->
+        <!-- ============== -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-jwt</artifactId>
         </dependency>
 
         <!-- ============== -->
@@ -102,8 +119,26 @@
         <!-- =================== -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-websockets</artifactId>
+            <artifactId>quarkus-websockets-next</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
+                <version>3.2.2</version>
+                <executions>
+                    <execution>
+                        <id>make-index</id>
+                        <goals>
+                            <goal>jandex</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
