@@ -2,6 +2,7 @@ package com.dndplatform.compendium.adapter.inbound.monsters.findall;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.compendium.view.model.MonsterFindAllResource;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import com.dndplatform.compendium.view.model.vm.PagedMonsterViewModel;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
@@ -23,6 +24,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/api/compendium/monsters")
 @Tag(name = "Monsters", description = "Monster reference data")
 @Consumes(MediaType.APPLICATION_JSON)

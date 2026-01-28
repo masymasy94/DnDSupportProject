@@ -384,7 +384,7 @@ else
     SWAGGER_INTERVAL=3
     SWAGGER_FAILED=""
 
-    SWAGGER_SERVICES="auth-service:8081 character-service:8082 campaign-service:8083 combat-service:8084 asset-service:8085 chat-service:8086 search-service:8087 notification-service:8088 user-service:8089"
+    SWAGGER_SERVICES="auth-service:8081 character-service:8082 campaign-service:8083 combat-service:8084 asset-service:8085 chat-service:8086 search-service:8087 notification-service:8088 user-service:8089 compendium-service:8090"
 
     for entry in $SWAGGER_SERVICES; do
         service="${entry%%:*}"

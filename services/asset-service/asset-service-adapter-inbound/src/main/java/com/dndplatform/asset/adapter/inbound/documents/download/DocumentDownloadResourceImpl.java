@@ -2,6 +2,7 @@ package com.dndplatform.asset.adapter.inbound.documents.download;
 
 import com.dndplatform.asset.view.model.DocumentDownloadResource;
 import com.dndplatform.common.annotations.Delegate;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -20,6 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/api/assets/documents")
 @Tag(name = "Documents", description = "Document upload and retrieval")
 @SecurityScheme(

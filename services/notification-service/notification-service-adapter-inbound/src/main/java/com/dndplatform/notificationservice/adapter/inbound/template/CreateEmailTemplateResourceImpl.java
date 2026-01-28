@@ -2,6 +2,7 @@ package com.dndplatform.notificationservice.adapter.inbound.template;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.notificationservice.view.model.CreateEmailTemplateResource;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import com.dndplatform.notificationservice.view.model.vm.CreateEmailTemplateRequestViewModel;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -17,6 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/email-templates")
 @Tag(name = "Email Templates", description = "Email template management operations")
 @Consumes(MediaType.APPLICATION_JSON)

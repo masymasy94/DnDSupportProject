@@ -2,6 +2,7 @@ package com.dndplatform.compendium.adapter.inbound.equipment.findall;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.compendium.view.model.EquipmentFindAllResource;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import com.dndplatform.compendium.view.model.vm.PagedEquipmentViewModel;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
@@ -23,6 +24,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/api/compendium/equipment")
 @Tag(name = "Equipment", description = "Equipment reference data")
 @Consumes(MediaType.APPLICATION_JSON)

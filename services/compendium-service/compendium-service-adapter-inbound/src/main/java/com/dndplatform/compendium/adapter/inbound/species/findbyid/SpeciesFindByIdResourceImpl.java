@@ -2,6 +2,7 @@ package com.dndplatform.compendium.adapter.inbound.species.findbyid;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.compendium.view.model.SpeciesFindByIdResource;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import com.dndplatform.compendium.view.model.vm.SpeciesViewModel;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
@@ -18,6 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/api/compendium/species")
 @Tag(name = "Species", description = "Species/Race reference data")
 @Consumes(MediaType.APPLICATION_JSON)

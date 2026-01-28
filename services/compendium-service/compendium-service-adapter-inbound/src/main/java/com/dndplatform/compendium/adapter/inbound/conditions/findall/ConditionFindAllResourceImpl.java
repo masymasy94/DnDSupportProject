@@ -4,6 +4,7 @@ import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.compendium.view.model.ConditionFindAllResource;
 import com.dndplatform.compendium.view.model.vm.ConditionViewModel;
 import io.quarkus.cache.CacheResult;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -20,6 +21,7 @@ import java.util.List;
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/api/compendium/conditions")
 @Tag(name = "Conditions", description = "D&D condition reference data")
 @Consumes(MediaType.APPLICATION_JSON)

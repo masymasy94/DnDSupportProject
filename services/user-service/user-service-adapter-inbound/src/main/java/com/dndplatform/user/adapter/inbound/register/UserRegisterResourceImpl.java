@@ -2,6 +2,7 @@ package com.dndplatform.user.adapter.inbound.register;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.user.view.model.UserRegisterResource;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import com.dndplatform.user.view.model.vm.UserRegisterViewModel;
 import com.dndplatform.user.view.model.vm.UserViewModel;
 import jakarta.enterprise.context.RequestScoped;
@@ -19,6 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/users")
 @Tag(name = "User Registration", description = "User registration operations")
 @Consumes(MediaType.APPLICATION_JSON)
