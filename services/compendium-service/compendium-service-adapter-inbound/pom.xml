@@ -35,6 +35,14 @@
         </dependency>
 
         <!-- ============== -->
+        <!-- = SMALLRYE = -->
+        <!-- ============== -->
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
+
+        <!-- ============== -->
         <!-- = JAKARTA EE = -->
         <!-- ============== -->
         <dependency>

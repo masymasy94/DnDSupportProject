@@ -3,6 +3,7 @@ package com.dndplatform.auth.adapter.inbound.login;
 import com.dndplatform.auth.view.model.CreateLoginTokensResource;
 import com.dndplatform.auth.view.model.vm.CreateLoginTokensViewModel;
 import com.dndplatform.common.annotations.Delegate;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -14,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/auth/login-tokens")
 @Tag(name = "Login")
 @Consumes(MediaType.APPLICATION_JSON)

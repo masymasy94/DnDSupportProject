@@ -3,6 +3,7 @@ package com.dndplatform.asset.adapter.inbound.documents.list;
 import com.dndplatform.asset.view.model.DocumentListResource;
 import com.dndplatform.asset.view.model.vm.DocumentListItemViewModel;
 import com.dndplatform.common.annotations.Delegate;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -21,6 +22,7 @@ import java.util.List;
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/api/assets/documents")
 @Tag(name = "Documents", description = "Document upload and retrieval")
 @SecurityScheme(
