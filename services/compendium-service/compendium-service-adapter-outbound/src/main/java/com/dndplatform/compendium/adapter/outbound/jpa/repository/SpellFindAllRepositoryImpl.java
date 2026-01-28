@@ -27,7 +27,7 @@ public class SpellFindAllRepositoryImpl implements SpellFindAllRepository, Panac
     public List<Spell> findAllSpells(SpellFilterCriteria criteria) {
         var filter = QueryFilterUtils.create(criteria);
 
-        return find(filter.query(), Sort.by("level,name"), filter.params())
+        return find(filter.query(), Sort.by("level").and("name"), filter.params())
                 .list().stream()
                 .map(mapper)
                 .toList();

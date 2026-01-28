@@ -489,6 +489,7 @@ if [ ${#MISSING_DOCKERFILES[@]} -eq 0 ]; then
     echo -e "  ⚔️ Combat Service:      ${GREEN}http://localhost:8084/q/swagger-ui/${NC}"
     echo -e "  📁 Asset Service:        ${GREEN}http://localhost:8085/q/swagger-ui/${NC}"
     echo -e "  💬 Chat Service:         ${GREEN}http://localhost:8086/q/swagger-ui/${NC}"
+    echo -e "     └─ WebSocket:         ${GREEN}ws://localhost:8086/ws/chat?token=<JWT>${NC}"
     echo -e "  🔍 Search Service:       ${GREEN}http://localhost:8087/q/swagger-ui/${NC}"
     echo -e "  🔔 Notification Service: ${GREEN}http://localhost:8088/q/swagger-ui/${NC}"
     echo -e "  👤 User Service:         ${GREEN}http://localhost:8089/q/swagger-ui/${NC}"
