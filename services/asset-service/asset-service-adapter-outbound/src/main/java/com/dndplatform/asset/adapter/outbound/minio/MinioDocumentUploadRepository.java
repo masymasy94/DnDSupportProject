@@ -7,16 +7,16 @@ import io.minio.PutObjectArgs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 @ApplicationScoped
 public class MinioDocumentUploadRepository implements DocumentUploadRepository {
 
-    private static final Logger LOG = Logger.getLogger(MinioDocumentUploadRepository.class);
+    private final java.util.logging.Logger log = Logger.getLogger(getClass().getName());
 
     private final MinioClient minioClient;
     private final String bucketName;
@@ -41,7 +41,7 @@ public class MinioDocumentUploadRepository implements DocumentUploadRepository {
                     .contentType(contentType)
                     .build());
 
-            LOG.infof("Uploaded document: %s (size: %d bytes)", objectName, size);
+            log.info(() -> "Uploaded document: %s (size: %d bytes)".formatted(objectName, size));
 
             return new Document(
                     documentId,
@@ -52,7 +52,7 @@ public class MinioDocumentUploadRepository implements DocumentUploadRepository {
                     Instant.now()
             );
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to upload document: %s", fileName);
+            log.severe(() -> "Error uploading document: " + e.getMessage());
             throw new RuntimeException("Failed to upload document", e);
         }
     }

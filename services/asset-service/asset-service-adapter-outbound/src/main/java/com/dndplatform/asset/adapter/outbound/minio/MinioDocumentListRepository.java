@@ -7,15 +7,15 @@ import io.minio.MinioClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 @ApplicationScoped
 public class MinioDocumentListRepository implements DocumentListRepository {
 
-    private static final Logger LOG = Logger.getLogger(MinioDocumentListRepository.class);
+    private final java.util.logging.Logger log = Logger.getLogger(getClass().getName());
 
     private final MinioClient minioClient;
     private final String bucketName;
@@ -48,7 +48,7 @@ public class MinioDocumentListRepository implements DocumentListRepository {
                 }
             }
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to list documents");
+            log.severe(() -> "Error listing all documents %s".formatted(e.getMessage()));
             throw new RuntimeException("Failed to list documents", e);
         }
         return documents;

@@ -390,21 +390,18 @@ else
         service="${entry%%:*}"
         port="${entry##*:}"
         url="http://localhost:${port}/q/swagger-ui/"
-        echo -n "Waiting for ${service} Swagger UI (port ${port})... "
-
         elapsed=0
         while [ $elapsed -lt $SWAGGER_TIMEOUT ]; do
             if curl -s -o /dev/null -w "%{http_code}" "$url" | grep -q "200"; then
-                echo -e "${GREEN}✓${NC}"
+                printf "%-25s (port %s) ${GREEN}✓${NC}\n" "$service" "$port"
                 break
             fi
-            echo -n "."
             sleep $SWAGGER_INTERVAL
             elapsed=$((elapsed + SWAGGER_INTERVAL))
         done
 
         if [ $elapsed -ge $SWAGGER_TIMEOUT ]; then
-            echo -e " ${RED}✗ TIMEOUT${NC}"
+            printf "%-25s (port %s) ${RED}✗ TIMEOUT${NC}\n" "$service" "$port"
             SWAGGER_FAILED="${SWAGGER_FAILED}${service}:${port} "
         fi
     done

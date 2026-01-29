@@ -7,12 +7,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
+
+import java.util.logging.Logger;
 
 @ApplicationScoped
 public class MinioConfig {
 
-    private static final Logger LOG = Logger.getLogger(MinioConfig.class);
+    private final java.util.logging.Logger log = Logger.getLogger(getClass().getName());
 
     @ConfigProperty(name = "minio.endpoint")
     String endpoint;
@@ -46,10 +47,10 @@ public class MinioConfig {
                 client.makeBucket(MakeBucketArgs.builder()
                         .bucket(bucketName)
                         .build());
-                LOG.infof("Created bucket: %s", bucketName);
+                log.info("Created bucket: %s".formatted(bucketName));
             }
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to initialize MinIO bucket: %s", bucketName);
+            log.severe(() -> "Failed to initialize MinIO bucket: %s".formatted(bucketName));
             throw new RuntimeException("Failed to initialize MinIO bucket", e);
         }
     }
