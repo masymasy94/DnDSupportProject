@@ -99,15 +99,13 @@ CREATE TABLE IF NOT EXISTS characters (
     user_id BIGINT NOT NULL,
     name VARCHAR(100) NOT NULL,
 
-    -- Compendium references (IDs from compendium-service, no FK constraints)
-    compendium_species_id SMALLINT NOT NULL,
-    compendium_class_id SMALLINT NOT NULL,
-    background_id SMALLINT,
-    alignment_id SMALLINT,
-
-    -- Denormalized names for display (cached from compendium)
-    species_name VARCHAR(50),
-    class_name VARCHAR(30),
+    -- Compendium references (name-based, validated via REST)
+    species_name VARCHAR(50) NOT NULL,
+    class_name VARCHAR(30) NOT NULL,
+    background_name VARCHAR(50),
+    alignment_name VARCHAR(30),
+    subrace_name VARCHAR(50),
+    subclass_name VARCHAR(50),
 
     level INTEGER NOT NULL DEFAULT 1,
     experience_points INTEGER DEFAULT 0,
@@ -132,6 +130,23 @@ CREATE TABLE IF NOT EXISTS characters (
     death_save_successes INTEGER DEFAULT 0,
     death_save_failures INTEGER DEFAULT 0,
 
+    -- Derived/calculated
+    proficiency_bonus INTEGER NOT NULL DEFAULT 2,
+    inspiration BOOLEAN DEFAULT FALSE,
+
+    -- Spellcasting
+    spellcasting_ability VARCHAR(3),  -- STR, DEX, CON, INT, WIS, CHA
+    spell_save_dc INTEGER,
+    spell_attack_bonus INTEGER,
+
+    -- Physical characteristics
+    age VARCHAR(30),
+    height VARCHAR(30),
+    weight VARCHAR(30),
+    eyes VARCHAR(30),
+    skin VARCHAR(30),
+    hair VARCHAR(30),
+
     -- Currency
     copper_pieces INTEGER DEFAULT 0,
     silver_pieces INTEGER DEFAULT 0,
@@ -155,8 +170,8 @@ CREATE TABLE IF NOT EXISTS characters (
 
 CREATE INDEX IF NOT EXISTS idx_characters_user_id ON characters(user_id);
 CREATE INDEX IF NOT EXISTS idx_characters_name ON characters(name);
-CREATE INDEX IF NOT EXISTS idx_characters_compendium_species_id ON characters(compendium_species_id);
-CREATE INDEX IF NOT EXISTS idx_characters_compendium_class_id ON characters(compendium_class_id);
+CREATE INDEX IF NOT EXISTS idx_characters_species_name ON characters(species_name);
+CREATE INDEX IF NOT EXISTS idx_characters_class_name ON characters(class_name);
 
 -- Character saving throws (linked to abilities reference table)
 CREATE TABLE IF NOT EXISTS character_saving_throws (
@@ -245,3 +260,14 @@ CREATE TABLE IF NOT EXISTS character_spells (
 CREATE INDEX IF NOT EXISTS idx_character_spells_character_id ON character_spells(character_id);
 CREATE INDEX IF NOT EXISTS idx_character_spells_spell_id ON character_spells(spell_id);
 CREATE INDEX IF NOT EXISTS idx_character_spells_prepared ON character_spells(character_id, prepared);
+
+-- Character languages (dedicated table for cleaner queries)
+CREATE TABLE IF NOT EXISTS character_languages (
+    id BIGSERIAL PRIMARY KEY,
+    character_id BIGINT NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+    language_id SMALLINT NOT NULL REFERENCES languages(id),
+    source VARCHAR(20),  -- race, background, class
+    CONSTRAINT uq_character_language UNIQUE (character_id, language_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_character_languages_character_id ON character_languages(character_id);

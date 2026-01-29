@@ -404,6 +404,7 @@ services:
       MINIO_BUCKET: dnd-assets
       VAULT_URL: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
+      ENVIRONMENT: ${ENVIRONMENT}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
@@ -623,6 +624,7 @@ services:
       AUTH_SERVICE_URL: http://auth-service:8081
       VAULT_URL: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
+      ENVIRONMENT: ${ENVIRONMENT}
       QUARKUS_LOG_LEVEL: INFO
       TZ: ${TZ}
     ports:
