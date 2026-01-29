@@ -2,7 +2,7 @@
 # Lightweight Dockerfile using pre-built artifacts
 # Requires: mvn clean install -DskipTests (run by start.sh)
 ####
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 WORKDIR /work/
 

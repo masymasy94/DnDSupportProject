@@ -384,27 +384,24 @@ else
     SWAGGER_INTERVAL=3
     SWAGGER_FAILED=""
 
-    SWAGGER_SERVICES="auth-service:8081 character-service:8082 campaign-service:8083 combat-service:8084 asset-service:8085 chat-service:8086 search-service:8087 notification-service:8088 user-service:8089"
+    SWAGGER_SERVICES="auth-service:8081 character-service:8082 campaign-service:8083 combat-service:8084 asset-service:8085 chat-service:8086 search-service:8087 notification-service:8088 user-service:8089 compendium-service:8090"
 
     for entry in $SWAGGER_SERVICES; do
         service="${entry%%:*}"
         port="${entry##*:}"
         url="http://localhost:${port}/q/swagger-ui/"
-        echo -n "Waiting for ${service} Swagger UI (port ${port})... "
-
         elapsed=0
         while [ $elapsed -lt $SWAGGER_TIMEOUT ]; do
             if curl -s -o /dev/null -w "%{http_code}" "$url" | grep -q "200"; then
-                echo -e "${GREEN}✓${NC}"
+                printf "%-25s (port %s) ${GREEN}✓${NC}\n" "$service" "$port"
                 break
             fi
-            echo -n "."
             sleep $SWAGGER_INTERVAL
             elapsed=$((elapsed + SWAGGER_INTERVAL))
         done
 
         if [ $elapsed -ge $SWAGGER_TIMEOUT ]; then
-            echo -e " ${RED}✗ TIMEOUT${NC}"
+            printf "%-25s (port %s) ${RED}✗ TIMEOUT${NC}\n" "$service" "$port"
             SWAGGER_FAILED="${SWAGGER_FAILED}${service}:${port} "
         fi
     done

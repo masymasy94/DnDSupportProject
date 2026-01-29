@@ -3,6 +3,7 @@ package com.dndplatform.character.adapter.inbound.findall;
 import com.dndplatform.character.view.model.CharacterFindAllResource;
 import com.dndplatform.character.view.model.vm.PagedCharactersViewModel;
 import com.dndplatform.common.annotations.Delegate;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -16,6 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/characters")
 @Tag(name = "Character", description = "Character management operations")
 @Consumes(MediaType.APPLICATION_JSON)

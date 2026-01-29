@@ -3,6 +3,7 @@ package com.dndplatform.auth.adapter.inbound.refresh;
 import com.dndplatform.auth.view.model.RefreshLoginTokensResource;
 import com.dndplatform.auth.view.model.vm.RefreshTokenViewModel;
 import com.dndplatform.common.annotations.Delegate;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -17,6 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/auth/login-tokens/refreshed")
 @Tag(name = "Refresh login token")
 @Consumes(MediaType.APPLICATION_JSON)
