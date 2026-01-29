@@ -22,6 +22,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
+import java.util.List;
+
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
@@ -62,5 +64,24 @@ public class DocumentUploadResourceImpl implements DocumentUploadResource {
     ) {
         String userId = jwt.getSubject();
         return delegate.upload(file, userId);
+    }
+
+    @POST
+    @Path("/batch")
+    @Override
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Upload multiple documents", description = "Upload multiple documents to the storage in a single request")
+    @APIResponse(responseCode = "200", description = "Documents uploaded successfully")
+    @APIResponse(responseCode = "400", description = "Invalid file type or size")
+    @SecurityRequirement(name = "bearer")
+    @RolesAllowed("PLAYER")
+    public List<DocumentViewModel> uploadMultiple(
+            @Parameter(description = "The document files to upload")
+            @RestForm("files") List<FileUpload> files,
+            @Parameter(hidden = true) String uploadedBy
+    ) {
+        String userId = jwt.getSubject();
+        return delegate.uploadMultiple(files, userId);
     }
 }

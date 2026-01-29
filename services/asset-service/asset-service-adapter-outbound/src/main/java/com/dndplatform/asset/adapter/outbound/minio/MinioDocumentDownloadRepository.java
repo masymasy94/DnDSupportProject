@@ -12,14 +12,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import java.io.InputStream;
+import java.util.logging.Logger;
 
 @ApplicationScoped
 public class MinioDocumentDownloadRepository implements DocumentDownloadRepository {
 
-    private static final Logger LOG = Logger.getLogger(MinioDocumentDownloadRepository.class);
+    private final java.util.logging.Logger log = Logger.getLogger(getClass().getName());
 
     private final MinioClient minioClient;
     private final String bucketName;
@@ -78,10 +78,10 @@ public class MinioDocumentDownloadRepository implements DocumentDownloadReposito
             if (e.errorResponse().code().equals("NoSuchKey")) {
                 throw new NotFoundException("Document not found: " + documentId);
             }
-            LOG.errorf(e, "Failed to download document: %s", documentId);
+            log.severe(() -> "Failed to download document: %s".formatted(documentId));
             throw new RuntimeException("Failed to download document", e);
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to download document: %s", documentId);
+            log.severe(() -> "Failed to download document: %s".formatted(documentId));
             throw new RuntimeException("Failed to download document", e);
         }
     }
