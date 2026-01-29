@@ -2,6 +2,7 @@ package com.dndplatform.notificationservice.adapter.inbound.send;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.notificationservice.view.model.SendEmailResource;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import com.dndplatform.notificationservice.view.model.vm.EmailSendRequestViewModel;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -17,6 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/emails")
 @Tag(name = "Email", description = "Email sending operations")
 @Consumes(MediaType.APPLICATION_JSON)

@@ -41,6 +41,12 @@
             <artifactId>microprofile-openapi-api</artifactId>
         </dependency>
 
+        <!-- RESTEasy Reactive for Multipart support -->
+        <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive-common</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>
