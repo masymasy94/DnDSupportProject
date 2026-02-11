@@ -8,7 +8,6 @@ import com.squareup.javapoet.JavaFile;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.lang.model.util.ElementFilter;
@@ -23,10 +22,14 @@ import java.util.Set;
  * Generates builder pattern implementations for annotated classes and records.
  */
 @SupportedAnnotationTypes("com.dndplatform.common.annotations.Builder")
-@SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class BuilderProcessor extends AbstractProcessor {
 
     private BuilderGenerator builderGenerator;
+
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.latest();
+    }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
