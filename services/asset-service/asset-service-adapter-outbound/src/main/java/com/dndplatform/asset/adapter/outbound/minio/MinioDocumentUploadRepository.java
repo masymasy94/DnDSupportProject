@@ -7,6 +7,7 @@ import io.minio.PutObjectArgs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jspecify.annotations.NonNull;
 
 import java.io.InputStream;
 import java.time.Instant;
@@ -34,26 +35,36 @@ public class MinioDocumentUploadRepository implements DocumentUploadRepository {
         String objectName = documentId + "/" + fileName;
 
         try {
-            minioClient.putObject(PutObjectArgs.builder()
-                    .bucket(bucketName)
-                    .object(objectName)
-                    .stream(inputStream, size, -1)
-                    .contentType(contentType)
-                    .build());
+            minioClient.putObject(getObjectArgs(contentType, inputStream, size, objectName));
 
             log.info(() -> "Uploaded document: %s (size: %d bytes)".formatted(objectName, size));
+            return getDocument(fileName, contentType, size, uploadedBy, documentId);
 
-            return new Document(
-                    documentId,
-                    fileName,
-                    contentType,
-                    size,
-                    uploadedBy,
-                    Instant.now()
-            );
         } catch (Exception e) {
             log.severe(() -> "Error uploading document: " + e.getMessage());
             throw new RuntimeException("Failed to upload document", e);
         }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    private PutObjectArgs getObjectArgs(String contentType, InputStream inputStream, long size, String objectName) {
+        return PutObjectArgs.builder()
+                .bucket(bucketName)
+                .object(objectName)
+                .stream(inputStream, size, -1)
+                .contentType(contentType)
+                .build();
+    }
+
+    private static @NonNull Document getDocument(String fileName, String contentType, long size, String uploadedBy, String documentId) {
+        return new Document(
+                documentId,
+                fileName,
+                contentType,
+                size,
+                uploadedBy,
+                Instant.now()
+        );
     }
 }
