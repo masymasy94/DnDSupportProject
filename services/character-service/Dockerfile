@@ -1,5 +1,6 @@
 ####
 # Multi-stage Dockerfile — compiles inside Docker
+# Dependencies: common, compendium-service (client)
 ####
 FROM eclipse-temurin:25-jdk-alpine AS build
 
@@ -11,6 +12,9 @@ RUN apk add --no-cache curl && \
 WORKDIR /build
 COPY common/ ./common/
 RUN --mount=type=cache,target=/root/.m2 cd common && mvn install -DskipTests -q
+
+COPY compendium-service/ ./compendium-service/
+RUN --mount=type=cache,target=/root/.m2 cd compendium-service && mvn install -DskipTests -q
 
 COPY character-service/ ./character-service/
 RUN --mount=type=cache,target=/root/.m2 cd character-service && mvn install -DskipTests -q

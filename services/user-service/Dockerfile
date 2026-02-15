@@ -1,5 +1,6 @@
 ####
 # Multi-stage Dockerfile — compiles inside Docker
+# Dependencies: common, notification-service (view-model)
 ####
 FROM eclipse-temurin:25-jdk-alpine AS build
 
@@ -11,6 +12,9 @@ RUN apk add --no-cache curl && \
 WORKDIR /build
 COPY common/ ./common/
 RUN --mount=type=cache,target=/root/.m2 cd common && mvn install -DskipTests -q
+
+COPY notification-service/ ./notification-service/
+RUN --mount=type=cache,target=/root/.m2 cd notification-service && mvn install -DskipTests -q
 
 COPY user-service/ ./user-service/
 RUN --mount=type=cache,target=/root/.m2 cd user-service && mvn install -DskipTests -q
