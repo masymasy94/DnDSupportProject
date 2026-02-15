@@ -1,5 +1,6 @@
 ####
 # Multi-stage Dockerfile — compiles inside Docker
+# Dependencies: common (annotation processors)
 ####
 FROM eclipse-temurin:25-jdk-alpine AS build
 
@@ -9,6 +10,9 @@ RUN apk add --no-cache curl && \
     ln -s /opt/apache-maven-${MAVEN_VERSION}/bin/mvn /usr/bin/mvn
 
 WORKDIR /build
+COPY common/ ./common/
+RUN --mount=type=cache,target=/root/.m2 cd common && mvn install -DskipTests -q
+
 COPY combat-service/ ./combat-service/
 RUN --mount=type=cache,target=/root/.m2 cd combat-service && mvn install -DskipTests -q
 
