@@ -271,3 +271,16 @@ CREATE TABLE IF NOT EXISTS character_languages (
 );
 
 CREATE INDEX IF NOT EXISTS idx_character_languages_character_id ON character_languages(character_id);
+
+-- Character sheet PDF storage
+CREATE TABLE IF NOT EXISTS character_sheets (
+    id           BIGSERIAL PRIMARY KEY,
+    character_id BIGINT NOT NULL UNIQUE REFERENCES characters(id) ON DELETE CASCADE,
+    file_name    VARCHAR(255) NOT NULL,
+    content_type VARCHAR(100) NOT NULL DEFAULT 'application/pdf',
+    file_size    BIGINT NOT NULL,
+    pdf_data     BYTEA NOT NULL,
+    uploaded_at  TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_character_sheets_character_id ON character_sheets(character_id);
