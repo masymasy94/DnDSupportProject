@@ -4,6 +4,7 @@ public record CreateLoginTokenResponse(
         String accessToken,
         String refreshToken,
         long accessTokenExpiresAt,
-        long refreshTokenExpiresAt
+        long refreshTokenExpiresAt,
+        long userId
 ) {
 }

@@ -4,6 +4,8 @@ import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "characters")
@@ -15,25 +17,24 @@ public class CharacterEntity extends PanacheEntity {
     @Column(name = "name", length = 100, nullable = false)
     public String name;
 
-    // Compendium service IDs (reference data stored in compendium-service)
-    @Column(name = "compendium_species_id", nullable = false)
-    public Integer compendiumSpeciesId;
-
-    @Column(name = "compendium_class_id", nullable = false)
-    public Integer compendiumClassId;
-
-    // Denormalized names for display (cached from compendium-service)
-    @Column(name = "species_name", length = 50)
+    // Compendium references (name-based, validated via REST)
+    @Column(name = "species_name", length = 50, nullable = false)
     public String speciesName;
 
-    @Column(name = "class_name", length = 30)
+    @Column(name = "class_name", length = 30, nullable = false)
     public String className;
 
-    @Column(name = "background_id")
-    public Short backgroundId;
+    @Column(name = "background_name", length = 50)
+    public String backgroundName;
 
-    @Column(name = "alignment_id")
-    public Short alignmentId;
+    @Column(name = "alignment_name", length = 30)
+    public String alignmentName;
+
+    @Column(name = "subrace_name", length = 50)
+    public String subraceName;
+
+    @Column(name = "subclass_name", length = 50)
+    public String subclassName;
 
     @Column(name = "level", nullable = false)
     public Integer level = 1;
@@ -91,6 +92,42 @@ public class CharacterEntity extends PanacheEntity {
     @Column(name = "death_save_failures")
     public Integer deathSaveFailures = 0;
 
+    // Derived/calculated
+    @Column(name = "proficiency_bonus", nullable = false)
+    public Integer proficiencyBonus = 2;
+
+    @Column(name = "inspiration")
+    public Boolean inspiration = false;
+
+    // Spellcasting
+    @Column(name = "spellcasting_ability", length = 3)
+    public String spellcastingAbility;
+
+    @Column(name = "spell_save_dc")
+    public Integer spellSaveDc;
+
+    @Column(name = "spell_attack_bonus")
+    public Integer spellAttackBonus;
+
+    // Physical characteristics
+    @Column(name = "age", length = 30)
+    public String age;
+
+    @Column(name = "height", length = 30)
+    public String height;
+
+    @Column(name = "weight", length = 30)
+    public String weight;
+
+    @Column(name = "eyes", length = 30)
+    public String eyes;
+
+    @Column(name = "skin", length = 30)
+    public String skin;
+
+    @Column(name = "hair", length = 30)
+    public String hair;
+
     // Currency
     @Column(name = "copper_pieces")
     public Integer copperPieces = 0;
@@ -129,6 +166,31 @@ public class CharacterEntity extends PanacheEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     public String notes;
 
+    // Relationships
+    @OneToMany(mappedBy = "character", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<CharacterLanguageEntity> languages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "character", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<CharacterSkillEntity> skills = new ArrayList<>();
+
+    @OneToMany(mappedBy = "character", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<CharacterSavingThrowEntity> savingThrows = new ArrayList<>();
+
+    @OneToMany(mappedBy = "character", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<CharacterProficiencyEntity> proficiencies = new ArrayList<>();
+
+    @OneToMany(mappedBy = "character", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<CharacterEquipmentEntity> equipment = new ArrayList<>();
+
+    @OneToMany(mappedBy = "character", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<CharacterSpellEntity> spells = new ArrayList<>();
+
+    @OneToMany(mappedBy = "character", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<CharacterSpellSlotEntity> spellSlots = new ArrayList<>();
+
+    @OneToMany(mappedBy = "character", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<CharacterFeatureEntity> features = new ArrayList<>();
+
     // Audit
     @Column(name = "created_at", nullable = false, updatable = false)
     public LocalDateTime createdAt;
@@ -157,12 +219,20 @@ public class CharacterEntity extends PanacheEntity {
         return className;
     }
 
-    public Integer getCompendiumSpeciesId() {
-        return compendiumSpeciesId;
+    public String getBackgroundName() {
+        return backgroundName;
     }
 
-    public Integer getCompendiumClassId() {
-        return compendiumClassId;
+    public String getAlignmentName() {
+        return alignmentName;
+    }
+
+    public String getSubraceName() {
+        return subraceName;
+    }
+
+    public String getSubclassName() {
+        return subclassName;
     }
 
     public Integer getLevel() {
@@ -179,6 +249,26 @@ public class CharacterEntity extends PanacheEntity {
 
     public Integer getArmorClass() {
         return armorClass;
+    }
+
+    public Integer getProficiencyBonus() {
+        return proficiencyBonus;
+    }
+
+    public Boolean getInspiration() {
+        return inspiration;
+    }
+
+    public String getSpellcastingAbility() {
+        return spellcastingAbility;
+    }
+
+    public Integer getSpellSaveDc() {
+        return spellSaveDc;
+    }
+
+    public Integer getSpellAttackBonus() {
+        return spellAttackBonus;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -33,6 +33,24 @@ public class QueryFilter {
                     conditions.add(field + " = :" + paramName);
                     params.put(paramName, value);
                 }
+                case IN -> {
+                    if (value instanceof List<?> list && !list.isEmpty()) {
+                        conditions.add(field + " IN (:" + paramName + ")");
+                        params.put(paramName, list);
+                    }
+                }
+                case LIKE_ANY -> {
+                    String[] fields = field.split(",");
+                    String searchValue = "%" + value.toString().toLowerCase() + "%";
+                    StringBuilder orCondition = new StringBuilder("(");
+                    for (int i = 0; i < fields.length; i++) {
+                        if (i > 0) orCondition.append(" or ");
+                        orCondition.append("lower(").append(fields[i].trim()).append(") LIKE :").append(paramName);
+                    }
+                    orCondition.append(")");
+                    conditions.add(orCondition.toString());
+                    params.put(paramName, searchValue);
+                }
             }
         }
         return this;

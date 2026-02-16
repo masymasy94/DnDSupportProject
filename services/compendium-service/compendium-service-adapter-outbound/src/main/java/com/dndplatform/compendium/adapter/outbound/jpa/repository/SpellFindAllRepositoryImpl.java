@@ -4,14 +4,13 @@ import com.dndplatform.common.filter.QueryFilterUtils;
 import com.dndplatform.compendium.adapter.outbound.jpa.entity.SpellEntity;
 import com.dndplatform.compendium.adapter.outbound.jpa.mapper.SpellMapper;
 import com.dndplatform.compendium.domain.filter.SpellFilterCriteria;
+import com.dndplatform.compendium.domain.model.PagedResult;
 import com.dndplatform.compendium.domain.model.Spell;
 import com.dndplatform.compendium.domain.repository.SpellFindAllRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
-import java.util.List;
 
 @ApplicationScoped
 public class SpellFindAllRepositoryImpl implements SpellFindAllRepository, PanacheRepository<SpellEntity> {
@@ -24,12 +23,23 @@ public class SpellFindAllRepositoryImpl implements SpellFindAllRepository, Panac
     }
 
     @Override
-    public List<Spell> findAllSpells(SpellFilterCriteria criteria) {
+    public PagedResult<Spell> findAllSpells(SpellFilterCriteria criteria) {
         var filter = QueryFilterUtils.create(criteria);
+        var panacheQuery = find(filter.query(), Sort.by("level").and("name"), filter.params());
+        long totalElements = panacheQuery.count();
 
-        return find(filter.query(), Sort.by("level,name"), filter.params())
-                .list().stream()
+        var content = panacheQuery
+                .page(criteria.page(), criteria.pageSize())
+                .list()
+                .stream()
                 .map(mapper)
                 .toList();
+
+        return new PagedResult<>(
+                content,
+                criteria.page(),
+                criteria.pageSize(),
+                totalElements
+        );
     }
 }

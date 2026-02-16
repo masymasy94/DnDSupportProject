@@ -4,6 +4,7 @@ import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.compendium.view.model.SpellSchoolFindByIdResource;
 import com.dndplatform.compendium.view.model.vm.SpellSchoolViewModel;
 import io.quarkus.cache.CacheResult;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -19,6 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/api/compendium/spell-schools")
 @Tag(name = "Spell Schools", description = "D&D spell school reference data")
 @Consumes(MediaType.APPLICATION_JSON)

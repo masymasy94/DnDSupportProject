@@ -2,6 +2,7 @@ package com.dndplatform.user.adapter.inbound.findbyid;
 
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.user.view.model.UserFindByIdResource;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import com.dndplatform.user.view.model.vm.UserViewModel;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -15,6 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/users/{id}")
 @Tag(name = "User", description = "User management operations")
 @Consumes(MediaType.APPLICATION_JSON)

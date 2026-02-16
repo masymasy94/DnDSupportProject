@@ -2,6 +2,7 @@ package com.dndplatform.auth.adapter.inbound.logout;
 
 import com.dndplatform.auth.view.model.LogoutResource;
 import com.dndplatform.common.annotations.Delegate;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -14,6 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @RequestScoped
+@RunOnVirtualThread
 @Path("/auth/login-tokens/{refreshToken}")
 @Tag(name = "Logout")
 @Produces(MediaType.APPLICATION_JSON)
