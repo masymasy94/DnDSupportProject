@@ -3,17 +3,20 @@ package com.dndplatform.compendium.adapter.inbound.spells.findall;
 import com.dndplatform.common.annotations.Delegate;
 import com.dndplatform.compendium.view.model.SpellFindAllResource;
 import io.smallrye.common.annotation.RunOnVirtualThread;
-import com.dndplatform.compendium.view.model.vm.SpellViewModel;
+import com.dndplatform.compendium.view.model.vm.PagedSpellViewModel;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
@@ -48,20 +51,30 @@ public class SpellFindAllResourceImpl implements SpellFindAllResource {
 
     @GET
     @Override
-    @Operation(summary = "Get all spells", description = "Retrieve all spells with optional filters")
+    @Operation(summary = "Get all spells", description = "Retrieve all spells with optional filters and pagination")
     @APIResponse(responseCode = "200", description = "Spell list retrieved successfully")
     @SecurityRequirement(name = "bearer")
     @RolesAllowed("PLAYER")
-    public List<SpellViewModel> findAll(
-            @Parameter(description = "Filter by spell level (0-9)")
-            @QueryParam("level") Integer level,
-            @Parameter(description = "Filter by school of magic")
-            @QueryParam("school") String school,
+    public PagedSpellViewModel findAll(
+            @Parameter(description = "Search in spell name and description")
+            @QueryParam("search") String search,
+            @Parameter(description = "Filter by spell levels (0-9), can specify multiple",
+                    schema = @Schema(type = SchemaType.ARRAY, implementation = Integer.class))
+            @QueryParam("level") List<Integer> levels,
+            @Parameter(description = "Filter by schools of magic, can specify multiple",
+                    schema = @Schema(type = SchemaType.ARRAY, implementation = String.class))
+            @QueryParam("school") List<String> schools,
             @Parameter(description = "Filter by concentration requirement")
             @QueryParam("concentration") Boolean concentration,
             @Parameter(description = "Filter by ritual casting")
-            @QueryParam("ritual") Boolean ritual
+            @QueryParam("ritual") Boolean ritual,
+
+            @Parameter(description = "Page number (0-indexed)")
+            @QueryParam("page") @DefaultValue("0") Integer page,
+
+            @Parameter(description = "Page size (default 50)")
+            @QueryParam("pageSize") @DefaultValue("50") Integer pageSize
     ) {
-        return delegate.findAll(level, school, concentration, ritual);
+        return delegate.findAll(search, levels, schools, concentration, ritual, page, pageSize);
     }
 }

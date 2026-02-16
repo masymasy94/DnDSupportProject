@@ -86,6 +86,23 @@
             <artifactId>mapstruct</artifactId>
         </dependency>
 
+        <!-- ============== -->
+        <!-- = QUARKUS REST = -->
+        <!-- ============== -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest</artifactId>
+        </dependency>
+
+        <!-- =========== -->
+        <!-- = PDF     = -->
+        <!-- =========== -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.4</version>
+        </dependency>
+
         <!-- =================== -->
         <!-- = TEST FRAMEWORKS = -->
         <!-- =================== -->
