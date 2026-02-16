@@ -1,9 +1,9 @@
-# .github/workflows/deploy.yml — Deploy to homeserver on [deploy] commit
+# .github/workflows/deploy-on-homeserver.yml — Deploy to homeserver on RELEASE commit
 #
-# Triggers when a push to 'develop' contains RELEASE in the commit message.
+# Triggers when a push contains RELEASE in the commit message.
 # Example: git commit -m "v1.2 RELEASE - new campaign feature"
 #
-# Shows deployment status in GitHub UI (Actions tab + Environments page).
+# Flow: setup JDK + Maven → ci-deploy.sh (clone/pull → Maven build → Docker deploy)
 
 name: Deploy to Homeserver
 
@@ -23,11 +23,28 @@ jobs:
       url: http://dndproject.local
 
     steps:
+      - name: Setup JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Setup Maven
+        run: |
+          if ! command -v mvn &>/dev/null; then
+            MVN_VER=3.9.9
+            curl -fsSL "https://archive.apache.org/dist/maven/maven-3/${MVN_VER}/binaries/apache-maven-${MVN_VER}-bin.tar.gz" | tar xzf - -C /opt
+            echo "/opt/apache-maven-${MVN_VER}/bin" >> "$GITHUB_PATH"
+          else
+            echo "Maven already available: $(mvn --version | head -1)"
+          fi
+
       - name: Deploy or update
         id: deploy
         run: |
+          set -o pipefail
           echo "::group::Deploy output"
-          /home/masy/Desktop/docker/apps/scripts/ci-deploy.sh "$REPO_URL" "$APP_NAME" 2>&1 | tee /tmp/deploy-${APP_NAME}.log
+          /home/masy/Desktop/docker/apps/scripts/ci-deploy.sh "$REPO_URL" "$APP_NAME" "${{ github.ref_name }}" 2>&1 | tee /tmp/deploy-${APP_NAME}.log
           echo "::endgroup::"
 
       - name: Collect status
