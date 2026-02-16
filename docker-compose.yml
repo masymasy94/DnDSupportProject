@@ -6,12 +6,13 @@ services:
   # ============================================
 
   traefik:
-    image: traefik:v3.0
+    image: traefik:latest
     container_name: dnd-traefik
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=dnd-backend"
       - "--entrypoints.web.address=:80"
       - "--log.level=INFO"
     ports:
@@ -227,7 +228,7 @@ services:
       - messaging
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/auth`)"
       - "traefik.http.routers.auth.entrypoints=web"
       - "traefik.http.services.auth.loadbalancer.server.port=8081"
       - "logging=promtail"
@@ -593,7 +594,7 @@ services:
       - messaging
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.user.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.routers.user.rule=PathPrefix(`/users`)"
       - "traefik.http.routers.user.entrypoints=web"
       - "traefik.http.services.user.loadbalancer.server.port=8089"
       - "logging=promtail"

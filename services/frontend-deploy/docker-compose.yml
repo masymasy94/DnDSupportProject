@@ -36,6 +36,17 @@ services:
         echo "Copying files to web root..."
         cp -r /app/repo/* /app/static/
 
+        # Patch env.js to route API calls through Traefik (same origin — avoids CORS)
+        if [ -n "$${API_HOST:-}" ] && [ -f /app/static/js/env.js ]; then
+          echo "Patching env.js: API_HOST=$${API_HOST}"
+          sed -i "s|API_HOST:.*|API_HOST: '$${API_HOST}',|" /app/static/js/env.js
+          sed -i "s|AUTH_PORT:.*|AUTH_PORT: 80,|" /app/static/js/env.js
+          sed -i "s|REGISTER_PORT:.*|REGISTER_PORT: 80,|" /app/static/js/env.js
+          sed -i "s|COMPENDIUM_PORT:.*|COMPENDIUM_PORT: 80,|" /app/static/js/env.js
+          echo "Patched env.js:"
+          cat /app/static/js/env.js
+        fi
+
         echo "=========================================="
         echo "  Frontend deployed! Files:"
         ls -la /app/static/
