@@ -159,6 +159,11 @@
                                 <artifactId>mapstruct-processor</artifactId>
                                 <version>${mapstruct.version}</version>
                             </path>
+                            <path>
+                                <groupId>com.dndplatform</groupId>
+                                <artifactId>common</artifactId>
+                                <version>1.0-SNAPSHOT</version>
+                            </path>
                         </annotationProcessorPaths>
                     </configuration>
                 </plugin>

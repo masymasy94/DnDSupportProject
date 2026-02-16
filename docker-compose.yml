@@ -202,8 +202,8 @@ services:
 
   auth-service:
     build:
-      context: ./services
-      dockerfile: auth-service/Dockerfile
+      context: ./services/auth-service
+      dockerfile: Dockerfile
     container_name: dnd-auth-service
     environment:
       QUARKUS_HTTP_PORT: 8081
@@ -248,8 +248,8 @@ services:
 
   character-service:
     build:
-      context: ./services
-      dockerfile: character-service/Dockerfile
+      context: ./services/character-service
+      dockerfile: Dockerfile
     container_name: dnd-character-service
     environment:
       QUARKUS_HTTP_PORT: 8082
@@ -295,8 +295,8 @@ services:
 
   campaign-service:
     build:
-      context: ./services
-      dockerfile: campaign-service/Dockerfile
+      context: ./services/campaign-service
+      dockerfile: Dockerfile
     container_name: dnd-campaign-service
     environment:
       QUARKUS_HTTP_PORT: 8083
@@ -340,8 +340,8 @@ services:
 
   combat-service:
     build:
-      context: ./services
-      dockerfile: combat-service/Dockerfile
+      context: ./services/combat-service
+      dockerfile: Dockerfile
     container_name: dnd-combat-service
     environment:
       QUARKUS_HTTP_PORT: 8084
@@ -387,8 +387,8 @@ services:
 
   asset-service:
     build:
-      context: ./services
-      dockerfile: asset-service/Dockerfile
+      context: ./services/asset-service
+      dockerfile: Dockerfile
     container_name: dnd-asset-service
     environment:
       QUARKUS_HTTP_PORT: 8085
@@ -438,8 +438,8 @@ services:
 
   chat-service:
     build:
-      context: ./services
-      dockerfile: chat-service/Dockerfile
+      context: ./services/chat-service
+      dockerfile: Dockerfile
     container_name: dnd-chat-service
     environment:
       QUARKUS_HTTP_PORT: 8086
@@ -484,8 +484,8 @@ services:
 
   search-service:
     build:
-      context: ./services
-      dockerfile: search-service/Dockerfile
+      context: ./services/search-service
+      dockerfile: Dockerfile
     container_name: dnd-search-service
     environment:
       QUARKUS_HTTP_PORT: 8087
@@ -523,8 +523,8 @@ services:
 
   notification-service:
     build:
-      context: ./services
-      dockerfile: notification-service/Dockerfile
+      context: ./services/notification-service
+      dockerfile: Dockerfile
     container_name: dnd-notification-service
     env_file:
       - .env.mailer
@@ -568,8 +568,8 @@ services:
 
   user-service:
     build:
-      context: ./services
-      dockerfile: user-service/Dockerfile
+      context: ./services/user-service
+      dockerfile: Dockerfile
     container_name: dnd-user-service
     environment:
       QUARKUS_HTTP_PORT: 8089
@@ -612,8 +612,8 @@ services:
 
   compendium-service:
     build:
-      context: ./services
-      dockerfile: compendium-service/Dockerfile
+      context: ./services/compendium-service
+      dockerfile: Dockerfile
     container_name: dnd-compendium-service
     environment:
       QUARKUS_HTTP_PORT: 8090
