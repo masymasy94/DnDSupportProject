@@ -96,6 +96,18 @@
                     <version>${compiler-plugin.version}</version>
                     <configuration>
                         <parameters>true</parameters>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.mapstruct</groupId>
+                                <artifactId>mapstruct-processor</artifactId>
+                                <version>${mapstruct.version}</version>
+                            </path>
+                            <path>
+                                <groupId>com.dndplatform</groupId>
+                                <artifactId>common</artifactId>
+                                <version>1.0-SNAPSHOT</version>
+                            </path>
+                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
                 <plugin>
