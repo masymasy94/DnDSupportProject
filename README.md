@@ -1,6 +1,6 @@
 # DnD Platform
 
-[![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Java](https://img.shields.io/badge/Java-25-orange?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.30-blue?style=for-the-badge&logo=quarkus&logoColor=white)](https://quarkus.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-red?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
@@ -8,7 +8,7 @@
 
 A **production-ready microservices platform** for Dungeons & Dragons campaign management, built with modern cloud-native technologies. This project demonstrates enterprise-grade architecture patterns, security best practices, and full observability in a distributed system.
 
-> **Portfolio Project** — This project showcases my expertise in designing and implementing scalable microservices architectures using Java 21, Quarkus, and cloud-native tooling.
+> **Portfolio Project** — This project showcases my expertise in designing and implementing scalable microservices architectures using Java 25, Quarkus, and cloud-native tooling.
 
 ---
 
@@ -23,6 +23,8 @@ A **production-ready microservices platform** for Dungeons & Dragons campaign ma
 - [Usage Examples](#usage-examples)
 - [Project Structure](#project-structure)
 - [Monitoring & Observability](#monitoring--observability)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Frontend](#frontend)
 - [Roadmap](#roadmap)
 - [License](#license)
 
@@ -33,7 +35,7 @@ A **production-ready microservices platform** for Dungeons & Dragons campaign ma
 DnD Platform is a comprehensive backend system designed to support Dungeons & Dragons gameplay and campaign management. It provides RESTful APIs for:
 
 - **User Management** — Registration, authentication, and profile management
-- **Character Management** — Create and manage D&D character sheets
+- **Character Management** — Create and manage D&D character sheets, import from official WotC 5e fillable PDFs
 - **Campaign Management** — Organize campaigns, sessions, and player groups
 - **Compendium** — Reference data including monsters, spells, classes, and races
 - **Combat Simulation** — Initiative tracking, damage calculation, and encounter management
@@ -54,6 +56,9 @@ DnD Platform is a comprehensive backend system designed to support Dungeons & Dr
 - **Full Observability** — Prometheus metrics, Grafana dashboards, Jaeger tracing, Loki logs
 - **Secret Management** — HashiCorp Vault for secure credential storage
 - **Database Per Service** — Isolated PostgreSQL databases for data sovereignty
+- **PDF Character Import** — Import characters from official D&D 5e fillable PDF sheets via Apache PDFBox
+- **CI/CD Pipeline** — GitHub Actions for automated build and deployment to self-hosted infrastructure
+- **Frontend** — Static web client served via Nginx, deployed from a separate repository
 
 ---
 
@@ -108,6 +113,17 @@ DnD Platform is a comprehensive backend system designed to support Dungeons & Dr
 | **Caching** | Reference Data | Redis |
 | **Search** | Full-text Queries | Elasticsearch |
 
+### Docker Networking
+
+The platform uses isolated Docker networks for security and separation of concerns:
+
+| Network | Purpose |
+|---------|---------|
+| `dnd-frontend` | Frontend and public-facing services |
+| `dnd-backend` | Inter-service communication |
+| `dnd-database` | Database tier (PostgreSQL access) |
+| `dnd-messaging` | Message broker tier (RabbitMQ access) |
+
 ---
 
 ## Technology Stack
@@ -115,12 +131,23 @@ DnD Platform is a comprehensive backend system designed to support Dungeons & Dr
 ### Backend
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| Java | 21 | Language (LTS with virtual threads) |
+| Java | 25 | Language (OpenJDK Temurin) |
 | Quarkus | 3.30.5 | Cloud-native Java framework |
 | Maven | 3.9+ | Build automation |
 | Hibernate ORM | 6.x | Object-relational mapping |
 | SmallRye JWT | - | JWT token handling |
-| MapStruct | 1.5+ | DTO mapping |
+| MapStruct | 1.6.3 | DTO mapping |
+| Apache PDFBox | 3.0.4 | PDF character sheet parsing |
+| JavaPoet | 1.13.0 | Annotation-based code generation (common module) |
+
+### Testing
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| JUnit | 5.11.4 | Unit testing |
+| Mockito | 5.14.2 | Mocking framework |
+| AssertJ | 3.26.3 | Fluent assertions |
+| ArchUnit | 1.3.0 | Architecture testing |
+| REST-Assured | - | REST API integration testing |
 
 ### Data Layer
 | Technology | Version | Purpose |
@@ -139,6 +166,8 @@ DnD Platform is a comprehensive backend system designed to support Dungeons & Dr
 | HashiCorp Vault | 1.15 | Secrets management |
 | MinIO | - | S3-compatible object storage |
 | RabbitMQ | 3.13 | Message broker |
+| Nginx | Alpine | Frontend static file serving |
+| GitHub Actions | - | CI/CD pipeline (self-hosted runner) |
 
 ### Observability
 | Technology | Purpose |
@@ -157,7 +186,7 @@ DnD Platform is a comprehensive backend system designed to support Dungeons & Dr
 |---------|------|-------------|---------------|
 | **auth-service** | 8081 | Authentication & JWT management | Login, logout, token refresh |
 | **user-service** | 8089 | User registration & profiles | Register, get user, validate credentials |
-| **character-service** | 8082 | D&D character management | Character CRUD, summaries |
+| **character-service** | 8082 | D&D character management | Character CRUD, PDF import, summaries |
 | **campaign-service** | 8083 | Campaign & session management | Campaign CRUD, player management |
 | **combat-service** | 8084 | Combat encounter simulation | Initiative, damage, turns |
 | **compendium-service** | 8090 | D&D reference data (SRD) | Monsters, spells, classes, races |
@@ -383,19 +412,71 @@ Authorization: Bearer <accessToken>
 }
 ```
 
+#### Import Character from PDF
+
+Import a character by uploading an official WotC D&D 5e fillable character sheet PDF. The backend extracts form field data using Apache PDFBox and creates the character automatically.
+
+```bash
+POST /characters/import-sheet
+Host: localhost:8082
+Authorization: Bearer <accessToken>
+Content-Type: multipart/form-data
+
+# file: the filled PDF (max 10 MB)
+```
+
+```bash
+# Example with curl
+curl -X POST 'http://localhost:8082/characters/import-sheet' \
+  -H "Authorization: Bearer $TOKEN" \
+  -F 'file=@my-character-sheet.pdf'
+```
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "name": "Thorin Ironforge",
+  "species": "Dwarf",
+  "characterClass": "Fighter",
+  "level": 5,
+  "background": "Soldier",
+  "alignment": "Lawful Good",
+  "abilityScores": {
+    "strength": 16,
+    "dexterity": 12,
+    "constitution": 14,
+    "intelligence": 10,
+    "wisdom": 13,
+    "charisma": 8
+  },
+  "hitPointsCurrent": 44,
+  "hitPointsMax": 44,
+  "armorClass": 11,
+  "proficiencyBonus": 3
+}
+```
+
+| Error Code | Cause |
+|------------|-------|
+| 400 | No file, non-PDF file, empty file, missing AcroForm, or missing required fields |
+| 401 | Missing or invalid JWT token |
+| 403 | User does not have PLAYER role |
+| 404 | Compendium validation failed (invalid species, class, background, or alignment) |
+
 ---
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Java 21** — [Download OpenJDK](https://adoptium.net/)
+- **Java 25** — [Download OpenJDK Temurin](https://adoptium.net/)
 - **Maven 3.9+** — [Download Maven](https://maven.apache.org/download.cgi)
 - **Docker & Docker Compose** — [Download Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 Verify installations:
 ```bash
-java --version    # Should show 21+
+java --version    # Should show 25+
 mvn --version     # Should show 3.9+
 docker --version  # Should show 24+
 ```
@@ -448,14 +529,18 @@ docker --version  # Should show 24+
 
 | Service | URL |
 |---------|-----|
+| Frontend | http://localhost:4000 |
 | Auth Service | http://localhost:8081 |
 | User Service | http://localhost:8089 |
 | Compendium Service | http://localhost:8090 |
 | Character Service | http://localhost:8082 |
+| Traefik Dashboard | http://localhost:8080 |
 | Grafana Dashboard | http://localhost:3000 |
 | Jaeger Tracing | http://localhost:16686 |
 | RabbitMQ Management | http://localhost:15672 |
-| Portainer | http://localhost:9000 |
+| MinIO Console | http://localhost:9001 |
+| Vault | http://localhost:8200 |
+| Portainer | http://localhost:9002 |
 
 ---
 
@@ -502,22 +587,26 @@ curl -s 'http://localhost:8090/api/compendium/spells?concentration=true' \
 ```
 dnd-platform/
 ├── services/
-│   ├── common/                     # Shared library (annotations, utilities)
+│   ├── common/                     # Shared library (annotation processors, code generation)
 │   ├── auth-service/               # Authentication microservice
 │   ├── user-service/               # User management microservice
-│   ├── character-service/          # Character management microservice
+│   ├── character-service/          # Character management microservice (incl. PDF import)
 │   ├── campaign-service/           # Campaign management microservice
 │   ├── combat-service/             # Combat simulation microservice
 │   ├── compendium-service/         # D&D reference data microservice
 │   ├── asset-service/              # File management microservice
 │   ├── chat-service/               # Real-time chat microservice
 │   ├── notification-service/       # Notification microservice
-│   └── search-service/             # Search microservice
+│   ├── search-service/             # Search microservice
+│   └── frontend-deploy/            # Frontend deployment (Nginx + git clone)
 ├── infrastructure/
 │   ├── postgres/                   # Database initialization scripts
 │   ├── vault/                      # Vault configuration
-│   └── monitoring/                 # Prometheus, Grafana, Loki configs
-├── docker-compose.yml              # Container orchestration
+│   ├── monitoring/                 # Prometheus, Grafana, Loki configs
+│   └── portainer/                  # Portainer initialization scripts
+├── .github/
+│   └── workflows/                  # CI/CD pipeline (GitHub Actions)
+├── docker-compose.yml              # Backend container orchestration
 ├── start.sh                        # Startup automation script
 └── README.md
 ```
@@ -553,18 +642,40 @@ All services emit JSON-structured logs collected by Promtail and queryable via G
 
 ---
 
+## CI/CD Pipeline
+
+The project uses **GitHub Actions** for continuous deployment to a self-hosted homeserver.
+
+- **Trigger:** Commits containing `RELEASE` in the message (e.g., `git commit -m "v1.2 RELEASE - new feature"`)
+- **Runner:** Self-hosted on the target homeserver
+- **Flow:** Setup JDK 25 + Maven 3.9.9 → Execute `ci-deploy.sh` (clone/pull → Maven build → Docker deploy)
+- **Output:** GitHub Step Summary with deployment status and container health
+
+---
+
+## Frontend
+
+The frontend is a static web client hosted in a [separate repository](https://github.com/MaryHsn93/DnD-platform-FE) and deployed via its own Docker Compose configuration (`services/frontend-deploy/docker-compose.yml`).
+
+- **Serving:** Nginx (Alpine) on port 4000
+- **Deployment:** An init container clones/pulls the `release` branch from the frontend repository, then Nginx serves the static files
+- **Features:** In-browser PDF character sheet viewer and import (using PDF.js)
+
+---
+
 ## Roadmap
 
 - [x] User authentication with JWT
 - [x] Compendium service with monsters and spells
 - [x] Redis caching for reference data
 - [x] Full observability stack
-- [ ] Character creation wizard
+- [x] PDF character sheet import
+- [x] CI/CD pipeline with GitHub Actions
+- [x] Frontend deployment
 - [ ] Campaign session management
 - [ ] Real-time combat tracker
 - [ ] WebSocket-based chat
 - [ ] Mobile-friendly API responses
-- [ ] GraphQL API layer
 
 ---
 
@@ -578,12 +689,14 @@ This project demonstrates proficiency in:
 | **Domain-Driven Design** | Hexagonal architecture with domain isolation |
 | **API Design** | RESTful APIs with proper pagination and filtering |
 | **Security** | JWT authentication, RBAC, Vault secrets management |
-| **Database Design** | Database-per-service pattern, Flyway migrations |
+| **Database Design** | Database-per-service pattern with isolated PostgreSQL databases |
 | **Caching Strategies** | Redis caching with TTL for reference data |
 | **Event-Driven Architecture** | RabbitMQ for async communication |
-| **Observability** | Metrics, tracing, and centralized logging |
-| **Containerization** | Docker Compose orchestration, health checks |
-| **Modern Java** | Java 21 features, Quarkus framework |
+| **Observability** | Prometheus metrics, Jaeger tracing, Loki centralized logging |
+| **Containerization** | Docker Compose orchestration, multi-layer networking, health checks |
+| **CI/CD** | GitHub Actions pipeline with self-hosted runner deployment |
+| **Testing** | JUnit 5, Mockito, AssertJ, ArchUnit architecture tests |
+| **Modern Java** | Java 25, Quarkus framework, annotation processing |
 
 ---
 
