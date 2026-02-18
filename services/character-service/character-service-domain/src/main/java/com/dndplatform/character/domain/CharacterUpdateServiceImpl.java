@@ -72,3 +72,4 @@ public class CharacterUpdateServiceImpl implements CharacterUpdateService {
         return character;
     }
 }
+
