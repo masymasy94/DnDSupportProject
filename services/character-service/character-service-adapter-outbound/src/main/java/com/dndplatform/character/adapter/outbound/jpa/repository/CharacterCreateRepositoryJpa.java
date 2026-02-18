@@ -2,7 +2,8 @@ package com.dndplatform.character.adapter.outbound.jpa.repository;
 
 import com.dndplatform.character.adapter.outbound.jpa.entity.*;
 import com.dndplatform.character.adapter.outbound.jpa.mapper.CharacterEntityMapper;
-import com.dndplatform.character.domain.CharacterCalculatorService;
+import com.dndplatform.character.domain.CharacterModifierCalculator;
+import com.dndplatform.character.domain.CharacterSpellSlotsCalculator;
 import com.dndplatform.character.domain.model.*;
 import com.dndplatform.character.domain.model.Character;
 import com.dndplatform.character.domain.repository.CharacterCreateRepository;
@@ -22,13 +23,16 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
     private final Logger log = Logger.getLogger(getClass().getName());
 
     private final CharacterEntityMapper mapper;
-    private final CharacterCalculatorService calculatorService;
+    private final CharacterModifierCalculator modifierCalculator;
+    private final CharacterSpellSlotsCalculator spellSlotsCalculator;
 
     @Inject
     public CharacterCreateRepositoryJpa(CharacterEntityMapper mapper,
-                                        CharacterCalculatorService calculatorService) {
+                                        CharacterModifierCalculator modifierCalculator,
+                                        CharacterSpellSlotsCalculator spellSlotsCalculator) {
         this.mapper = mapper;
-        this.calculatorService = calculatorService;
+        this.modifierCalculator = modifierCalculator;
+        this.spellSlotsCalculator = spellSlotsCalculator;
     }
 
     @Override
@@ -89,7 +93,7 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
         entity.hitPointsCurrent = hitPointsMax;
         entity.hitPointsMax = hitPointsMax;
         entity.hitPointsTemp = 0;
-        entity.armorClass = 10 + calculatorService.calculateModifier(input.abilityScores().dexterity());
+        entity.armorClass = 10 + modifierCalculator.calculateModifier(input.abilityScores().dexterity());
         entity.speed = compendiumData.baseSpeed();
         entity.hitDiceTotal = input.level();
         entity.hitDiceType = compendiumData.hitDie();
@@ -131,8 +135,11 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             return;
         }
 
+        var em = getEntityManager();
         for (String languageName : languageNames) {
-            LanguageEntity language = LanguageEntity.find("name", languageName).firstResult();
+            LanguageEntity language = em.createQuery("FROM LanguageEntity WHERE name = ?1", LanguageEntity.class)
+                    .setParameter(1, languageName)
+                    .getResultStream().findFirst().orElse(null);
             if (language == null) {
                 log.warning(() -> "Language not found: %s".formatted(languageName));
                 continue;
@@ -142,7 +149,7 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             charLang.character = character;
             charLang.language = language;
             charLang.source = "character_creation";
-            charLang.persist();
+            em.persist(charLang);
             character.languages.add(charLang);
         }
     }
@@ -152,8 +159,11 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             return;
         }
 
+        var em = getEntityManager();
         for (String skillName : skillNames) {
-            SkillEntity skill = SkillEntity.find("name", skillName).firstResult();
+            SkillEntity skill = em.createQuery("FROM SkillEntity WHERE name = ?1", SkillEntity.class)
+                    .setParameter(1, skillName)
+                    .getResultStream().findFirst().orElse(null);
             if (skill == null) {
                 log.warning(() -> "Skill not found: %s".formatted(skillName));
                 continue;
@@ -164,7 +174,7 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             charSkill.skill = skill;
             charSkill.proficient = true;
             charSkill.expertise = false;
-            charSkill.persist();
+            em.persist(charSkill);
             character.skills.add(charSkill);
         }
     }
@@ -174,8 +184,11 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             return;
         }
 
+        var em = getEntityManager();
         for (String abilityCode : abilityCodes) {
-            AbilityEntity ability = AbilityEntity.find("code", abilityCode).firstResult();
+            AbilityEntity ability = em.createQuery("FROM AbilityEntity WHERE code = ?1", AbilityEntity.class)
+                    .setParameter(1, abilityCode)
+                    .getResultStream().findFirst().orElse(null);
             if (ability == null) {
                 log.warning(() -> "Ability not found: %s".formatted(abilityCode));
                 continue;
@@ -185,7 +198,7 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             charSave.character = character;
             charSave.ability = ability;
             charSave.proficient = true;
-            charSave.persist();
+            em.persist(charSave);
             character.savingThrows.add(charSave);
         }
     }
@@ -195,8 +208,11 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             return;
         }
 
+        var em = getEntityManager();
         for (Proficiency prof : proficiencies) {
-            ProficiencyTypeEntity profType = ProficiencyTypeEntity.find("name", prof.type()).firstResult();
+            ProficiencyTypeEntity profType = em.createQuery("FROM ProficiencyTypeEntity WHERE name = ?1", ProficiencyTypeEntity.class)
+                    .setParameter(1, prof.type())
+                    .getResultStream().findFirst().orElse(null);
             if (profType == null) {
                 log.warning(() -> "Proficiency type not found: %s".formatted(prof.type()));
                 continue;
@@ -206,7 +222,7 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             charProf.character = character;
             charProf.proficiencyType = profType;
             charProf.name = prof.name();
-            charProf.persist();
+            em.persist(charProf);
             character.proficiencies.add(charProf);
         }
     }
@@ -216,13 +232,14 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             return;
         }
 
+        var em = getEntityManager();
         for (Equipment equip : equipmentList) {
             CharacterEquipmentEntity charEquip = new CharacterEquipmentEntity();
             charEquip.character = character;
             charEquip.name = equip.name();
             charEquip.quantity = equip.quantity() != null ? equip.quantity() : 1;
             charEquip.equipped = equip.equipped() != null ? equip.equipped() : false;
-            charEquip.persist();
+            em.persist(charEquip);
             character.equipment.add(charEquip);
         }
     }
@@ -232,8 +249,11 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             return;
         }
 
+        var em = getEntityManager();
         for (String spellName : spellNames) {
-            SpellEntity spell = SpellEntity.find("name", spellName).firstResult();
+            SpellEntity spell = em.createQuery("FROM SpellEntity WHERE name = ?1", SpellEntity.class)
+                    .setParameter(1, spellName)
+                    .getResultStream().findFirst().orElse(null);
             if (spell == null) {
                 log.warning(() -> "Spell not found: %s".formatted(spellName));
                 continue;
@@ -244,13 +264,14 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             charSpell.spell = spell;
             charSpell.prepared = spell.level == 0; // Cantrips are always prepared
             charSpell.source = "Class";
-            charSpell.persist();
+            em.persist(charSpell);
             character.spells.add(charSpell);
         }
     }
 
     private void addSpellSlots(CharacterEntity character, String className, int level) {
-        List<SpellSlotAllocation> slots = calculatorService.calculateSpellSlots(className, level);
+        var em = getEntityManager();
+        List<SpellSlotAllocation> slots = spellSlotsCalculator.calculateSpellSlots(className, level);
 
         for (SpellSlotAllocation slot : slots) {
             CharacterSpellSlotEntity charSlot = new CharacterSpellSlotEntity();
@@ -258,7 +279,7 @@ public class CharacterCreateRepositoryJpa implements CharacterCreateRepository, 
             charSlot.spellLevel = slot.spellLevel().shortValue();
             charSlot.slotsTotal = slot.slotsTotal().shortValue();
             charSlot.slotsUsed = 0;
-            charSlot.persist();
+            em.persist(charSlot);
             character.spellSlots.add(charSlot);
         }
     }

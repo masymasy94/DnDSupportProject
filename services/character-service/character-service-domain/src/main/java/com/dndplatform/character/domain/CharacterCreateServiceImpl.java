@@ -15,15 +15,27 @@ public class CharacterCreateServiceImpl implements CharacterCreateService {
     private final Logger log = Logger.getLogger(getClass().getName());
 
     private final CharacterValidationService validationService;
-    private final CharacterCalculatorService calculatorService;
+    private final CharacterProficiencyBonusCalculator proficiencyBonusCalculator;
+    private final CharacterModifierCalculator modifierCalculator;
+    private final CharacterMaxHpCalculator maxHpCalculator;
+    private final CharacterHitDieProvider hitDieProvider;
+    private final CharacterSpellcastingAbilityProvider spellcastingAbilityProvider;
     private final CharacterCreateRepository repository;
 
     @Inject
     public CharacterCreateServiceImpl(CharacterValidationService validationService,
-                                      CharacterCalculatorService calculatorService,
+                                      CharacterProficiencyBonusCalculator proficiencyBonusCalculator,
+                                      CharacterModifierCalculator modifierCalculator,
+                                      CharacterMaxHpCalculator maxHpCalculator,
+                                      CharacterHitDieProvider hitDieProvider,
+                                      CharacterSpellcastingAbilityProvider spellcastingAbilityProvider,
                                       CharacterCreateRepository repository) {
         this.validationService = validationService;
-        this.calculatorService = calculatorService;
+        this.proficiencyBonusCalculator = proficiencyBonusCalculator;
+        this.modifierCalculator = modifierCalculator;
+        this.maxHpCalculator = maxHpCalculator;
+        this.hitDieProvider = hitDieProvider;
+        this.spellcastingAbilityProvider = spellcastingAbilityProvider;
         this.repository = repository;
     }
 
@@ -35,14 +47,14 @@ public class CharacterCreateServiceImpl implements CharacterCreateService {
         ValidatedCompendiumData compendiumData = validationService.validate(input);
 
         // Calculate derived stats
-        int proficiencyBonus = calculatorService.calculateProficiencyBonus(input.level());
+        int proficiencyBonus = proficiencyBonusCalculator.calculateProficiencyBonus(input.level());
 
-        String hitDie = calculatorService.getHitDie(input.characterClass());
-        int conModifier = calculatorService.calculateModifier(input.abilityScores().constitution());
-        int hitPointsMax = calculatorService.calculateMaxHp(hitDie, input.level(), conModifier);
+        String hitDie = hitDieProvider.getHitDie(input.characterClass());
+        int conModifier = modifierCalculator.calculateModifier(input.abilityScores().constitution());
+        int hitPointsMax = maxHpCalculator.calculateMaxHp(hitDie, input.level(), conModifier);
 
         // Calculate spellcasting stats if applicable
-        String spellcastingAbility = calculatorService.getSpellcastingAbility(input.characterClass());
+        String spellcastingAbility = spellcastingAbilityProvider.getSpellcastingAbility(input.characterClass());
         Integer spellSaveDc = null;
         Integer spellAttackBonus = null;
 

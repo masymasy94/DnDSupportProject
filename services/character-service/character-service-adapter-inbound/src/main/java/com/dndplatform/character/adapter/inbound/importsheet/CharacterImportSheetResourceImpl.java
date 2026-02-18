@@ -9,7 +9,6 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -41,12 +40,10 @@ import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeT
 public class CharacterImportSheetResourceImpl implements CharacterImportSheetResource {
 
     private final CharacterImportSheetDelegate delegate;
-    private final JsonWebToken jwt;
 
     @Inject
-    public CharacterImportSheetResourceImpl(@Delegate CharacterImportSheetResource delegate, JsonWebToken jwt) {
+    public CharacterImportSheetResourceImpl(@Delegate CharacterImportSheetResource delegate) {
         this.delegate = (CharacterImportSheetDelegate) delegate;
-        this.jwt = jwt;
     }
 
     @POST
@@ -72,7 +69,7 @@ public class CharacterImportSheetResourceImpl implements CharacterImportSheetRes
     })
     @SecurityRequirement(name = "bearer")
     @RolesAllowed("PLAYER")
-    public CharacterViewModel importSheet(@RestForm("file") FileUpload file) {
+    public CharacterViewModel importSheet(@RestForm("file") FileUpload file, @RestForm("userId") Long userId) {
         if (file == null) {
             throw new BadRequestException("No file uploaded. Please provide a PDF file.");
         }
@@ -93,7 +90,6 @@ public class CharacterImportSheetResourceImpl implements CharacterImportSheetRes
             throw new BadRequestException("Uploaded file is empty");
         }
 
-        Long userId = Long.parseLong(jwt.getSubject());
         String fileName = file.fileName() != null ? file.fileName() : "character-sheet.pdf";
 
         return delegate.importSheetWithUserId(pdfBytes, fileName, "application/pdf", userId);

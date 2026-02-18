@@ -1,0 +1,358 @@
+i <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Sheet Import - Test Page</title>
+    <link rel="stylesheet" href="https://unpkg.com/pdfjs-dist@3.11.174/web/pdf_viewer.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #e0e0e0; }
+
+        /* --- Top bar --- */
+        .top-bar { background: #16213e; border-bottom: 1px solid #2a2a4a; padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+        .top-bar h1 { color: #c9a84c; font-size: 1.1rem; white-space: nowrap; }
+        .top-bar input { padding: 0.4rem 0.6rem; border: 1px solid #2a2a4a; border-radius: 4px; background: #0f3460; color: #e0e0e0; font-size: 0.85rem; }
+        .top-bar input:focus { outline: none; border-color: #c9a84c; }
+        .top-bar button { padding: 0.4rem 1rem; border: none; border-radius: 4px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .btn-login { background: #2a2a4a; color: #e0e0e0; }
+        .btn-login:hover { background: #3a3a5a; }
+        .auth-status { font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 4px; }
+        .auth-status.ok { background: #1a4a2a; color: #4caf50; }
+        .auth-status.fail { background: #4a1a1a; color: #e74c3c; }
+        .auth-group { display: flex; align-items: center; gap: 0.5rem; }
+        .sep { color: #2a2a4a; }
+
+        /* --- PDF viewer area --- */
+        #viewerContainer { position: absolute; top: 50px; bottom: 64px; left: 0; right: 0; overflow: auto; background: #2a2a2a; }
+        #viewer.pdfViewer .page { margin: 12px auto; box-shadow: 0 2px 12px rgba(0,0,0,0.5); }
+
+        /* Make annotation layer form fields visible and interactive */
+        .annotationLayer { z-index: 5; }
+        .annotationLayer .textWidgetAnnotation input,
+        .annotationLayer .textWidgetAnnotation textarea,
+        .annotationLayer .choiceWidgetAnnotation select {
+            background: rgba(255, 255, 200, 0.15);
+            border: 1px solid rgba(201, 168, 76, 0.3);
+            color: #000;
+            font-size: 10px;
+        }
+        .annotationLayer .textWidgetAnnotation input:focus,
+        .annotationLayer .textWidgetAnnotation textarea:focus {
+            background: rgba(255, 255, 200, 0.35);
+            border-color: #c9a84c;
+            outline: none;
+        }
+        .annotationLayer .buttonWidgetAnnotation.checkBox input {
+            appearance: auto;
+            cursor: pointer;
+        }
+
+        /* --- Bottom bar --- */
+        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #16213e; border-top: 1px solid #2a2a4a; padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem; z-index: 100; }
+        .btn-import { background: #c9a84c; color: #1a1a2e; padding: 0.6rem 1.8rem; border: none; border-radius: 4px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        .btn-import:hover { background: #d4b85c; }
+        .btn-import:disabled { background: #555; color: #888; cursor: not-allowed; }
+        .import-status { font-size: 0.85rem; flex: 1; }
+        .import-status.ok { color: #4caf50; }
+        .import-status.fail { color: #e74c3c; }
+        .import-status.working { color: #5dade2; }
+        .btn-secondary { background: #2a2a4a; color: #e0e0e0; padding: 0.5rem 1rem; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer; }
+        .btn-secondary:hover { background: #3a3a5a; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #555; border-top-color: #c9a84c; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 0.4rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- Result overlay --- */
+        .result-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 200; justify-content: center; align-items: center; }
+        .result-overlay.visible { display: flex; }
+        .result-card { background: #16213e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 1.5rem; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .result-card h2 { color: #c9a84c; margin-bottom: 1rem; }
+        .field-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .field-table th, .field-table td { padding: 0.4rem 0.6rem; border: 1px solid #2a2a4a; text-align: left; }
+        .field-table th { background: #0f3460; color: #c9a84c; width: 160px; }
+        .field-table tr:nth-child(even) { background: #0a0a1e; }
+        pre { background: #0a0a1e; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.8rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; color: #e0e0e0; }
+        .close-btn { float: right; background: none; border: 1px solid #2a2a4a; color: #888; padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
+        .close-btn:hover { border-color: #c9a84c; color: #c9a84c; }
+        .toggle-json { background: none; border: 1px solid #2a2a4a; color: #888; padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-top: 0.75rem; }
+        .toggle-json:hover { border-color: #c9a84c; color: #c9a84c; }
+        .hidden { display: none; }
+
+        /* --- Loading overlay --- */
+        .loading-overlay { position: absolute; top: 50px; bottom: 64px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; background: #1a1a2e; z-index: 10; }
+        .loading-overlay.hidden { display: none; }
+        .loading-text { color: #888; font-size: 1.1rem; }
+
+        /* --- File upload mode --- */
+        .upload-fallback { display: none; position: absolute; top: 50px; bottom: 64px; left: 0; right: 0; justify-content: center; align-items: center; flex-direction: column; gap: 1rem; background: #1a1a2e; z-index: 8; }
+        .upload-fallback.visible { display: flex; }
+        .upload-fallback p { color: #888; font-size: 0.95rem; }
+        .upload-fallback input[type="file"] { padding: 0.5rem; background: #0f3460; color: #e0e0e0; border: 1px solid #2a2a4a; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<!-- Top bar: auth -->
+<div class="top-bar">
+    <h1>D&D Sheet Import</h1>
+    <span class="sep">|</span>
+    <div class="auth-group">
+        <input type="text" id="username" placeholder="username" style="width:110px;">
+        <input type="password" id="password" placeholder="password" style="width:110px;">
+        <button class="btn-login" onclick="login()">Login</button>
+    </div>
+    <span class="sep">or</span>
+    <div class="auth-group">
+        <input type="text" id="manualToken" placeholder="paste JWT token..." style="width:260px;">
+        <button class="btn-login" onclick="useManualToken()">Use Token</button>
+    </div>
+    <span id="authStatus" class="auth-status"></span>
+</div>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <span class="loading-text"><span class="spinner"></span> Loading character sheet...</span>
+</div>
+
+<!-- Upload fallback (shown if PDF.js fails) -->
+<div id="uploadFallback" class="upload-fallback">
+    <p>Fill the character sheet externally, then upload the filled PDF:</p>
+    <input type="file" id="pdfFileUpload" accept="application/pdf,.pdf">
+</div>
+
+<!-- PDF viewer -->
+<div id="viewerContainer">
+    <div id="viewer" class="pdfViewer"></div>
+</div>
+
+<!-- Bottom bar: import -->
+<div class="bottom-bar">
+    <button class="btn-import" id="importBtn" onclick="importSheet()" disabled>Import Character</button>
+    <span id="importStatus" class="import-status"></span>
+    <button class="btn-secondary" id="resultBtn" onclick="showResult()" style="display:none;">View Result</button>
+</div>
+
+<!-- Result overlay -->
+<div id="resultOverlay" class="result-overlay" onclick="if(event.target===this)closeResult()">
+    <div class="result-card">
+        <button class="close-btn" onclick="closeResult()">Close</button>
+        <h2>Imported Character</h2>
+        <table class="field-table"><tbody id="summaryTable"></tbody></table>
+        <button class="toggle-json" onclick="document.getElementById('jsonBlock').classList.toggle('hidden')">Toggle JSON</button>
+        <pre id="jsonBlock" class="hidden"></pre>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://unpkg.com/pdfjs-dist@3.11.174/web/pdf_viewer.js"></script>
+<script>
+    const AUTH_URL = 'http://localhost:8081/auth/login-tokens';
+    const IMPORT_URL = '/characters/import-sheet';
+    const PDF_URL = '/wotc-5e-sheet.pdf';
+
+    let accessToken = null;
+    let pdfDocument = null;
+    let uploadedFileBytes = null;
+
+    // ─── Auth ───
+
+    async function login() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        if (!username || !password) return showAuth('fail', 'Enter credentials');
+
+        try {
+            const resp = await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            if (!resp.ok) { showAuth('fail', `Login failed (${resp.status})`); return; }
+            const data = await resp.json();
+            accessToken = data.accessToken;
+            showAuth('ok', `Logged in as ${username} (id: ${data.userId})`);
+            updateImportBtn();
+        } catch (e) {
+            showAuth('fail', 'Connection failed');
+        }
+    }
+
+    function useManualToken() {
+        const token = document.getElementById('manualToken').value.trim();
+        if (!token) return;
+        accessToken = token;
+        showAuth('ok', 'Token set');
+        updateImportBtn();
+    }
+
+    function showAuth(type, msg) {
+        const el = document.getElementById('authStatus');
+        el.className = 'auth-status ' + type;
+        el.textContent = msg;
+    }
+
+    function updateImportBtn() {
+        document.getElementById('importBtn').disabled = !accessToken || (!pdfDocument && !uploadedFileBytes);
+    }
+
+    // ─── PDF.js viewer ───
+
+    async function initViewer() {
+        try {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+            const eventBus = new pdfjsViewer.EventBus();
+            const container = document.getElementById('viewerContainer');
+
+            const linkService = new pdfjsViewer.PDFLinkService({ eventBus });
+            const pdfViewer = new pdfjsViewer.PDFViewer({
+                container: container,
+                eventBus: eventBus,
+                linkService: linkService,
+                textLayerMode: 0,
+                annotationMode: pdfjsLib.AnnotationMode.ENABLE_FORMS,
+            });
+            linkService.setViewer(pdfViewer);
+
+            eventBus.on('pagesinit', function () {
+                pdfViewer.currentScaleValue = 'page-width';
+            });
+
+            const loadingTask = pdfjsLib.getDocument(PDF_URL);
+            pdfDocument = await loadingTask.promise;
+            pdfViewer.setDocument(pdfDocument);
+            linkService.setDocument(pdfDocument, null);
+
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            updateImportBtn();
+        } catch (err) {
+            console.error('PDF.js init failed:', err);
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('uploadFallback').classList.add('visible');
+        }
+    }
+
+    // File upload fallback
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('pdfFileUpload').addEventListener('change', async function () {
+            if (this.files.length) {
+                const buf = await this.files[0].arrayBuffer();
+                uploadedFileBytes = new Uint8Array(buf);
+                updateImportBtn();
+            }
+        });
+    });
+
+    // ─── Import ───
+
+    async function importSheet() {
+        if (!accessToken) { setImportStatus('fail', 'Please login first.'); return; }
+
+        let pdfBytes;
+        let fileName = 'character-sheet.pdf';
+
+        if (pdfDocument) {
+            setImportStatus('working', '<span class="spinner"></span> Saving PDF form data...');
+            try {
+                pdfBytes = await pdfDocument.saveDocument();
+            } catch (e) {
+                setImportStatus('fail', 'saveDocument() failed: ' + e.message);
+                return;
+            }
+        } else if (uploadedFileBytes) {
+            pdfBytes = uploadedFileBytes;
+            const fileInput = document.getElementById('pdfFileUpload');
+            if (fileInput.files.length) fileName = fileInput.files[0].name;
+        } else {
+            setImportStatus('fail', 'No PDF loaded.'); return;
+        }
+
+        setImportStatus('working', '<span class="spinner"></span> Uploading to server...');
+        document.getElementById('importBtn').disabled = true;
+
+        try {
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const formData = new FormData();
+            formData.append('file', blob, fileName);
+
+            const resp = await fetch(IMPORT_URL, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + accessToken },
+                body: formData
+            });
+
+            const text = await resp.text();
+            document.getElementById('importBtn').disabled = false;
+            updateImportBtn();
+
+            if (!resp.ok) {
+                setImportStatus('fail', `Failed (${resp.status}): ${text}`);
+                return;
+            }
+
+            const character = JSON.parse(text);
+            window.lastResult = character;
+            setImportStatus('ok', `Created <b>${character.name || '(unnamed)'}</b> (ID: ${character.id})`);
+            buildSummary(character);
+            document.getElementById('jsonBlock').textContent = JSON.stringify(character, null, 2);
+            document.getElementById('resultBtn').style.display = '';
+            showResult();
+        } catch (e) {
+            document.getElementById('importBtn').disabled = false;
+            updateImportBtn();
+            setImportStatus('fail', 'Request failed: ' + e.message);
+        }
+    }
+
+    function setImportStatus(type, html) {
+        const el = document.getElementById('importStatus');
+        el.className = 'import-status ' + type;
+        el.innerHTML = html;
+    }
+
+    // ─── Result ───
+
+    function showResult() { document.getElementById('resultOverlay').classList.add('visible'); }
+    function closeResult() { document.getElementById('resultOverlay').classList.remove('visible'); }
+
+    function buildSummary(c) {
+        const rows = [
+            ['ID', c.id], ['Name', c.name], ['Species', c.species],
+            ['Class', c.characterClass], ['Level', c.level],
+            ['Background', c.background], ['Alignment', c.alignment],
+            ['HP', `${c.hitPointsCurrent} / ${c.hitPointsMax}`],
+            ['AC', c.armorClass], ['Speed', c.speed],
+            ['Prof. Bonus', c.proficiencyBonus ? '+' + c.proficiencyBonus : '-'],
+        ];
+        if (c.abilityScores) {
+            const a = c.abilityScores;
+            rows.push(['Abilities', `STR ${a.strength} | DEX ${a.dexterity} | CON ${a.constitution} | INT ${a.intelligence} | WIS ${a.wisdom} | CHA ${a.charisma}`]);
+        }
+        if (c.spellcastingAbility) {
+            rows.push(['Spellcasting', `${c.spellcastingAbility} (DC ${c.spellSaveDc}, +${c.spellAttackBonus})`]);
+        }
+        if (c.skills?.length) rows.push(['Skills', c.skills.filter(s => s.proficient).map(s => s.name).join(', ')]);
+        if (c.savingThrows?.length) rows.push(['Saves', c.savingThrows.filter(s => s.proficient).map(s => s.ability).join(', ')]);
+        if (c.equipment?.length) rows.push(['Equipment', c.equipment.map(e => e.name).join(', ')]);
+        if (c.spells?.length) rows.push(['Spells', c.spells.map(s => `${s.name} (L${s.level})`).join(', ')]);
+        if (c.physicalCharacteristics) {
+            const p = c.physicalCharacteristics;
+            const parts = [p.age && `Age: ${p.age}`, p.height && `Ht: ${p.height}`, p.weight && `Wt: ${p.weight}`,
+                p.eyes && `Eyes: ${p.eyes}`, p.skin && `Skin: ${p.skin}`, p.hair && `Hair: ${p.hair}`].filter(Boolean);
+            if (parts.length) rows.push(['Physical', parts.join(', ')]);
+        }
+        if (c.personalityTraits) rows.push(['Traits', c.personalityTraits]);
+        if (c.ideals) rows.push(['Ideals', c.ideals]);
+        if (c.bonds) rows.push(['Bonds', c.bonds]);
+        if (c.flaws) rows.push(['Flaws', c.flaws]);
+
+        document.getElementById('summaryTable').innerHTML = rows
+            .filter(([, v]) => v != null && v !== '' && v !== 'null')
+            .map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('');
+    }
+
+    // ─── Init ───
+    initViewer();
+</script>
+</body>
+</html>

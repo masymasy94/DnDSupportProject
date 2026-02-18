@@ -35,12 +35,12 @@ A **production-ready microservices platform** for Dungeons & Dragons campaign ma
 DnD Platform is a comprehensive backend system designed to support Dungeons & Dragons gameplay and campaign management. It provides RESTful APIs for:
 
 - **User Management** — Registration, authentication, and profile management
-- **Character Management** — Create and manage D&D character sheets, import from official WotC 5e fillable PDFs
-- **Campaign Management** — Organize campaigns, sessions, and player groups
+- **Character Management** — Create and manage D&D character sheets, import from official WotC 5e fillable PDFs, generate downloadable PDF sheets
+- **Campaign Management** — Create/manage campaigns, invite and manage members, and maintain campaign notes with visibility controls
 - **Compendium** — Reference data including monsters, spells, classes, and races
 - **Combat Simulation** — Initiative tracking, damage calculation, and encounter management
 - **Real-time Chat** — In-game messaging with WebSocket support
-- **Asset Management** — Upload and manage character art, maps, and tokens
+- **Asset Management** — Upload and manage character art, maps, and tokens (single and batch upload)
 - **Search** — Full-text search across campaigns, characters, and monsters
 - **Notifications** — Event-driven alerts and email notifications
 
@@ -57,6 +57,7 @@ DnD Platform is a comprehensive backend system designed to support Dungeons & Dr
 - **Secret Management** — HashiCorp Vault for secure credential storage
 - **Database Per Service** — Isolated PostgreSQL databases for data sovereignty
 - **PDF Character Import** — Import characters from official D&D 5e fillable PDF sheets via Apache PDFBox
+- **PDF Character Sheet Generation** — Auto-generate downloadable D&D 5e character sheets with computed stats (modifiers, HP, spell slots, proficiency)
 - **CI/CD Pipeline** — GitHub Actions for automated build and deployment to self-hosted infrastructure
 - **Frontend** — Static web client served via Nginx, deployed from a separate repository
 
@@ -186,11 +187,11 @@ The platform uses isolated Docker networks for security and separation of concer
 |---------|------|-------------|---------------|
 | **auth-service** | 8081 | Authentication & JWT management | Login, logout, token refresh |
 | **user-service** | 8089 | User registration & profiles | Register, get user, validate credentials |
-| **character-service** | 8082 | D&D character management | Character CRUD, PDF import, summaries |
-| **campaign-service** | 8083 | Campaign & session management | Campaign CRUD, player management |
+| **character-service** | 8082 | D&D character management | Character CRUD, PDF import, sheet generation/download |
+| **campaign-service** | 8083 | Campaign & session management | Campaign CRUD, member management, campaign notes |
 | **combat-service** | 8084 | Combat encounter simulation | Initiative, damage, turns |
 | **compendium-service** | 8090 | D&D reference data (SRD) | Monsters, spells, classes, races |
-| **asset-service** | 8085 | File/media management | Upload, retrieve assets |
+| **asset-service** | 8085 | File/media management | Upload (single/batch), retrieve assets |
 | **chat-service** | 8086 | Real-time messaging | WebSocket chat, message history |
 | **notification-service** | 8088 | Event notifications | Alerts, email notifications |
 | **search-service** | 8087 | Full-text search | Search across entities |
@@ -383,8 +384,112 @@ GET /api/compendium/abilities
 
 ### Character Service API
 
+#### Create a Character
+
+Create a new D&D 5e character with full details. A PDF character sheet is auto-generated on creation using the official WotC 5e template, with all derived stats computed automatically.
+
 ```bash
-# Get characters (paginated)
+POST /characters
+Host: localhost:8082
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "name": "Thorin Ironforge",
+  "species": "Dwarf",
+  "subrace": "Hill Dwarf",
+  "characterClass": "Cleric",
+  "subclass": "Life Domain",
+  "background": "Acolyte",
+  "alignment": "Lawful Good",
+  "level": 1,
+  "abilityScores": {
+    "strength": 14,
+    "dexterity": 12,
+    "constitution": 16,
+    "intelligence": 10,
+    "wisdom": 16,
+    "charisma": 8
+  },
+  "skillProficiencies": ["Insight", "Religion"],
+  "savingThrowProficiencies": ["WIS", "CHA"],
+  "languages": ["Common", "Dwarvish", "Celestial"],
+  "proficiencies": [
+    {"name": "Light Armor", "type": "ARMOR"},
+    {"name": "Simple Weapons", "type": "WEAPON"}
+  ],
+  "equipment": [
+    {"name": "Mace", "quantity": 1},
+    {"name": "Scale Mail", "quantity": 1}
+  ],
+  "spells": ["Guidance", "Sacred Flame", "Bless", "Cure Wounds"],
+  "personalityTraits": "I quote sacred texts in almost every situation.",
+  "ideals": "Faith. I trust that my deity will guide my actions.",
+  "bonds": "I will do anything to protect the temple where I served.",
+  "flaws": "I judge others harshly, and myself even more severely."
+}
+```
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "name": "Thorin Ironforge",
+  "species": "Dwarf",
+  "subrace": "Hill Dwarf",
+  "characterClass": "Cleric",
+  "subclass": "Life Domain",
+  "background": "Acolyte",
+  "alignment": "Lawful Good",
+  "level": 1,
+  "experiencePoints": 0,
+  "abilityScores": {
+    "strength": 14,
+    "dexterity": 12,
+    "constitution": 16,
+    "intelligence": 10,
+    "wisdom": 16,
+    "charisma": 8
+  },
+  "hitPointsCurrent": 11,
+  "hitPointsMax": 11,
+  "hitPointsTemp": 0,
+  "armorClass": 16,
+  "speed": 25,
+  "hitDiceTotal": 1,
+  "hitDiceType": "d8",
+  "hitDiceUsed": 0,
+  "proficiencyBonus": 2,
+  "inspiration": false,
+  "spellcastingAbility": "WIS",
+  "spellSaveDc": 13,
+  "spellAttackBonus": 5,
+  "skills": [{"name": "Insight", "modifier": 5, "proficient": true}],
+  "savingThrows": [{"ability": "WIS", "modifier": 5, "proficient": true}],
+  "spellSlots": [{"level": 1, "total": 2, "used": 0}],
+  "createdAt": "2026-02-18T10:30:00",
+  "updatedAt": null
+}
+```
+
+**Computed stats** (auto-calculated by the server):
+- **Proficiency bonus** — derived from character level
+- **Ability modifiers** — `(score - 10) / 2`
+- **Max HP** — hit die max + CON modifier (+ hit die avg per additional level)
+- **Hit dice** — type and total based on class and level
+- **Spellcasting** — ability, save DC (`8 + proficiency + ability mod`), attack bonus (class-dependent; `null` for non-casters)
+- **Spell slots** — per-level allocation based on class and character level
+- **Base speed** — based on species
+
+| Error Code | Cause |
+|------------|-------|
+| 400 | Validation failed (missing required fields, invalid values) |
+| 401 | Missing or invalid JWT token |
+| 404 | Compendium validation failed (invalid species, class, background, or alignment) |
+
+#### Get Characters (Paginated)
+
+```bash
 GET /characters?page=0&size=20
 Host: localhost:8082
 Authorization: Bearer <accessToken>
@@ -395,19 +500,19 @@ Authorization: Bearer <accessToken>
 {
   "content": [
     {
-      "id": "uuid",
-      "name": "Thorin Stoneshield",
+      "id": 1,
+      "name": "Thorin Ironforge",
       "species": "Dwarf",
-      "characterClass": "Fighter",
-      "level": 5,
-      "currentHitPoints": 45,
-      "maxHitPoints": 52,
-      "armorClass": 18
+      "characterClass": "Cleric",
+      "level": 1,
+      "hitPointsCurrent": 11,
+      "hitPointsMax": 11,
+      "armorClass": 16
     }
   ],
   "page": 0,
   "size": 20,
-  "totalElements": 5,
+  "totalElements": 1,
   "totalPages": 1
 }
 ```
@@ -432,37 +537,142 @@ curl -X POST 'http://localhost:8082/characters/import-sheet' \
   -F 'file=@my-character-sheet.pdf'
 ```
 
-**Response (200):**
-```json
-{
-  "id": 1,
-  "name": "Thorin Ironforge",
-  "species": "Dwarf",
-  "characterClass": "Fighter",
-  "level": 5,
-  "background": "Soldier",
-  "alignment": "Lawful Good",
-  "abilityScores": {
-    "strength": 16,
-    "dexterity": 12,
-    "constitution": 14,
-    "intelligence": 10,
-    "wisdom": 13,
-    "charisma": 8
-  },
-  "hitPointsCurrent": 44,
-  "hitPointsMax": 44,
-  "armorClass": 11,
-  "proficiencyBonus": 3
-}
-```
-
 | Error Code | Cause |
 |------------|-------|
 | 400 | No file, non-PDF file, empty file, missing AcroForm, or missing required fields |
 | 401 | Missing or invalid JWT token |
 | 403 | User does not have PLAYER role |
 | 404 | Compendium validation failed (invalid species, class, background, or alignment) |
+
+#### Download Character Sheet (PDF)
+
+Download a generated D&D 5e PDF character sheet with all computed stats (modifiers, proficiency bonus, max HP, spell slots, etc.). Sheets are auto-generated on character creation.
+
+```bash
+GET /characters/{id}/sheet
+Host: localhost:8082
+Authorization: Bearer <accessToken>
+```
+
+```bash
+# Example with curl
+curl -X GET 'http://localhost:8082/characters/1/sheet' \
+  -H "Authorization: Bearer $TOKEN" \
+  -o character-sheet.pdf
+```
+
+**Response:** `200 OK` with `application/pdf` body and `Content-Disposition: attachment` header.
+
+---
+
+### Campaign Service API
+
+#### Campaign Management
+
+```bash
+# Create a campaign
+POST /campaigns
+Host: localhost:8083
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "name": "Curse of Strahd",
+  "description": "A gothic horror adventure in Barovia",
+  "maxPlayers": 5,
+  "imageUrl": "https://example.com/strahd.jpg"
+}
+```
+
+```bash
+# Get campaign by ID
+GET /campaigns/{id}
+Host: localhost:8083
+Authorization: Bearer <accessToken>
+
+# List user's campaigns (paginated)
+GET /campaigns?page=0&size=20
+Host: localhost:8083
+Authorization: Bearer <accessToken>
+
+# Update campaign (DM only)
+PUT /campaigns/{id}
+Host: localhost:8083
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "name": "Curse of Strahd — Chapter 2",
+  "status": "ACTIVE"
+}
+
+# Delete campaign (DM only)
+DELETE /campaigns/{id}
+Host: localhost:8083
+Authorization: Bearer <accessToken>
+```
+
+**Campaign Statuses:** `DRAFT`, `ACTIVE`, `PAUSED`, `COMPLETED`, `ARCHIVED`
+
+#### Campaign Members
+
+```bash
+# Add member to campaign (DM only)
+POST /campaigns/{campaignId}/members
+Content-Type: application/json
+{"userId": 2, "characterId": 5}
+
+# List campaign members
+GET /campaigns/{campaignId}/members
+
+# Remove member (DM removes anyone; players remove themselves)
+DELETE /campaigns/{campaignId}/members/{userId}
+```
+
+**Member Roles:** `DUNGEON_MASTER` (campaign creator), `PLAYER`
+
+#### Campaign Notes
+
+Campaign members can create notes with visibility controls — `PUBLIC` notes are visible to all members, `PRIVATE` notes only to the author.
+
+```bash
+# Create a note
+POST /campaigns/{campaignId}/notes
+Content-Type: application/json
+{"title": "Session 1 Recap", "content": "The party entered Barovia...", "visibility": "PUBLIC"}
+
+# List notes (returns public + user's private notes)
+GET /campaigns/{campaignId}/notes
+
+# Get note by ID
+GET /campaigns/{campaignId}/notes/{noteId}
+
+# Update note (author only)
+PUT /campaigns/{campaignId}/notes/{noteId}
+Content-Type: application/json
+{"title": "Updated Title", "visibility": "PRIVATE"}
+
+# Delete note (author or DM)
+DELETE /campaigns/{campaignId}/notes/{noteId}
+```
+
+---
+
+### Asset Service API
+
+```bash
+# Upload a single document
+POST /api/assets/documents
+Host: localhost:8085
+Authorization: Bearer <accessToken>
+Content-Type: multipart/form-data
+
+# Upload multiple documents (batch)
+POST /api/assets/documents/batch
+Host: localhost:8085
+Authorization: Bearer <accessToken>
+Content-Type: multipart/form-data
+```
 
 ---
 
@@ -534,6 +744,8 @@ docker --version  # Should show 24+
 | User Service | http://localhost:8089 |
 | Compendium Service | http://localhost:8090 |
 | Character Service | http://localhost:8082 |
+| Campaign Service | http://localhost:8083 |
+| Asset Service | http://localhost:8085 |
 | Traefik Dashboard | http://localhost:8080 |
 | Grafana Dashboard | http://localhost:3000 |
 | Jaeger Tracing | http://localhost:16686 |
@@ -578,6 +790,64 @@ curl -s 'http://localhost:8090/api/compendium/spells?level=3&school=Evocation' \
 # Get concentration spells
 curl -s 'http://localhost:8090/api/compendium/spells?concentration=true' \
   -H "Authorization: Bearer $TOKEN" | jq
+```
+
+### Create a Character
+
+```bash
+# Create a character (auto-generates a PDF sheet with computed stats)
+curl -s -X POST 'http://localhost:8082/characters' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "Thorin Ironforge",
+    "species": "Dwarf",
+    "characterClass": "Cleric",
+    "background": "Acolyte",
+    "alignment": "Lawful Good",
+    "level": 1,
+    "abilityScores": {"strength":14,"dexterity":12,"constitution":16,"intelligence":10,"wisdom":16,"charisma":8},
+    "skillProficiencies": ["Insight","Religion"],
+    "savingThrowProficiencies": ["WIS","CHA"],
+    "languages": ["Common","Dwarvish","Celestial"],
+    "spells": ["Guidance","Sacred Flame","Bless","Cure Wounds"]
+  }' | jq
+
+# Download the auto-generated PDF character sheet
+curl -X GET 'http://localhost:8082/characters/1/sheet' \
+  -H "Authorization: Bearer $TOKEN" \
+  -o thorin-ironforge.pdf
+
+# Or import from an existing WotC 5e fillable PDF
+curl -X POST 'http://localhost:8082/characters/import-sheet' \
+  -H "Authorization: Bearer $TOKEN" \
+  -F 'file=@my-character-sheet.pdf'
+```
+
+### Manage a Campaign
+
+```bash
+# Create a campaign (you become the Dungeon Master)
+curl -s -X POST 'http://localhost:8083/campaigns' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Lost Mine of Phandelver","description":"A classic starter adventure","maxPlayers":5}' | jq
+
+# List your campaigns
+curl -s 'http://localhost:8083/campaigns?page=0&size=20' \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# Add a player to the campaign
+curl -s -X POST 'http://localhost:8083/campaigns/1/members' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":2,"characterId":1}' | jq
+
+# Create a session note
+curl -s -X POST 'http://localhost:8083/campaigns/1/notes' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Session 1","content":"The party met at the Yawning Portal...","visibility":"PUBLIC"}' | jq
 ```
 
 ---
@@ -670,9 +940,10 @@ The frontend is a static web client hosted in a [separate repository](https://gi
 - [x] Redis caching for reference data
 - [x] Full observability stack
 - [x] PDF character sheet import
+- [x] PDF character sheet generation & download
+- [x] Campaign management (CRUD, members, notes)
 - [x] CI/CD pipeline with GitHub Actions
 - [x] Frontend deployment
-- [ ] Campaign session management
 - [ ] Real-time combat tracker
 - [ ] WebSocket-based chat
 - [ ] Mobile-friendly API responses

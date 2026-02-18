@@ -9,7 +9,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import java.util.List;
 
 @JsonbPropertyOrder({
-        "name", "species", "subrace", "characterClass", "subclass", "background", "alignment", "level",
+        "userId", "name", "species", "subrace", "characterClass", "subclass", "background", "alignment", "level",
         "abilityScores", "skillProficiencies", "savingThrowProficiencies", "languages",
         "proficiencies", "equipment", "spells", "physicalCharacteristics",
         "personalityTraits", "ideals", "bonds", "flaws"
@@ -17,6 +17,10 @@ import java.util.List;
 @Schema(description = "Request to create a new character")
 @Builder
 public record CreateCharacterRequest(
+
+        @Schema(description = "ID of the user creating the character", example = "1")
+        @NotNull
+        Long userId,
 
         @Schema(description = "Character name", example = "Thorin Ironforge")
         @NotBlank @Size(min = 1, max = 100)

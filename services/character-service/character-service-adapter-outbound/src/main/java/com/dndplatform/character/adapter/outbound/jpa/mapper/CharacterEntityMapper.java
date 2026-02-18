@@ -1,11 +1,9 @@
 package com.dndplatform.character.adapter.outbound.jpa.mapper;
 
 import com.dndplatform.character.adapter.outbound.jpa.entity.*;
-import com.dndplatform.character.domain.CharacterCalculatorService;
 import com.dndplatform.character.domain.model.*;
 import com.dndplatform.character.domain.model.Character;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -15,12 +13,6 @@ import java.util.stream.Collectors;
 public class CharacterEntityMapper {
 
     private final Logger log = Logger.getLogger(getClass().getName());
-    private final CharacterCalculatorService calculatorService;
-
-    @Inject
-    public CharacterEntityMapper(CharacterCalculatorService calculatorService) {
-        this.calculatorService = calculatorService;
-    }
 
     public Character toCharacter(CharacterEntity entity) {
         log.fine(() -> "Mapping CharacterEntity to Character: %d".formatted(entity.id));

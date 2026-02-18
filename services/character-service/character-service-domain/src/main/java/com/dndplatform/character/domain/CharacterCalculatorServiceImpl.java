@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 @ApplicationScoped
-public class CharacterCalculatorServiceImpl implements CharacterCalculatorService {
+public class CharacterCalculatorServiceImpl implements CharacterProficiencyBonusCalculator,
+        CharacterModifierCalculator, CharacterMaxHpCalculator, CharacterSpellcastingAbilityProvider,
+        CharacterHitDieProvider, CharacterBaseSpeedProvider, CharacterSpellSlotsCalculator {
 
     private final Logger log = Logger.getLogger(getClass().getName());
 

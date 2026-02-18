@@ -1,6 +1,7 @@
 package com.dndplatform.character.adapter.outbound.validation;
 
-import com.dndplatform.character.domain.CharacterCalculatorService;
+import com.dndplatform.character.domain.CharacterBaseSpeedProvider;
+import com.dndplatform.character.domain.CharacterHitDieProvider;
 import com.dndplatform.character.domain.CharacterValidationService;
 import com.dndplatform.character.domain.model.CharacterCreate;
 import com.dndplatform.character.domain.model.ValidatedCompendiumData;
@@ -16,7 +17,8 @@ import java.util.logging.Logger;
 public class CharacterValidationServiceImpl implements CharacterValidationService {
 
     private final Logger log = Logger.getLogger(getClass().getName());
-    private final CharacterCalculatorService calculatorService;
+    private final CharacterHitDieProvider hitDieProvider;
+    private final CharacterBaseSpeedProvider baseSpeedProvider;
 
     private static final Set<String> VALID_SPECIES = Set.of(
             "Human", "Elf", "High Elf", "Wood Elf", "Dark Elf", "Drow",
@@ -46,8 +48,10 @@ public class CharacterValidationServiceImpl implements CharacterValidationServic
     );
 
     @Inject
-    public CharacterValidationServiceImpl(CharacterCalculatorService calculatorService) {
-        this.calculatorService = calculatorService;
+    public CharacterValidationServiceImpl(CharacterHitDieProvider hitDieProvider,
+                                            CharacterBaseSpeedProvider baseSpeedProvider) {
+        this.hitDieProvider = hitDieProvider;
+        this.baseSpeedProvider = baseSpeedProvider;
     }
 
     @Override
@@ -77,8 +81,8 @@ public class CharacterValidationServiceImpl implements CharacterValidationServic
         }
 
         // Get hit die and base speed from calculator service
-        String hitDie = calculatorService.getHitDie(input.characterClass());
-        int baseSpeed = calculatorService.getBaseSpeed(input.species());
+        String hitDie = hitDieProvider.getHitDie(input.characterClass());
+        int baseSpeed = baseSpeedProvider.getBaseSpeed(input.species());
 
         return ValidatedCompendiumDataBuilder.builder()
                 .withSpeciesName(input.species())
