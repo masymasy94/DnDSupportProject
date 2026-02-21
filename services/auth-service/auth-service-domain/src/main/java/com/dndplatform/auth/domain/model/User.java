@@ -15,3 +15,4 @@ public record User(Long id,
                    LocalDateTime createdAt,
                    LocalDateTime lastLogin) {
 }
+
