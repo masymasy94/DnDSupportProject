@@ -2,24 +2,61 @@
 set -e
 
 export VAULT_ADDR='http://vault:8200'
-export VAULT_TOKEN='dnd-dev-token'
 
-echo "Waiting for Vault to be ready..."
-sleep 5
+KEYS_FILE="/vault/init-keys/vault-keys.json"
 
-# Check if Vault is ready
-until vault status > /dev/null 2>&1; do
-    echo "Vault is not ready yet, waiting..."
-    sleep 2
-done
+# --- Helper: wait for Vault to be reachable ---
+wait_for_vault() {
+    echo "Waiting for Vault to be reachable..."
+    until vault status >/dev/null 2>&1 || [ $? -eq 2 ]; do
+        sleep 2
+    done
+    echo "Vault is reachable."
+}
 
-echo "Vault is ready. Setting up secrets..."
+# --- Helper: unseal Vault ---
+unseal_vault() {
+    UNSEAL_KEY=$(grep -A1 'unseal_keys_b64' "$KEYS_FILE" | tail -1 | sed 's/.*"\(.*\)".*/\1/')
+    wget -qO /dev/null --header="Content-Type: application/json" \
+        --post-data="{\"key\": \"$UNSEAL_KEY\"}" \
+        "${VAULT_ADDR}/v1/sys/unseal"
+    echo "Vault unsealed."
+}
 
-# Enable KV v2 secrets engine (already enabled in dev mode, but this is idempotent)
+wait_for_vault
+
+# --- Initialization (first run only) ---
+if ! vault status -format=json 2>/dev/null | grep -q '"initialized": true'; then
+    echo "Vault is not initialized. Initializing with 1 key share..."
+    vault operator init -key-shares=1 -key-threshold=1 -format=json > "$KEYS_FILE"
+    echo "Vault initialized. Keys saved to $KEYS_FILE"
+fi
+
+# --- Unseal if sealed ---
+SEALED=$(vault status -format=json 2>/dev/null | grep '"sealed"' | grep -o 'true\|false')
+if [ "$SEALED" = "true" ]; then
+    echo "Vault is sealed. Unsealing..."
+    unseal_vault
+fi
+
+# --- Authenticate ---
+ROOT_TOKEN=$(grep '"root_token"' "$KEYS_FILE" | sed 's/.*: *"\(.*\)".*/\1/')
+export VAULT_TOKEN="$ROOT_TOKEN"
+
+echo "Authenticated. Setting up secrets..."
+
+# Enable KV v2 secrets engine (idempotent)
 vault secrets enable -path=secret kv-v2 2>/dev/null || echo "KV v2 already enabled"
 
+# Create a dev token with a known ID so services can authenticate
+# This keeps compatibility with VAULT_TOKEN=dnd-dev-token in service configs
+DEV_TOKEN_ID="dnd-dev-token"
+echo "Creating dev service token with known ID..."
+vault token create -id="$DEV_TOKEN_ID" -policy=root -no-default-policy=false -orphan -period=876000h 2>/dev/null \
+    && echo "Dev token created." \
+    || echo "Dev token already exists, skipping."
+
 # Pre-generated RSA keys for development (DO NOT USE IN PRODUCTION)
-# These are dev-only keys - in production, use proper key management
 PRIVATE_KEY='-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDDl72s95zEZncV
 dnguU15+9ftytLXKa1UQ9I0j4wRlTqG/p1yc3xgXOjqTqKi8vb9sLTeosKEV4sDX
@@ -59,30 +96,26 @@ UC67nochL8tqb0vvFihiXSspJx5TkJk8poc/hJDQk0vElgCNJp0X73D/VMG2Ux1l
 DQIDAQAB
 -----END PUBLIC KEY-----'
 
-# Store common database credentials (keys match application.properties placeholders)
+# Store common database credentials
 echo "Storing database credentials..."
 vault kv put secret/dnd-platform/common/database \
     username="dnd_user" \
     password="dnd_password"
 
-# Store auth-service specific database configuration
 echo "Storing auth-service database configuration..."
 vault kv put secret/dnd-platform/auth-service/database \
     url="jdbc:postgresql://postgres:5432/auth_db"
 
-# Store user-service specific database configuration
 echo "Storing user-service database configuration..."
 vault kv put secret/dnd-platform/user-service/database \
     url="jdbc:postgresql://postgres:5432/user_db"
 
-# Store character-service specific database configuration
 echo "Storing character-service database configuration..."
 vault kv put secret/dnd-platform/character-service/database \
     url="jdbc:postgresql://postgres:5432/character_db" \
     auth-service-url="http://auth-service:8081" \
     search-service-url="http://search-service:8087"
 
-# Store campaign-service specific database configuration
 echo "Storing campaign-service database configuration..."
 vault kv put secret/dnd-platform/campaign-service/database \
     url="jdbc:postgresql://postgres:5432/campaign_db" \
@@ -90,30 +123,25 @@ vault kv put secret/dnd-platform/campaign-service/database \
     character-service-url="http://character-service:8082" \
     asset-service-url="http://asset-service:8085"
 
-# Store combat-service specific database configuration
 echo "Storing combat-service database configuration..."
 vault kv put secret/dnd-platform/combat-service/database \
     url="jdbc:postgresql://postgres:5432/combat_db" \
     auth-service-url="http://auth-service:8081" \
     character-service-url="http://character-service:8082"
 
-# Store chat-service specific database configuration
 echo "Storing chat-service database configuration..."
 vault kv put secret/dnd-platform/chat-service/database \
     url="jdbc:postgresql://postgres:5432/chat_db" \
     auth-service-url="http://auth-service:8081"
 
-# Store asset-service specific database configuration
 echo "Storing asset-service database configuration..."
 vault kv put secret/dnd-platform/asset-service/database \
     url="jdbc:postgresql://postgres:5432/asset_db"
 
-# Store notification-service specific database configuration
 echo "Storing notification-service database configuration..."
 vault kv put secret/dnd-platform/notification-service/database \
     url="jdbc:postgresql://postgres:5432/notification_db"
 
-# Store search-service specific configuration
 echo "Storing search-service configuration..."
 vault kv put secret/dnd-platform/search-service/config \
     elasticsearch-scheme="http" \
@@ -121,13 +149,11 @@ vault kv put secret/dnd-platform/search-service/config \
     elasticsearch-port="9200" \
     auth-service-url="http://auth-service:8081"
 
-# Store compendium-service specific database configuration
 echo "Storing compendium-service database configuration..."
 vault kv put secret/dnd-platform/compendium-service/database \
     url="jdbc:postgresql://postgres:5432/compendium_db" \
     auth-service-url="http://auth-service:8081"
 
-# Store RabbitMQ credentials and configuration
 echo "Storing RabbitMQ credentials and configuration..."
 vault kv put secret/dnd-platform/common/rabbitmq \
     username="dnd_user" \
@@ -136,55 +162,46 @@ vault kv put secret/dnd-platform/common/rabbitmq \
     port="5672" \
     virtual-host="dnd_vhost"
 
-# Store MinIO credentials
 echo "Storing MinIO credentials..."
 vault kv put secret/dnd-platform/common/minio \
     access-key="dnd_user" \
     secret-key="dnd_password"
 
-# Store Redis configuration
 echo "Storing Redis configuration..."
 vault kv put secret/dnd-platform/common/redis \
     hosts="redis://redis:6379" \
     password=""
 
-# Store Grafana admin credentials
 echo "Storing Grafana credentials..."
 vault kv put secret/dnd-platform/grafana \
     admin-user="admin" \
     admin-password="admin"
 
-# Store Portainer admin credentials
 echo "Storing Portainer credentials..."
 vault kv put secret/dnd-platform/portainer \
     admin-user="admin" \
     admin-password="portainer_admin_password"
 
-# Store JWT keys (without prefix - Quarkus Vault adds secret path prefix automatically)
 echo "Storing JWT keys..."
 vault kv put secret/dnd-platform/jwt \
     private-key="$PRIVATE_KEY" \
     public-key="$PUBLIC_KEY"
 
-# Store JWT configuration for auth-service
 echo "Storing JWT configuration..."
 vault kv put secret/dnd-platform/auth-service/jwt-config \
     issuer="dnd-platform" \
     access-token-expiry-seconds="3600" \
     refresh-token-expiry-days="30"
 
-# Store service-to-service authentication tokens
 echo "Storing service-to-service authentication tokens..."
 vault kv put secret/dnd-platform/common/service-token \
     rest_client_user_service_auth="dev-service-token-change-in-production" \
     rest_client_user_service_auth_http_header="x-service-token"
 
-# Store REST client URLs for service-to-service communication
 echo "Storing REST client URLs..."
 vault kv put secret/dnd-platform/auth-service/rest-client \
     url="http://user-service:8089"
 
-# Store Vault connection configuration
 echo "Storing Vault configuration..."
 vault kv put secret/dnd-platform/common/vault \
     url="http://vault:8200" \
@@ -216,3 +233,17 @@ echo "  - secret/dnd-platform/asset-service/database"
 echo "  - secret/dnd-platform/notification-service/database"
 echo "  - secret/dnd-platform/search-service/config"
 echo "  - secret/dnd-platform/compendium-service/database"
+
+# --- Auto-unseal watcher ---
+# Stay alive and monitor Vault. If it gets sealed (e.g. after restart),
+# automatically unseal it so services don't crash-loop.
+echo ""
+echo "Starting auto-unseal watcher (checking every 15s)..."
+while true; do
+    sleep 15
+    SEALED=$(vault status -format=json 2>/dev/null | grep '"sealed"' | grep -o 'true\|false')
+    if [ "$SEALED" = "true" ]; then
+        echo "$(date): Vault is sealed! Auto-unsealing..."
+        unseal_vault
+    fi
+done
