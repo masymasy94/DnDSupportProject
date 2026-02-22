@@ -245,7 +245,7 @@ services:
       vault:
         condition: service_healthy
       vault-init:
-        condition: service_completed_successfully
+        condition: service_started
     restart: unless-stopped
 
   character-service:
