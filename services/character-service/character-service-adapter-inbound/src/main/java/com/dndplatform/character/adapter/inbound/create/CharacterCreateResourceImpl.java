@@ -63,10 +63,6 @@ public class CharacterCreateResourceImpl implements CharacterCreateResource {
             @APIResponse(
                     responseCode = "401",
                     description = "Unauthorized - missing or invalid token"
-            ),
-            @APIResponse(
-                    responseCode = "404",
-                    description = "Invalid compendium reference (species, class, background, or alignment not found)"
             )
     })
     @SecurityRequirement(name = "bearer")
