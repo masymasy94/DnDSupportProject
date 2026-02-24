@@ -70,5 +70,6 @@ public class CharacterUpdateServiceImpl implements CharacterUpdateService {
 
         log.info(() -> "Character updated with ID: %d".formatted(character.id()));
         return character;
+
     }
 }
