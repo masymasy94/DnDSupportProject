@@ -48,6 +48,39 @@ jobs:
           /home/masy/Desktop/docker/apps/scripts/ci-deploy.sh "$REPO_URL" "$APP_NAME" "${{ github.ref_name }}" 2>&1 | tee /tmp/deploy-${APP_NAME}.log
           echo "::endgroup::"
 
+      - name: Build all services
+        id: build-services
+        run: |
+          set -e
+          DEPLOY_DIR="/home/masy/Desktop/docker/apps/deployments/${APP_NAME}"
+          if [ ! -d "$DEPLOY_DIR/services" ]; then
+            echo "Deployment directory not found, skipping service build"
+            exit 0
+          fi
+          cd "$DEPLOY_DIR"
+
+          echo "::group::Maven build all services"
+
+          # Build order matters: common first (already built by ci-deploy.sh),
+          # then notification → user → auth (dependency chain), then the rest
+          SERVICES=(notification-service user-service auth-service compendium-service character-service campaign-service combat-service asset-service chat-service search-service)
+          for svc in "${SERVICES[@]}"; do
+            if [ -f "services/$svc/pom.xml" ]; then
+              echo "Building $svc..."
+              mvn -f "services/$svc/pom.xml" clean install -DskipTests -q
+              echo "OK: $svc built"
+            fi
+          done
+          echo "::endgroup::"
+
+          # Rebuild Docker images with fresh JARs and restart
+          COMPOSE="docker-compose.deploy.yml"
+          if [ -f "$COMPOSE" ]; then
+            echo "::group::Rebuild and restart services"
+            docker compose -f "$COMPOSE" -p "$APP_NAME" up -d --build
+            echo "::endgroup::"
+          fi
+
       - name: Collect status
         id: status
         if: always()
