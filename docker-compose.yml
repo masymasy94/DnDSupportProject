@@ -6,20 +6,25 @@ services:
   # ============================================
 
   traefik:
-    image: traefik:latest
+    image: traefik:v3.4
     container_name: dnd-traefik
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=dnd-backend"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--log.level=INFO"
+      - "--experimental.plugins.sablier.moduleName=github.com/sablierapp/sablier-traefik-plugin"
+      - "--experimental.plugins.sablier.version=v1.1.0"
     ports:
       - "80:80"
       - "8080:8080"  # Traefik Dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infrastructure/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     networks:
       - frontend
       - backend
@@ -198,6 +203,22 @@ services:
       - backend
     restart: unless-stopped
 
+  sablier:
+    image: sablierapp/sablier:1.11.1
+    container_name: dnd-sablier
+    command:
+      - start
+      - --provider.name=docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - backend
+    labels:
+      - "logging=promtail"
+      - "service_type=infrastructure"
+      - "environment=dev"
+    restart: unless-stopped
+
   # ============================================
   # MICROSERVICES LAYER
   # ============================================
@@ -228,13 +249,17 @@ services:
       - database
       - messaging
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.auth.rule=PathPrefix(`/auth`)"
-      - "traefik.http.routers.auth.entrypoints=web"
-      - "traefik.http.services.auth.loadbalancer.server.port=8081"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -275,13 +300,17 @@ services:
       - database
       - messaging
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.character.rule=PathPrefix(`/api/characters`)"
-      - "traefik.http.routers.character.entrypoints=web"
-      - "traefik.http.services.character.loadbalancer.server.port=8082"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8082/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -322,13 +351,17 @@ services:
       - database
       - messaging
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.campaign.rule=PathPrefix(`/api/campaigns`)"
-      - "traefik.http.routers.campaign.entrypoints=web"
-      - "traefik.http.services.campaign.loadbalancer.server.port=8083"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8083/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -367,13 +400,17 @@ services:
       - database
       - messaging
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.combat.rule=PathPrefix(`/api/combat`)"
-      - "traefik.http.routers.combat.entrypoints=web"
-      - "traefik.http.services.combat.loadbalancer.server.port=8084"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8084/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -416,13 +453,17 @@ services:
       - database
       - messaging
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.asset.rule=PathPrefix(`/api/assets`)"
-      - "traefik.http.routers.asset.entrypoints=web"
-      - "traefik.http.services.asset.loadbalancer.server.port=8085"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8085/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -464,13 +505,17 @@ services:
       - database
       - messaging
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.chat.rule=PathPrefix(`/api/chat`) || PathPrefix(`/ws/chat`)"
-      - "traefik.http.routers.chat.entrypoints=web"
-      - "traefik.http.services.chat.loadbalancer.server.port=8086"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8086/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -505,13 +550,17 @@ services:
     networks:
       - backend
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.search.rule=PathPrefix(`/api/search`)"
-      - "traefik.http.routers.search.entrypoints=web"
-      - "traefik.http.services.search.loadbalancer.server.port=8087"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8087/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -550,13 +599,17 @@ services:
       - database
       - messaging
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.notification.rule=PathPrefix(`/api/notifications`)"
-      - "traefik.http.routers.notification.entrypoints=web"
-      - "traefik.http.services.notification.loadbalancer.server.port=8088"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8088/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -594,13 +647,17 @@ services:
       - database
       - messaging
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.user.rule=PathPrefix(`/users`)"
-      - "traefik.http.routers.user.entrypoints=web"
-      - "traefik.http.services.user.loadbalancer.server.port=8089"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8089/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -635,13 +692,17 @@ services:
       - backend
       - database
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.compendium.rule=PathPrefix(`/api/compendium`)"
-      - "traefik.http.routers.compendium.entrypoints=web"
-      - "traefik.http.services.compendium.loadbalancer.server.port=8090"
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8090/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -658,6 +719,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: dnd-prometheus
+    profiles: ["monitoring"]
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -681,6 +743,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: dnd-grafana
+    profiles: ["monitoring"]
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
@@ -707,6 +770,7 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: dnd-jaeger
+    profiles: ["monitoring"]
     environment:
       COLLECTOR_OTLP_ENABLED: true
       COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
@@ -731,6 +795,7 @@ services:
   loki:
     image: grafana/loki:2.9.4
     container_name: dnd-loki
+    profiles: ["monitoring"]
     command: -config.file=/etc/loki/loki-config.yml
     environment:
       TZ: ${TZ}
@@ -755,6 +820,7 @@ services:
   promtail:
     image: grafana/promtail:2.9.4
     container_name: dnd-promtail
+    profiles: ["monitoring"]
     command: -config.file=/etc/promtail/promtail-config.yml
     environment:
       TZ: ${TZ}
@@ -776,6 +842,7 @@ services:
   portainer:
     image: portainer/portainer-ce:latest
     container_name: dnd-portainer
+    profiles: ["monitoring"]
     environment:
       TZ: ${TZ}
     ports:
@@ -796,6 +863,7 @@ services:
   portainer-init:
     image: curlimages/curl:latest
     container_name: dnd-portainer-init
+    profiles: ["monitoring"]
     environment:
       PORTAINER_ADMIN_USER: ${PORTAINER_ADMIN_USER:-admin}
       PORTAINER_ADMIN_PASSWORD: ${PORTAINER_ADMIN_PASSWORD:-portainer_admin_password}
