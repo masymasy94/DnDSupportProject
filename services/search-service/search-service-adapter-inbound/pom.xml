@@ -53,10 +53,6 @@
             <artifactId>microprofile-config-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.microprofile.metrics</groupId>
-            <artifactId>microprofile-metrics-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.eclipse.microprofile.openapi</groupId>
             <artifactId>microprofile-openapi-api</artifactId>
         </dependency>
