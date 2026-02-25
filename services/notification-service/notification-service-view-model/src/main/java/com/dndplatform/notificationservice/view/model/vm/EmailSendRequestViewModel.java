@@ -8,10 +8,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.dndplatform.common.annotations.Builder;
 
 import java.util.List;
+import java.util.Map;
 
 
 @Builder
-@JsonbPropertyOrder({"to", "cc", "bcc", "templateId", "textBody", "attachments"})
+@JsonbPropertyOrder({"to", "cc", "bcc", "templateId", "textBody", "templateVariables", "attachments"})
 @Schema(description = "Email send request")
 public record EmailSendRequestViewModel(
 
@@ -32,6 +33,9 @@ public record EmailSendRequestViewModel(
 
         @Schema(description = "Plain text body (optional override)")
         String textBody,
+
+        @Schema(description = "Template variable substitutions for placeholders like {key}")
+        Map<String, String> templateVariables,
 
         @Schema(description = "File attachments")
         List<EmailAttachmentViewModel> attachments

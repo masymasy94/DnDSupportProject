@@ -130,3 +130,151 @@ VALUES (
     'Welcome email template sent to newly registered users',
     true
 );
+
+-- Insert password reset email template with OTP code
+INSERT INTO email_templates (name, subject, html_content, description, active)
+VALUES (
+    'password-reset',
+    'Reset Your Password',
+    '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: ''Segoe UI'', Arial, sans-serif; background-color: #1a1a2e;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto;">
+        <!-- Header -->
+        <tr>
+            <td style="padding: 0;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 12px 12px 0 0;">
+                    <tr>
+                        <td style="padding: 50px 40px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">🔑</div>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Password Reset Request</h1>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <!-- Main content -->
+        <tr>
+            <td style="background-color: #ffffff; padding: 40px;">
+                <p style="color: #333333; font-size: 16px; line-height: 1.7; margin: 0 0 25px 0;">
+                    We received a request to reset the password for your D&amp;D Platform account.
+                </p>
+                <p style="color: #333333; font-size: 16px; line-height: 1.7; margin: 0 0 25px 0;">
+                    Use the following code to reset your password. This code will expire in <strong>15 minutes</strong>.
+                </p>
+                <!-- OTP Code -->
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td style="text-align: center; padding: 10px 0 30px 0;">
+                            <div style="display: inline-block; padding: 20px 50px; background-color: #f8f5ff; border: 2px dashed #e74c3c; border-radius: 12px;">
+                                <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #e74c3c; font-family: monospace;">{otpCode}</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <p style="color: #999999; font-size: 14px; line-height: 1.7; margin: 0 0 15px 0;">
+                    If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.
+                </p>
+            </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+            <td style="background-color: #2d2d44; padding: 30px 40px; border-radius: 0 0 12px 12px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td style="text-align: center;">
+                            <p style="color: #a0a0b0; font-size: 14px; margin: 0 0 10px 0;">
+                                Stay safe, adventurer!
+                            </p>
+                            <p style="color: #6b6b80; font-size: 12px; margin: 0;">
+                                D&amp;D Platform Team
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>',
+    'Password reset email template with {otpCode} placeholder',
+    true
+);
+
+-- Insert OTP login email template
+INSERT INTO email_templates (name, subject, html_content, description, active)
+VALUES (
+    'otp-login',
+    'Your Login Code for D&D Platform',
+    '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: ''Segoe UI'', Arial, sans-serif; background-color: #1a1a2e;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto;">
+        <!-- Header -->
+        <tr>
+            <td style="padding: 0;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0;">
+                    <tr>
+                        <td style="padding: 50px 40px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">🎲</div>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Your Login Code</h1>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <!-- Main content -->
+        <tr>
+            <td style="background-color: #ffffff; padding: 40px;">
+                <p style="color: #333333; font-size: 16px; line-height: 1.7; margin: 0 0 25px 0;">
+                    We received a request to log in to your D&amp;D Platform account.
+                </p>
+                <p style="color: #333333; font-size: 16px; line-height: 1.7; margin: 0 0 25px 0;">
+                    Use the following code to complete your login. This code will expire in <strong>5 minutes</strong>.
+                </p>
+                <!-- OTP Code -->
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td style="text-align: center; padding: 10px 0 30px 0;">
+                            <div style="display: inline-block; padding: 20px 50px; background-color: #f8f5ff; border: 2px dashed #7c3aed; border-radius: 12px;">
+                                <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #7c3aed; font-family: monospace;">{otpCode}</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <p style="color: #999999; font-size: 14px; line-height: 1.7; margin: 0 0 15px 0;">
+                    If you did not request this login code, you can safely ignore this email. Someone may have entered your email address by mistake.
+                </p>
+            </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+            <td style="background-color: #2d2d44; padding: 30px 40px; border-radius: 0 0 12px 12px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td style="text-align: center;">
+                            <p style="color: #a0a0b0; font-size: 14px; margin: 0 0 10px 0;">
+                                Stay safe, adventurer!
+                            </p>
+                            <p style="color: #6b6b80; font-size: 12px; margin: 0;">
+                                D&amp;D Platform Team
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>',
+    'OTP login email template with {otpCode} placeholder',
+    true
+);
