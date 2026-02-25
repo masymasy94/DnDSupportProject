@@ -19,43 +19,43 @@ http:
     auth:
       loadBalancer:
         servers:
-          - url: http://dnd-auth-service:8081
+          - url: http://auth-service:8081
     character:
       loadBalancer:
         servers:
-          - url: http://dnd-character-service:8082
+          - url: http://character-service:8082
     campaign:
       loadBalancer:
         servers:
-          - url: http://dnd-campaign-service:8083
+          - url: http://campaign-service:8083
     combat:
       loadBalancer:
         servers:
-          - url: http://dnd-combat-service:8084
+          - url: http://combat-service:8084
     asset:
       loadBalancer:
         servers:
-          - url: http://dnd-asset-service:8085
+          - url: http://asset-service:8085
     chat:
       loadBalancer:
         servers:
-          - url: http://dnd-chat-service:8086
+          - url: http://chat-service:8086
     search:
       loadBalancer:
         servers:
-          - url: http://dnd-search-service:8087
+          - url: http://search-service:8087
     notification:
       loadBalancer:
         servers:
-          - url: http://dnd-notification-service:8088
+          - url: http://notification-service:8088
     user:
       loadBalancer:
         servers:
-          - url: http://dnd-user-service:8089
+          - url: http://user-service:8089
     compendium:
       loadBalancer:
         servers:
-          - url: http://dnd-compendium-service:8090
+          - url: http://compendium-service:8090
 
   routers:
     auth:
