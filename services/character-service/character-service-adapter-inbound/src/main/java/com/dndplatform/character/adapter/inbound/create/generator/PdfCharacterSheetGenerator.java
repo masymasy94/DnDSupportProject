@@ -83,6 +83,10 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
                 throw new IOException("PDF template does not contain an AcroForm");
             }
 
+            // Tell viewers to regenerate field appearances from values, preventing
+            // double-rendered text (PDFBox appearance stream + viewer's own rendering)
+            acroForm.setNeedAppearances(true);
+
             // Build a lookup map: trimmed field name -> PDField (handles trailing spaces)
             Map<String, PDField> fieldMap = buildFieldMap(acroForm);
 
