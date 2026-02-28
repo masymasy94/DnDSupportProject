@@ -5,9 +5,7 @@ import com.dndplatform.character.domain.model.Character;
 import com.dndplatform.character.domain.model.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDCheckBox;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
@@ -80,15 +78,18 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
         byte[] templateBytes = loadTemplate();
 
         try (PDDocument document = Loader.loadPDF(templateBytes)) {
-            // Use getAcroForm(null) to bypass PDFBox 3 fixups that auto-generate
-            // appearance streams on form access.
-            PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm(null);
+            PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
             if (acroForm == null) {
                 throw new IOException("PDF template does not contain an AcroForm");
             }
 
             // Build a lookup map: trimmed field name -> PDField (handles trailing spaces)
             Map<String, PDField> fieldMap = buildFieldMap(acroForm);
+
+            // Ensure NeedAppearances is OFF so setValue() generates /AP streams.
+            // PDFBox 3 always generates /AP on setValue() regardless, but keeping
+            // NeedAppearances=false prevents PDF.js from rendering both /AP and /V.
+            acroForm.setNeedAppearances(false);
 
             fillCharacterInfo(fieldMap, character);
             fillAbilityScores(fieldMap, character);
@@ -103,11 +104,6 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
             fillSpells(fieldMap, character);
             fillSpellSlots(fieldMap, character);
             fillProficienciesAndLanguages(fieldMap, character);
-
-            // Remove any pre-existing /AP from all widgets to prevent doubled text,
-            // then set NeedAppearances so the viewer generates appearances from /V.
-            removeAppearanceStreams(acroForm);
-            acroForm.getCOSObject().setBoolean(COSName.NEED_APPEARANCES, true);
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             document.save(out);
@@ -127,15 +123,6 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
             return is.readAllBytes();
         } catch (IOException e) {
             throw new RuntimeException("Failed to load PDF template", e);
-        }
-    }
-
-    private void removeAppearanceStreams(PDAcroForm acroForm) throws IOException {
-        for (PDField field : acroForm.getFieldTree()) {
-            field.getCOSObject().removeItem(COSName.AP);
-            for (PDAnnotationWidget widget : field.getWidgets()) {
-                widget.getCOSObject().removeItem(COSName.AP);
-            }
         }
     }
 
@@ -378,9 +365,11 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
             return;
         }
 
-        // Set /V directly on the COS dictionary to avoid PDFBox generating
-        // appearance streams that cause doubled text in some PDF viewers.
-        field.getCOSObject().setString(COSName.V, value);
+        try {
+            field.setValue(value);
+        } catch (IOException e) {
+            log.warning(() -> "Failed to set PDF field '%s': %s".formatted(name, e.getMessage()));
+        }
     }
 
     private void setCheckBox(Map<String, PDField> fieldMap, String name, boolean checked) {
@@ -391,10 +380,15 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
         }
 
         if (field instanceof PDCheckBox checkbox) {
-            // Set checkbox value at COS level: "Yes" = checked, "Off" = unchecked
-            COSName val = checked ? COSName.YES : COSName.OFF;
-            checkbox.getCOSObject().setItem(COSName.V, val);
-            checkbox.getCOSObject().setItem(COSName.AS, val);
+            try {
+                if (checked) {
+                    checkbox.check();
+                } else {
+                    checkbox.unCheck();
+                }
+            } catch (IOException e) {
+                log.warning(() -> "Failed to set checkbox '%s': %s".formatted(name, e.getMessage()));
+            }
         }
     }
 
