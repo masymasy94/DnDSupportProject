@@ -6,8 +6,8 @@ import com.dndplatform.character.domain.model.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDCheckBox;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
@@ -79,10 +79,10 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
     public byte[] generate(Character character) {
         byte[] templateBytes = loadTemplate();
 
-        // Use RandomAccessReadBuffer to enable incremental save, which preserves
-        // NeedAppearances and avoids PDFBox's forced appearance stream generation.
-        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(templateBytes))) {
-            PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
+        try (PDDocument document = Loader.loadPDF(templateBytes)) {
+            // Use getAcroForm(null) to bypass PDFBox 3 fixups that auto-generate
+            // appearance streams on form access.
+            PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm(null);
             if (acroForm == null) {
                 throw new IOException("PDF template does not contain an AcroForm");
             }
@@ -104,13 +104,13 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
             fillSpellSlots(fieldMap, character);
             fillProficienciesAndLanguages(fieldMap, character);
 
-            // Tell viewers to generate field appearances from /V values on open.
-            // Combined with COS-level value setting (no /AP streams), this produces
-            // an editable PDF without doubled text.
+            // Remove any pre-existing /AP from all widgets to prevent doubled text,
+            // then set NeedAppearances so the viewer generates appearances from /V.
+            removeAppearanceStreams(acroForm);
             acroForm.getCOSObject().setBoolean(COSName.NEED_APPEARANCES, true);
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            document.saveIncremental(out);
+            document.save(out);
             return out.toByteArray();
 
         } catch (IOException e) {
@@ -127,6 +127,15 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
             return is.readAllBytes();
         } catch (IOException e) {
             throw new RuntimeException("Failed to load PDF template", e);
+        }
+    }
+
+    private void removeAppearanceStreams(PDAcroForm acroForm) throws IOException {
+        for (PDField field : acroForm.getFieldTree()) {
+            field.getCOSObject().removeItem(COSName.AP);
+            for (PDAnnotationWidget widget : field.getWidgets()) {
+                widget.getCOSObject().removeItem(COSName.AP);
+            }
         }
     }
 
