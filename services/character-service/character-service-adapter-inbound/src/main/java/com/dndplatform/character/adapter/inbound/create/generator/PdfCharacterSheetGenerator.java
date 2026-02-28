@@ -5,6 +5,8 @@ import com.dndplatform.character.domain.model.Character;
 import com.dndplatform.character.domain.model.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDCheckBox;
@@ -77,7 +79,9 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
     public byte[] generate(Character character) {
         byte[] templateBytes = loadTemplate();
 
-        try (PDDocument document = Loader.loadPDF(templateBytes)) {
+        // Use RandomAccessReadBuffer to enable incremental save, which preserves
+        // NeedAppearances and avoids PDFBox's forced appearance stream generation.
+        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(templateBytes))) {
             PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
             if (acroForm == null) {
                 throw new IOException("PDF template does not contain an AcroForm");
@@ -100,13 +104,13 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
             fillSpellSlots(fieldMap, character);
             fillProficienciesAndLanguages(fieldMap, character);
 
-            // Flatten the form: bakes field values into page content and removes
-            // form fields. Prevents doubled text caused by PDFBox's /AP appearance
-            // streams being rendered alongside the viewer's own /V rendering.
-            acroForm.flatten();
+            // Tell viewers to generate field appearances from /V values on open.
+            // Combined with COS-level value setting (no /AP streams), this produces
+            // an editable PDF without doubled text.
+            acroForm.getCOSObject().setBoolean(COSName.NEED_APPEARANCES, true);
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            document.save(out);
+            document.saveIncremental(out);
             return out.toByteArray();
 
         } catch (IOException e) {
@@ -365,11 +369,9 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
             return;
         }
 
-        try {
-            field.setValue(value);
-        } catch (IOException e) {
-            log.warning(() -> "Failed to set PDF field '%s': %s".formatted(name, e.getMessage()));
-        }
+        // Set /V directly on the COS dictionary to avoid PDFBox generating
+        // appearance streams that cause doubled text in some PDF viewers.
+        field.getCOSObject().setString(COSName.V, value);
     }
 
     private void setCheckBox(Map<String, PDField> fieldMap, String name, boolean checked) {
@@ -380,15 +382,10 @@ public class PdfCharacterSheetGenerator implements CharacterSheetGenerator {
         }
 
         if (field instanceof PDCheckBox checkbox) {
-            try {
-                if (checked) {
-                    checkbox.check();
-                } else {
-                    checkbox.unCheck();
-                }
-            } catch (IOException e) {
-                log.warning(() -> "Failed to set checkbox '%s': %s".formatted(name, e.getMessage()));
-            }
+            // Set checkbox value at COS level: "Yes" = checked, "Off" = unchecked
+            COSName val = checked ? COSName.YES : COSName.OFF;
+            checkbox.getCOSObject().setItem(COSName.V, val);
+            checkbox.getCOSObject().setItem(COSName.AS, val);
         }
     }
 
