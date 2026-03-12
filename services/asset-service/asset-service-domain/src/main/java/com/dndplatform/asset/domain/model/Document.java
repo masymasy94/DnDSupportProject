@@ -8,6 +8,10 @@ public record Document(
         String contentType,
         long size,
         String uploadedBy,
-        Instant uploadedAt
+        Instant uploadedAt,
+        RagStatus ragStatus
 ) {
+    public Document(String id, String fileName, String contentType, long size, String uploadedBy, Instant uploadedAt) {
+        this(id, fileName, contentType, size, uploadedBy, uploadedAt, RagStatus.PENDING);
+    }
 }

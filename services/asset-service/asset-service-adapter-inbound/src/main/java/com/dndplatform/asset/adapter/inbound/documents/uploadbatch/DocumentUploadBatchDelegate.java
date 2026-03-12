@@ -46,7 +46,8 @@ public class DocumentUploadBatchDelegate implements DocumentUploadBatchResource 
                             doc.contentType(),
                             doc.size(),
                             doc.uploadedBy(),
-                            doc.uploadedAt()
+                            doc.uploadedAt(),
+                            doc.ragStatus() != null ? doc.ragStatus().name() : null
                     ))
                     .toList();
         } catch (IOException e) {

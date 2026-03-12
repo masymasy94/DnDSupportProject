@@ -47,7 +47,8 @@ public class DocumentUploadDelegate implements DocumentUploadResource {
                 document.contentType(),
                 document.size(),
                 document.uploadedBy(),
-                document.uploadedAt()
+                document.uploadedAt(),
+                document.ragStatus() != null ? document.ragStatus().name() : null
         );
     }
 }

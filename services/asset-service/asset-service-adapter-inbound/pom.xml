@@ -78,6 +78,18 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
+        <!-- ====================== -->
+        <!-- = REACTIVE MESSAGING = -->
+        <!-- ====================== -->
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-core</artifactId>
+        </dependency>
+
         <!-- ==================== -->
         <!-- = RESTEASY REACTIVE = -->
         <!-- ==================== -->

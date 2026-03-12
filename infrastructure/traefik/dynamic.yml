@@ -56,6 +56,10 @@ http:
       loadBalancer:
         servers:
           - url: http://compendium-service:8090
+    document-qa:
+      loadBalancer:
+        servers:
+          - url: http://document-qa-service:8091
 
   routers:
     auth:
@@ -128,3 +132,10 @@ http:
       middlewares:
         - sablier-dnd
       service: compendium
+    document-qa:
+      rule: "PathPrefix(`/api/document-qa`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: document-qa

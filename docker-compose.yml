@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: dnd-postgres
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -218,6 +218,7 @@ services:
       - "service_type=infrastructure"
       - "environment=dev"
     restart: unless-stopped
+
 
   # ============================================
   # MICROSERVICES LAYER
@@ -710,6 +711,61 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+    restart: unless-stopped
+
+  document-qa-service:
+    build:
+      context: ./services/document-qa-service
+      dockerfile: Dockerfile
+    container_name: dnd-document-qa-service
+    env_file:
+      - .env.groq
+    environment:
+      QUARKUS_HTTP_PORT: 8091
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/document_qa_db
+      QUARKUS_DATASOURCE_DB_KIND: postgresql
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: none
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_VIRTUAL_HOST: dnd_vhost
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_BUCKET: dnd-assets
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dnd-dev-token}
+      QUARKUS_LOG_LEVEL: INFO
+      TZ: ${TZ}
+    ports:
+      - "8091:8091"
+    networks:
+      - backend
+      - database
+      - messaging
+    labels:
+      - "sablier.enable=true"
+      - "sablier.group=dnd-app"
+      - "logging=promtail"
+      - "service_type=microservice"
+      - "environment=dev"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8091/q/health/started || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      vault-init:
+        condition: service_started
     restart: unless-stopped
 
   # ============================================

@@ -8,6 +8,7 @@ public record DocumentViewModel(
         String contentType,
         long size,
         String uploadedBy,
-        Instant uploadedAt
+        Instant uploadedAt,
+        String ragStatus
 ) {
 }

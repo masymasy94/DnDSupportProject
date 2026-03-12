@@ -154,6 +154,18 @@ vault kv put secret/dnd-platform/compendium-service/database \
     url="jdbc:postgresql://postgres:5432/compendium_db" \
     auth-service-url="http://auth-service:8081"
 
+echo "Storing document-qa-service database configuration..."
+vault kv put secret/dnd-platform/document-qa-service/database \
+    url="jdbc:postgresql://postgres:5432/document_qa_db"
+
+echo "Storing document-qa-service LLM configuration..."
+vault kv put secret/dnd-platform/document-qa-service/llm \
+    groq-api-key=""
+
+echo "Storing document-qa-service encryption key..."
+vault kv put secret/dnd-platform/document-qa-service/encryption \
+    key="dnd-dev-encryption-key-change-in-prod"
+
 echo "Storing RabbitMQ credentials and configuration..."
 vault kv put secret/dnd-platform/common/rabbitmq \
     username="dnd_user" \
@@ -233,6 +245,9 @@ echo "  - secret/dnd-platform/asset-service/database"
 echo "  - secret/dnd-platform/notification-service/database"
 echo "  - secret/dnd-platform/search-service/config"
 echo "  - secret/dnd-platform/compendium-service/database"
+echo "  - secret/dnd-platform/document-qa-service/database"
+echo "  - secret/dnd-platform/document-qa-service/llm"
+echo "  - secret/dnd-platform/document-qa-service/encryption"
 
 # --- Auto-unseal watcher ---
 # Stay alive and monitor Vault. If it gets sealed (e.g. after restart),
