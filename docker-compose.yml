@@ -250,8 +250,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -648,8 +646,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"

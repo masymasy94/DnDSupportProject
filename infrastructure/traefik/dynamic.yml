@@ -66,11 +66,9 @@ http:
       rule: "PathPrefix(`/auth`)"
       entryPoints:
         - web
-      middlewares:
-        - sablier-dnd
       service: auth
     character:
-      rule: "PathPrefix(`/api/characters`)"
+      rule: "PathPrefix(`/characters`)"
       entryPoints:
         - web
       middlewares:
@@ -122,8 +120,6 @@ http:
       rule: "PathPrefix(`/users`)"
       entryPoints:
         - web
-      middlewares:
-        - sablier-dnd
       service: user
     compendium:
       rule: "PathPrefix(`/api/compendium`)"
