@@ -37,4 +37,3 @@ public class PasswordResetEmailSendRepositoryRabbitMq implements PasswordResetEm
         emitter.send(payload);
     }
 }
-
