@@ -95,6 +95,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Sanitize branch name
+        id: branch
+        run: echo "slug=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v6
         with:
@@ -104,7 +108,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ matrix.service }}:latest
             ${{ env.REGISTRY }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/${{ matrix.service }}:${{ github.ref_name }}
+            ${{ env.REGISTRY }}/${{ matrix.service }}:${{ steps.branch.outputs.slug }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
