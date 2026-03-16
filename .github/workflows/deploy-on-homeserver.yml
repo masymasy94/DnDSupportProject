@@ -47,7 +47,7 @@ jobs:
         with:
           name: maven-artifacts
           retention-days: 1
-          path: services/*/target/quarkus-app/**
+          path: services/*/*/target/quarkus-app/
 
   # ──────────────────────────────────────────────
   # Job 2: Docker build + push to GHCR (matrix)
