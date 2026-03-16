@@ -5,6 +5,18 @@ services:
   # INFRASTRUCTURE LAYER
   # ============================================
 
+  gateway:
+    image: nginx:alpine
+    volumes:
+      - dnd-frontend-static:/usr/share/nginx/html:ro
+      - ./infrastructure/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+    networks:
+      - backend
+      - frontend
+    restart: unless-stopped
+
   postgres:
     image: pgvector/pgvector:pg16
     container_name: dnd-postgres
@@ -913,3 +925,5 @@ volumes:
     name: dnd-portainer-data
   loki_data:
     name: dnd-loki-data
+  dnd-frontend-static:
+    name: dnd-frontend-static
