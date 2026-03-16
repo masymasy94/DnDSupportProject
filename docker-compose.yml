@@ -195,6 +195,7 @@ services:
   # ============================================
 
   auth-service:
+    image: ghcr.io/masymasy94/dndsupportproject/auth-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/auth-service
       dockerfile: Dockerfile
@@ -243,6 +244,7 @@ services:
     restart: unless-stopped
 
   character-service:
+    image: ghcr.io/masymasy94/dndsupportproject/character-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/character-service
       dockerfile: Dockerfile
@@ -292,6 +294,7 @@ services:
     restart: unless-stopped
 
   campaign-service:
+    image: ghcr.io/masymasy94/dndsupportproject/campaign-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/campaign-service
       dockerfile: Dockerfile
@@ -339,6 +342,7 @@ services:
     restart: unless-stopped
 
   combat-service:
+    image: ghcr.io/masymasy94/dndsupportproject/combat-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/combat-service
       dockerfile: Dockerfile
@@ -388,6 +392,7 @@ services:
     restart: unless-stopped
 
   asset-service:
+    image: ghcr.io/masymasy94/dndsupportproject/asset-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/asset-service
       dockerfile: Dockerfile
@@ -441,6 +446,7 @@ services:
     restart: unless-stopped
 
   chat-service:
+    image: ghcr.io/masymasy94/dndsupportproject/chat-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/chat-service
       dockerfile: Dockerfile
@@ -489,6 +495,7 @@ services:
     restart: unless-stopped
 
   search-service:
+    image: ghcr.io/masymasy94/dndsupportproject/search-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/search-service
       dockerfile: Dockerfile
@@ -530,6 +537,7 @@ services:
     restart: unless-stopped
 
   notification-service:
+    image: ghcr.io/masymasy94/dndsupportproject/notification-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/notification-service
       dockerfile: Dockerfile
@@ -577,6 +585,7 @@ services:
     restart: unless-stopped
 
   user-service:
+    image: ghcr.io/masymasy94/dndsupportproject/user-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/user-service
       dockerfile: Dockerfile
@@ -623,6 +632,7 @@ services:
     restart: unless-stopped
 
   compendium-service:
+    image: ghcr.io/masymasy94/dndsupportproject/compendium-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/compendium-service
       dockerfile: Dockerfile
@@ -664,6 +674,7 @@ services:
     restart: unless-stopped
 
   document-qa-service:
+    image: ghcr.io/masymasy94/dndsupportproject/document-qa-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/document-qa-service
       dockerfile: Dockerfile
