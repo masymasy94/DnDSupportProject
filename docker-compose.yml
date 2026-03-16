@@ -5,31 +5,6 @@ services:
   # INFRASTRUCTURE LAYER
   # ============================================
 
-  traefik:
-    image: traefik:v3.6
-    container_name: dnd-traefik
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=dnd-backend"
-      - "--providers.file.filename=/etc/traefik/dynamic.yml"
-      - "--providers.file.watch=true"
-      - "--entrypoints.web.address=:80"
-      - "--log.level=INFO"
-      - "--experimental.plugins.sablier.moduleName=github.com/sablierapp/sablier-traefik-plugin"
-      - "--experimental.plugins.sablier.version=v1.1.0"
-    ports:
-      - "80:80"
-      - "8080:8080"  # Traefik Dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./infrastructure/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
-    networks:
-      - frontend
-      - backend
-    restart: unless-stopped
-
   postgres:
     image: pgvector/pgvector:pg16
     container_name: dnd-postgres
@@ -203,23 +178,6 @@ services:
       - backend
     restart: unless-stopped
 
-  sablier:
-    image: sablierapp/sablier:1.11.1
-    container_name: dnd-sablier
-    command:
-      - start
-      - --provider.name=docker
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - backend
-    labels:
-      - "logging=promtail"
-      - "service_type=infrastructure"
-      - "environment=dev"
-    restart: unless-stopped
-
-
   # ============================================
   # MICROSERVICES LAYER
   # ============================================
@@ -299,8 +257,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -350,8 +306,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -399,8 +353,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -452,8 +404,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -504,8 +454,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -549,8 +497,6 @@ services:
     networks:
       - backend
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -598,8 +544,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -689,8 +633,6 @@ services:
       - backend
       - database
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -738,8 +680,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
