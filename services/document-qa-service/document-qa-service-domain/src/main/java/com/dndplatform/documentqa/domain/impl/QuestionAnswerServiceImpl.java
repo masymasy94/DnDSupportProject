@@ -55,11 +55,11 @@ public class QuestionAnswerServiceImpl implements QuestionAnswerService {
             conversationId = conversation.id();
         }
 
+        // Get conversation history BEFORE saving current question to avoid duplicating it
+        List<ConversationMessage> history = messageFindRepository.findByConversationId(conversationId);
+
         // Save user message
         messageCreateRepository.create(conversationId, "USER", request.question());
-
-        // Get conversation history
-        List<ConversationMessage> history = messageFindRepository.findByConversationId(conversationId);
 
         // Search for relevant chunks
         float[] queryEmbedding = embeddingRepository.embed(request.question());
