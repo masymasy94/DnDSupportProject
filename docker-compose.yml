@@ -5,29 +5,16 @@ services:
   # INFRASTRUCTURE LAYER
   # ============================================
 
-  traefik:
-    image: traefik:v3.6
-    container_name: dnd-traefik
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=dnd-backend"
-      - "--providers.file.filename=/etc/traefik/dynamic.yml"
-      - "--providers.file.watch=true"
-      - "--entrypoints.web.address=:80"
-      - "--log.level=INFO"
-      - "--experimental.plugins.sablier.moduleName=github.com/sablierapp/sablier-traefik-plugin"
-      - "--experimental.plugins.sablier.version=v1.1.0"
+  gateway:
+    image: nginx:alpine
+    volumes:
+      - dnd-frontend-static:/usr/share/nginx/html:ro
+      - ./infrastructure/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "80:80"
-      - "8080:8080"  # Traefik Dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./infrastructure/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     networks:
-      - frontend
       - backend
+      - frontend
     restart: unless-stopped
 
   postgres:
@@ -203,28 +190,12 @@ services:
       - backend
     restart: unless-stopped
 
-  sablier:
-    image: sablierapp/sablier:1.11.1
-    container_name: dnd-sablier
-    command:
-      - start
-      - --provider.name=docker
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - backend
-    labels:
-      - "logging=promtail"
-      - "service_type=infrastructure"
-      - "environment=dev"
-    restart: unless-stopped
-
-
   # ============================================
   # MICROSERVICES LAYER
   # ============================================
 
   auth-service:
+    image: ghcr.io/masymasy94/dndsupportproject/auth-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/auth-service
       dockerfile: Dockerfile
@@ -273,6 +244,7 @@ services:
     restart: unless-stopped
 
   character-service:
+    image: ghcr.io/masymasy94/dndsupportproject/character-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/character-service
       dockerfile: Dockerfile
@@ -299,8 +271,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -324,6 +294,7 @@ services:
     restart: unless-stopped
 
   campaign-service:
+    image: ghcr.io/masymasy94/dndsupportproject/campaign-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/campaign-service
       dockerfile: Dockerfile
@@ -350,8 +321,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -373,6 +342,7 @@ services:
     restart: unless-stopped
 
   combat-service:
+    image: ghcr.io/masymasy94/dndsupportproject/combat-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/combat-service
       dockerfile: Dockerfile
@@ -399,8 +369,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -424,6 +392,7 @@ services:
     restart: unless-stopped
 
   asset-service:
+    image: ghcr.io/masymasy94/dndsupportproject/asset-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/asset-service
       dockerfile: Dockerfile
@@ -452,8 +421,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -479,6 +446,7 @@ services:
     restart: unless-stopped
 
   chat-service:
+    image: ghcr.io/masymasy94/dndsupportproject/chat-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/chat-service
       dockerfile: Dockerfile
@@ -504,8 +472,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -529,6 +495,7 @@ services:
     restart: unless-stopped
 
   search-service:
+    image: ghcr.io/masymasy94/dndsupportproject/search-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/search-service
       dockerfile: Dockerfile
@@ -549,8 +516,6 @@ services:
     networks:
       - backend
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -572,6 +537,7 @@ services:
     restart: unless-stopped
 
   notification-service:
+    image: ghcr.io/masymasy94/dndsupportproject/notification-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/notification-service
       dockerfile: Dockerfile
@@ -598,8 +564,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -621,6 +585,7 @@ services:
     restart: unless-stopped
 
   user-service:
+    image: ghcr.io/masymasy94/dndsupportproject/user-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/user-service
       dockerfile: Dockerfile
@@ -667,6 +632,7 @@ services:
     restart: unless-stopped
 
   compendium-service:
+    image: ghcr.io/masymasy94/dndsupportproject/compendium-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/compendium-service
       dockerfile: Dockerfile
@@ -689,8 +655,6 @@ services:
       - backend
       - database
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -710,6 +674,7 @@ services:
     restart: unless-stopped
 
   document-qa-service:
+    image: ghcr.io/masymasy94/dndsupportproject/document-qa-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/document-qa-service
       dockerfile: Dockerfile
@@ -738,8 +703,6 @@ services:
       - database
       - messaging
     labels:
-      - "sablier.enable=true"
-      - "sablier.group=dnd-app"
       - "logging=promtail"
       - "service_type=microservice"
       - "environment=dev"
@@ -973,3 +936,5 @@ volumes:
     name: dnd-portainer-data
   loki_data:
     name: dnd-loki-data
+  dnd-frontend-static:
+    name: dnd-frontend-static

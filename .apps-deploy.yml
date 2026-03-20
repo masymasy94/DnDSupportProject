@@ -1,0 +1,3 @@
+frontend_service: gateway
+frontend_port: 80
+registry: ghcr.io/masymasy94/dndsupportproject
