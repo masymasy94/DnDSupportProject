@@ -41,6 +41,9 @@ public class CampaignEntity extends PanacheEntity {
     @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
     public List<CampaignNoteEntity> notes = new ArrayList<>();
 
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<CampaignQuestEntity> quests = new ArrayList<>();
+
     public CampaignEntity() {
         this.createdAt = LocalDateTime.now();
         this.status = "DRAFT";
