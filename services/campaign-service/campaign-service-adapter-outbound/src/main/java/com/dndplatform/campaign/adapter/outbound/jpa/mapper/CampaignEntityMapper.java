@@ -3,6 +3,7 @@ package com.dndplatform.campaign.adapter.outbound.jpa.mapper;
 import com.dndplatform.campaign.adapter.outbound.jpa.entity.CampaignEntity;
 import com.dndplatform.campaign.adapter.outbound.jpa.entity.CampaignMemberEntity;
 import com.dndplatform.campaign.adapter.outbound.jpa.entity.CampaignNoteEntity;
+import com.dndplatform.campaign.adapter.outbound.jpa.entity.CampaignQuestEntity;
 import com.dndplatform.campaign.domain.model.*;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -42,6 +43,20 @@ public class CampaignEntityMapper {
                 .withTitle(entity.title)
                 .withContent(entity.content)
                 .withVisibility(NoteVisibility.valueOf(entity.visibility))
+                .withCreatedAt(entity.createdAt)
+                .withUpdatedAt(entity.updatedAt)
+                .build();
+    }
+
+    public CampaignQuest toCampaignQuest(CampaignQuestEntity entity) {
+        return CampaignQuestBuilder.builder()
+                .withId(entity.id)
+                .withCampaignId(entity.campaign.id)
+                .withAuthorId(entity.authorId)
+                .withTitle(entity.title)
+                .withDescription(entity.description)
+                .withStatus(QuestStatus.valueOf(entity.status))
+                .withPriority(QuestPriority.valueOf(entity.priority))
                 .withCreatedAt(entity.createdAt)
                 .withUpdatedAt(entity.updatedAt)
                 .build();
