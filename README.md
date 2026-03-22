@@ -1,7 +1,7 @@
 # DnD Platform
 
 [![Java](https://img.shields.io/badge/Java-25-orange?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.30-blue?style=for-the-badge&logo=quarkus&logoColor=white)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.31-blue?style=for-the-badge&logo=quarkus&logoColor=white)](https://quarkus.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-red?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
@@ -46,7 +46,7 @@ DnD Platform is a comprehensive backend system designed to support Dungeons & Dr
 
 ### Key Features
 
-- **Microservices Architecture** — 10 independent, loosely-coupled services
+- **Microservices Architecture** — 11 independent, loosely-coupled services
 - **Hexagonal Architecture** — Clean separation between domain logic and infrastructure
 - **JWT Authentication** — Secure token-based authentication with refresh token rotation
 - **Role-Based Access Control** — Fine-grained authorization with role permissions
@@ -133,7 +133,7 @@ The platform uses isolated Docker networks for security and separation of concer
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | Java | 25 | Language (OpenJDK Temurin) |
-| Quarkus | 3.30.5 | Cloud-native Java framework |
+| Quarkus | 3.31.4 | Cloud-native Java framework |
 | Maven | 3.9+ | Build automation |
 | Hibernate ORM | 6.x | Object-relational mapping |
 | SmallRye JWT | - | JWT token handling |
@@ -195,6 +195,7 @@ The platform uses isolated Docker networks for security and separation of concer
 | **chat-service** | 8086 | Real-time messaging | WebSocket chat, message history |
 | **notification-service** | 8088 | Event notifications | Alerts, email notifications |
 | **search-service** | 8087 | Full-text search | Search across entities |
+| **document-qa-service** | 8091 | AI-powered document Q&A | Groq LLM chat, embeddings, document interaction |
 
 ### Hexagonal Architecture
 
@@ -868,6 +869,7 @@ dnd-platform/
 │   ├── chat-service/               # Real-time chat microservice
 │   ├── notification-service/       # Notification microservice
 │   ├── search-service/             # Search microservice
+│   ├── document-qa-service/        # AI-powered document Q&A (Groq + embeddings)
 │   └── frontend-deploy/            # Frontend deployment (Nginx + git clone)
 ├── infrastructure/
 │   ├── postgres/                   # Database initialization scripts
@@ -944,8 +946,10 @@ The frontend is a static web client hosted in a [separate repository](https://gi
 - [x] Campaign management (CRUD, members, notes)
 - [x] CI/CD pipeline with GitHub Actions
 - [x] Frontend deployment
-- [ ] Real-time combat tracker
-- [ ] WebSocket-based chat
+- [x] Real-time combat tracker with encounter builder and initiative system
+- [x] WebSocket-based chat with message history and online tracking
+- [x] Quest tracking system
+- [x] AI-powered document Q&A (Groq LLM + vector embeddings)
 - [ ] Mobile-friendly API responses
 
 ---
@@ -956,7 +960,7 @@ This project demonstrates proficiency in:
 
 | Skill | Implementation |
 |-------|----------------|
-| **Microservices Architecture** | 10 independent services with clear boundaries |
+| **Microservices Architecture** | 11 independent services with clear boundaries |
 | **Domain-Driven Design** | Hexagonal architecture with domain isolation |
 | **API Design** | RESTful APIs with proper pagination and filtering |
 | **Security** | JWT authentication, RBAC, Vault secrets management |
@@ -979,7 +983,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-**Your Name** — [your.email@example.com](mailto:your.email@example.com)
+**masymasy94** — [GitHub Profile](https://github.com/masymasy94)
 
 Project Link: [https://github.com/masymasy94/DnDSupportProject](https://github.com/masymasy94/DnDSupportProject)
 
