@@ -181,7 +181,7 @@ echo ""
 # Start infrastructure services first (without microservices)
 echo -e "${YELLOW}Starting infrastructure services (this may take a few minutes)...${NC}"
 echo -e "${YELLOW}Services: PostgreSQL, Redis, RabbitMQ, Elasticsearch, MinIO, Vault, Monitoring${NC}"
-docker-compose up -d traefik postgres redis rabbitmq elasticsearch minio vault prometheus grafana jaeger portainer
+docker-compose up -d postgres redis rabbitmq elasticsearch minio vault prometheus grafana jaeger portainer
 
 echo ""
 echo -e "${YELLOW}Waiting for infrastructure services to be ready...${NC}"
@@ -235,13 +235,6 @@ until curl -s http://localhost:8200/v1/sys/health > /dev/null 2>&1; do
 done
 echo -e " ${GREEN}✓${NC}"
 
-# Wait for Ollama
-echo -n "Waiting for Ollama... "
-until curl -s http://localhost:11434/api/version > /dev/null 2>&1; do
-    echo -n "."
-    sleep 2
-done
-echo -e " ${GREEN}✓${NC}"
 
 # Initialize Vault secrets
 echo -n "Initializing Vault secrets... "
@@ -273,9 +266,23 @@ echo -e "${BLUE}  Building Maven Projects${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
+# Ensure Java 25 is used for the build
+DETECTED_JAVA_HOME=$(/usr/libexec/java_home -v 25 2>/dev/null)
+if [ -n "$DETECTED_JAVA_HOME" ]; then
+    export JAVA_HOME="$DETECTED_JAVA_HOME"
+    export PATH="$JAVA_HOME/bin:$PATH"
+    echo -e "${GREEN}✓ Using Java 25: $JAVA_HOME${NC}"
+else
+    echo -e "${YELLOW}⚠ Java 25 not found. Build may fail.${NC}"
+fi
+
 # Set Maven command - try to use IntelliJ's bundled Maven or system Maven
 MAVEN_CMD=""
-if [ -x "/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn" ]; then
+INTELLIJ_MVN="$HOME/Library/Application Support/JetBrains/IntelliJIdea2025.3/plugins/maven/lib/maven3/bin/mvn"
+if [ -x "$INTELLIJ_MVN" ]; then
+    MAVEN_CMD="$INTELLIJ_MVN"
+    echo -e "${GREEN}✓ Using IntelliJ bundled Maven${NC}"
+elif [ -x "/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn" ]; then
     MAVEN_CMD="/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn"
     echo -e "${GREEN}✓ Using IntelliJ bundled Maven${NC}"
 elif command -v mvn &> /dev/null; then
@@ -485,7 +492,6 @@ echo -e "  🐰 RabbitMQ Management:  ${GREEN}http://localhost:15672${NC} (user:
 echo -e "  🔍 Elasticsearch:        ${GREEN}http://localhost:9200${NC}"
 echo -e "  📦 MinIO Console:        ${GREEN}http://localhost:9001${NC} (user: dnd_user, pass: dnd_password)"
 echo -e "  🔐 Vault:                ${GREEN}http://localhost:8200${NC} (token: dnd-dev-token)"
-echo -e "  🤖 Ollama:               ${GREEN}http://localhost:11434${NC} (managed by Sablier)"
 echo ""
 echo -e "${BLUE}Monitoring Services:${NC}"
 echo -e "  📊 Prometheus:           ${GREEN}http://localhost:9090${NC}"
