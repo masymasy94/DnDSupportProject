@@ -1,191 +1,489 @@
 # Auth Service
 
-Authentication microservice for the DnD Platform, providing JWT-based authentication with access and refresh token management.
+[![Java](https://img.shields.io/badge/Java-25-orange?style=flat-square&logo=openjdk)](https://openjdk.org/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.31-blue?style=flat-square&logo=quarkus)](https://quarkus.io/)
+[![Port](https://img.shields.io/badge/Port-8081-green?style=flat-square)]()
 
-## Overview
+The **Auth Service** handles all authentication and credential management for the DnD Platform. It provides JWT-based login, token refresh, OTP (one-time password) login via email, and password reset flows. It does **not** store user data directly — it delegates user lookups and password updates to the [User Service](../user-service) via REST client calls.
 
-The Auth Service handles user authentication by validating credentials against the User Service and issuing JWT tokens. It supports token refresh functionality and session management through revocable refresh tokens.
+---
 
-### Key Features
+## Table of Contents
 
-- **JWT Authentication**: Issues access tokens and refresh tokens
-- **Token Refresh**: Secure token rotation with refresh tokens
-- **Session Management**: Single session logout and logout from all devices
-- **Secure Secret Management**: Integration with HashiCorp Vault
+- [Architecture Overview](#architecture-overview)
+- [Module Structure](#module-structure)
+- [API Endpoints](#api-endpoints)
+- [Operative Flows](#operative-flows)
+  - [Login (JWT)](#1-login-jwt-token-creation)
+  - [Token Refresh](#2-token-refresh)
+  - [Logout (Single)](#3-logout-single-session)
+  - [Logout (All)](#4-logout-all-sessions)
+  - [OTP Login Request](#5-otp-login-request)
+  - [OTP Login Validation](#6-otp-login-validation)
+  - [Password Reset Request](#7-password-reset-request)
+  - [Password Reset Execution](#8-password-reset-execution)
+- [Design Patterns](#design-patterns)
+- [Security Details](#security-details)
+- [Inter-Service Communication](#inter-service-communication)
+- [Data Model](#data-model)
 
-## Architecture
+---
 
-This service follows a hexagonal (ports and adapters) architecture with the following modules:
+## Architecture Overview
 
-| Module | Description |
-|--------|-------------|
-| `auth-service-domain` | Core business logic and domain models |
-| `auth-service-view-model` | API contracts and view models |
-| `auth-service-adapter-inbound` | REST API controllers |
-| `auth-service-adapter-outbound` | External integrations (database, REST clients) |
-| `auth-service-client` | Client library for other services |
-| `auth-service` | Main application module |
-
-## Tech Stack
-
-- **Framework**: Quarkus 3.30.5
-- **Language**: Java 21
-- **Database**: PostgreSQL
-- **Caching**: Redis
-- **Messaging**: RabbitMQ
-- **Secrets**: HashiCorp Vault
-- **Migrations**: Flyway
-- **Mapping**: MapStruct
-- **Observability**: OpenTelemetry, Jaeger, Prometheus
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/auth/login-tokens` | Create login tokens (authenticate) |
-| `POST` | `/auth/login-tokens/refreshed` | Refresh access token |
-| `DELETE` | `/auth/login-tokens/{refreshToken}?userId={userId}` | Logout (revoke single token) |
-| `DELETE` | `/auth/login-tokens?userId={userId}` | Logout all sessions |
-
-### Request/Response Examples
-
-#### Login
-```bash
-POST /auth/login-tokens
-Content-Type: application/json
-
-{
-  "username": "user@example.com",
-  "password": "password123"
-}
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Auth Service (:8081)                         │
+│                                                                     │
+│  ┌─────────────────┐    ┌──────────────┐    ┌───────────────────┐  │
+│  │ Adapter-Inbound │    │    Domain     │    │ Adapter-Outbound  │  │
+│  │                 │    │              │    │                   │  │
+│  │ ResourceImpl ──►│───►│  Service ────│───►│ JPA Repository    │  │
+│  │   Delegate      │    │  Interface   │    │ REST Client       │  │
+│  │   Mapper        │    │  Impl        │    │ RabbitMQ Publisher│  │
+│  └─────────────────┘    └──────────────┘    └────────┬──────────┘  │
+│                                                       │             │
+└───────────────────────────────────────────────────────┼─────────────┘
+                                                        │
+                    ┌───────────────────────────────────┼──────────┐
+                    │                                   │          │
+                    ▼                                   ▼          ▼
+             ┌─────────────┐                    ┌────────────┐ ┌────────┐
+             │ User Service│                    │ PostgreSQL │ │RabbitMQ│
+             │   (:8089)   │                    │  (auth_db) │ │(emails)│
+             └─────────────┘                    └────────────┘ └────────┘
 ```
 
-**Response (200 OK)**:
-```json
-{
-  "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...",
-  "accessTokenExpiresAt": 1704067200,
-  "refreshTokenExpiresAt": 1706659200,
-  "tokenType": "Bearer"
-}
-```
+---
 
-#### Refresh Token
-```bash
-POST /auth/login-tokens/refreshed
-Content-Type: application/json
+## Module Structure
 
-{
-  "refreshToken": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
-}
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Java 21+
-- Maven 3.9+
-- Docker & Docker Compose (for local development)
-- Running instances of:
-  - PostgreSQL
-  - Redis
-  - RabbitMQ
-  - HashiCorp Vault
-  - User Service
-
-### Local Development
-
-1. **Start infrastructure services**:
-   ```bash
-   docker-compose up -d postgres redis rabbitmq vault
-   ```
-
-2. **Build the project**:
-   ```bash
-   mvn clean install
-   ```
-
-3. **Run in development mode**:
-   ```bash
-   cd auth-service
-   mvn quarkus:dev
-   ```
-
-The service starts on `http://localhost:8081`.
-
-### Configuration
-
-Key configuration properties (configured via Vault in production):
-
-| Property | Description |
-|----------|-------------|
-| `jwt.issuer` | JWT token issuer |
-| `jwt.access-token-expiry-seconds` | Access token expiration time |
-| `jwt.refresh-token-expiry-days` | Refresh token expiration time |
-| `db.username` / `db.password` | Database credentials |
-| `redis.hosts` | Redis connection string |
-
-## API Documentation
-
-Once running, API documentation is available at:
-
-- **Swagger UI**: http://localhost:8081/q/swagger-ui
-- **OpenAPI Spec**: http://localhost:8081/openapi
-
-## Health & Metrics
-
-- **Health Check**: http://localhost:8081/q/health
-- **Metrics (Prometheus)**: http://localhost:8081/q/metrics
-
-## Building for Production
-
-### Build JAR
-```bash
-mvn clean package -DskipTests
-```
-
-### Build Native Image
-```bash
-mvn clean package -Pnative -DskipTests
-```
-
-### Build Docker Image
-```bash
-mvn clean package -Dquarkus.container-image.build=true
-```
-
-## Testing
-
-```bash
-# Run unit tests
-mvn test
-
-# Run integration tests
-mvn verify -DskipITs=false
-```
-
-## Project Structure
+Follows **Hexagonal Architecture** (Ports & Adapters):
 
 ```
 auth-service/
-├── auth-service-domain/          # Business logic
-│   └── src/main/java/
-│       └── com/dndplatform/auth/domain/
-│           ├── model/            # Domain models
-│           ├── repository/       # Repository interfaces
-│           └── impl/             # Service implementations
-├── auth-service-view-model/      # API contracts
-├── auth-service-adapter-inbound/ # REST controllers
-├── auth-service-adapter-outbound/# External adapters
-├── auth-service-client/          # Client library
-└── auth-service/                 # Main application
-    └── src/main/resources/
-        ├── application.properties
-        └── db/migration/         # Flyway migrations
+├── auth-service-domain/              # Business logic & domain models
+│   ├── model/                        # Records: User, RefreshToken, OtpLoginToken, PasswordResetToken
+│   ├── CreateLoginTokensService      # Login orchestration
+│   ├── RefreshLoginTokensService     # Token refresh logic
+│   ├── LogoutService / LogoutAllService
+│   ├── RequestOtpLoginService        # OTP generation & email dispatch
+│   ├── ValidateOtpLoginService       # OTP validation & JWT issuance
+│   ├── RequestPasswordResetService   # Reset token generation
+│   └── ResetPasswordService          # Password update & session revocation
+│
+├── auth-service-view-model/          # DTOs & Resource interfaces
+│   └── vm/                           # Request/Response ViewModels
+│
+├── auth-service-adapter-inbound/     # REST controllers (Driving Adapters)
+│   ├── login/                        # Login endpoint + Delegate
+│   ├── refresh/                      # Token refresh endpoint + Delegate
+│   ├── logout/                       # Logout endpoints + Delegates
+│   ├── otplogin/                     # OTP login endpoints + Delegates
+│   └── passwordreset/                # Password reset endpoints + Delegates
+│
+├── auth-service-adapter-outbound/    # Infrastructure (Driven Adapters)
+│   ├── jpa/                          # Panache entities & JPA repositories
+│   ├── rest/                         # User Service REST client
+│   └── messaging/                    # RabbitMQ email publishers
+│
+├── auth-service-client/              # REST client interface for other services
+└── auth-service/                     # Quarkus bootstrap & configuration
 ```
 
-## Related Services
+---
 
-- **User Service**: Provides user credential validation
+## API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/auth/login-tokens` | Public | Login with username/password |
+| `POST` | `/auth/login-tokens/refreshed` | Public | Refresh an access token |
+| `DELETE` | `/auth/login-tokens/{refreshToken}` | Bearer | Logout single session |
+| `DELETE` | `/auth/login-tokens` | Bearer | Logout all sessions |
+| `POST` | `/auth/otp-login-requests` | Public | Request OTP code via email |
+| `POST` | `/auth/otp-login-tokens` | Public | Validate OTP and get tokens |
+| `POST` | `/auth/password-resets` | Public | Request password reset email |
+| `PUT` | `/auth/password-resets` | Public | Reset password with token |
+
+---
+
+## Operative Flows
+
+### 1. Login (JWT Token Creation)
+
+**`POST /auth/login-tokens`** — Creates a JWT access token and refresh token after validating user credentials.
+
+```
+Client                    Auth Service                          User Service       Database
+  │                           │                                      │                │
+  │  POST /auth/login-tokens  │                                      │                │
+  │  {username, password}     │                                      │                │
+  │──────────────────────────►│                                      │                │
+  │                           │                                      │                │
+  │                           │  ┌──────────────────────────────┐    │                │
+  │                           │  │ ResourceImpl                 │    │                │
+  │                           │  │  └► Delegate (Delegate Pattern)   │                │
+  │                           │  │       └► Mapper (ViewModel→Domain)│                │
+  │                           │  └──────────────────────────────┘    │                │
+  │                           │                                      │                │
+  │                           │  POST /users/credentials-validation  │                │
+  │                           │─────────────────────────────────────►│                │
+  │                           │         User (validated)             │                │
+  │                           │◄─────────────────────────────────────│                │
+  │                           │                                      │                │
+  │                           │  createRefreshToken(userId)                           │
+  │                           │──────────────────────────────────────────────────────►│
+  │                           │         RefreshToken (UUID, 30d TTL)                  │
+  │                           │◄──────────────────────────────────────────────────────│
+  │                           │                                      │                │
+  │                           │  ┌──────────────────────────────┐    │                │
+  │                           │  │ JwtGenerationRepository      │    │                │
+  │                           │  │  SmallRye JWT (RS256)        │    │                │
+  │                           │  │  Claims: sub, upn, role,     │    │                │
+  │                           │  │  username, groups             │    │                │
+  │                           │  └──────────────────────────────┘    │                │
+  │                           │                                      │                │
+  │  201 Created              │                                      │                │
+  │  {accessToken,            │                                      │                │
+  │   refreshToken,           │                                      │                │
+  │   expiresAt, userId}      │                                      │                │
+  │◄──────────────────────────│                                      │                │
+```
+
+The **Delegate Pattern** separates HTTP concerns (`ResourceImpl`) from business logic (`Delegate`). The `CreateLoginTokensMapper` transforms the ViewModel into the domain `CreateLoginTokens` record, and the `LoginResponseViewModelMapper` maps the result back.
+
+---
+
+### 2. Token Refresh
+
+**`POST /auth/login-tokens/refreshed`** — Generates a new access token from a valid, non-revoked refresh token.
+
+```
+Client                       Auth Service                    Database
+  │                               │                              │
+  │  POST /login-tokens/refreshed │                              │
+  │  {token, userId}              │                              │
+  │──────────────────────────────►│                              │
+  │                               │  findByTokenAndId()          │
+  │                               │─────────────────────────────►│
+  │                               │  RefreshToken                │
+  │                               │◄─────────────────────────────│
+  │                               │                              │
+  │                               │  ┌────────────────────────┐  │
+  │                               │  │ Validate:              │  │
+  │                               │  │  - Not revoked         │  │
+  │                               │  │  - Not expired         │  │
+  │                               │  └────────────────────────┘  │
+  │                               │                              │
+  │                               │  findById(userId)            │
+  │                               │──► User Service ────────────►│
+  │                               │◄─────────────────────────────│
+  │                               │                              │
+  │                               │  Generate new JWT (SmallRye) │
+  │                               │                              │
+  │  201 {accessToken, expiresAt} │                              │
+  │◄──────────────────────────────│                              │
+```
+
+---
+
+### 3. Logout (Single Session)
+
+**`DELETE /auth/login-tokens/{refreshToken}`** — Revokes a single refresh token.
+
+```
+Client                          Auth Service              Database
+  │                                  │                        │
+  │  DELETE /login-tokens/{token}    │                        │
+  │  Authorization: Bearer <jwt>     │                        │
+  │─────────────────────────────────►│                        │
+  │                                  │  UPDATE revoked=true   │
+  │                                  │  WHERE token AND user  │
+  │                                  │───────────────────────►│
+  │                                  │◄───────────────────────│
+  │  204 No Content                  │                        │
+  │◄─────────────────────────────────│                        │
+```
+
+---
+
+### 4. Logout (All Sessions)
+
+**`DELETE /auth/login-tokens`** — Revokes all refresh tokens for the user.
+
+```
+Client                          Auth Service              Database
+  │                                  │                        │
+  │  DELETE /login-tokens            │                        │
+  │  Authorization: Bearer <jwt>     │                        │
+  │─────────────────────────────────►│                        │
+  │                                  │  UPDATE revoked=true   │
+  │                                  │  WHERE userId=X        │
+  │                                  │───────────────────────►│
+  │                                  │◄───────────────────────│
+  │  204 No Content                  │                        │
+  │◄─────────────────────────────────│                        │
+```
+
+---
+
+### 5. OTP Login Request
+
+**`POST /auth/otp-login-requests`** — Generates a 6-digit OTP code and sends it to the user's email. The OTP is **SHA-256 hashed before storage** (Hash-before-store pattern).
+
+```
+Client                    Auth Service               User Service     Database      RabbitMQ
+  │                           │                           │               │              │
+  │  POST /otp-login-requests │                           │               │              │
+  │  {email}                  │                           │               │              │
+  │──────────────────────────►│                           │               │              │
+  │                           │  findByEmail(email)       │               │              │
+  │                           │──────────────────────────►│               │              │
+  │                           │  Optional<User>           │               │              │
+  │                           │◄──────────────────────────│               │              │
+  │                           │                           │               │              │
+  │                           │  ┌──────────────────────────────────┐     │              │
+  │                           │  │ If user not found → return 202  │     │              │
+  │                           │  │ (silent fail — prevents user    │     │              │
+  │                           │  │  enumeration attacks)           │     │              │
+  │                           │  └──────────────────────────────────┘     │              │
+  │                           │                           │               │              │
+  │                           │  SecureRandom → 6-digit   │               │              │
+  │                           │  SHA-256(otp) → persist   │               │              │
+  │                           │───────────────────────────────────────────►│              │
+  │                           │                           │               │              │
+  │                           │  Publish email event      │               │              │
+  │                           │  (templateId: 3)          │               │              │
+  │                           │──────────────────────────────────────────────────────────►│
+  │                           │                           │               │              │
+  │  202 Accepted             │                           │               │              │
+  │◄──────────────────────────│                           │               │              │
+```
+
+---
+
+### 6. OTP Login Validation
+
+**`POST /auth/otp-login-tokens`** — Validates the OTP code, marks it as used, and returns JWT tokens.
+
+```
+Client                    Auth Service                User Service     Database
+  │                           │                            │               │
+  │  POST /otp-login-tokens   │                            │               │
+  │  {email, otpCode}         │                            │               │
+  │──────────────────────────►│                            │               │
+  │                           │  findByEmail(email)        │               │
+  │                           │───────────────────────────►│               │
+  │                           │  User                      │               │
+  │                           │◄───────────────────────────│               │
+  │                           │                            │               │
+  │                           │  SHA-256(otpCode) → lookup │               │
+  │                           │────────────────────────────────────────────►│
+  │                           │  OtpLoginToken             │               │
+  │                           │◄────────────────────────────────────────────│
+  │                           │                            │               │
+  │                           │  ┌─────────────────────┐   │               │
+  │                           │  │ Validate:            │   │               │
+  │                           │  │  - Not used          │   │               │
+  │                           │  │  - Not expired       │   │               │
+  │                           │  │  - Correct userId    │   │               │
+  │                           │  └─────────────────────┘   │               │
+  │                           │                            │               │
+  │                           │  markUsed + createRefresh  │               │
+  │                           │  + generateJWT             │               │
+  │                           │────────────────────────────────────────────►│
+  │                           │                            │               │
+  │  201 {accessToken,        │                            │               │
+  │       refreshToken, ...}  │                            │               │
+  │◄──────────────────────────│                            │               │
+```
+
+---
+
+### 7. Password Reset Request
+
+**`POST /auth/password-resets`** — Generates a password reset token (SHA-256 hashed) and sends an email.
+
+```
+Client                    Auth Service               User Service     Database      RabbitMQ
+  │                           │                           │               │              │
+  │  POST /password-resets    │                           │               │              │
+  │  {email}                  │                           │               │              │
+  │──────────────────────────►│                           │               │              │
+  │                           │  findByEmail(email)       │               │              │
+  │                           │──────────────────────────►│               │              │
+  │                           │  Optional<User>           │               │              │
+  │                           │◄──────────────────────────│               │              │
+  │                           │                           │               │              │
+  │                           │  ┌──────────────────────────────────┐     │              │
+  │                           │  │ Silent fail if user not found   │     │              │
+  │                           │  └──────────────────────────────────┘     │              │
+  │                           │                           │               │              │
+  │                           │  Generate token + SHA-256 │               │              │
+  │                           │───────────────────────────────────────────►│              │
+  │                           │                           │               │              │
+  │                           │  Publish email event      │               │              │
+  │                           │  (templateId: 2)          │               │              │
+  │                           │──────────────────────────────────────────────────────────►│
+  │                           │                           │               │              │
+  │  202 Accepted             │                           │               │              │
+  │◄──────────────────────────│                           │               │              │
+```
+
+---
+
+### 8. Password Reset Execution
+
+**`PUT /auth/password-resets`** — Validates the reset token, updates the password, and revokes all sessions.
+
+```
+Client                    Auth Service               User Service     Database
+  │                           │                           │               │
+  │  PUT /password-resets     │                           │               │
+  │  {token, newPassword}     │                           │               │
+  │──────────────────────────►│                           │               │
+  │                           │  SHA-256(token) → lookup  │               │
+  │                           │───────────────────────────────────────────►│
+  │                           │  PasswordResetToken       │               │
+  │                           │◄───────────────────────────────────────────│
+  │                           │                           │               │
+  │                           │  ┌─────────────────────┐  │               │
+  │                           │  │ Validate:            │  │               │
+  │                           │  │  - Not used          │  │               │
+  │                           │  │  - Not expired       │  │               │
+  │                           │  └─────────────────────┘  │               │
+  │                           │                           │               │
+  │                           │  PUT /users/{id}/password │               │
+  │                           │──────────────────────────►│               │
+  │                           │                           │               │
+  │                           │  markUsed(token)          │               │
+  │                           │───────────────────────────────────────────►│
+  │                           │                           │               │
+  │                           │  revokeAllTokens(userId)  │               │
+  │                           │───────────────────────────────────────────►│
+  │                           │                           │               │
+  │  204 No Content           │                           │               │
+  │◄──────────────────────────│                           │               │
+```
+
+---
+
+## Design Patterns
+
+### Hexagonal Architecture (Ports & Adapters)
+
+The domain core defines **repository interfaces** (ports) and is completely free of infrastructure dependencies. Adapters implement these ports:
+
+```
+                    ┌───────────────────────────────┐
+   Driving Ports    │         DOMAIN CORE            │   Driven Ports
+   (Inbound)        │                                 │   (Outbound)
+  ──────────────────│  Service Interfaces             │──────────────────
+                    │  Domain Records (@Builder)      │
+  ResourceImpl ────►│  Business Rules                 │────► JPA Repositories (Panache)
+  Delegate          │                                 │────► REST Client → User Service
+  Mapper            │  CreateLoginTokensService       │────► JwtGenerationRepository
+                    │  RefreshLoginTokensService      │────► RabbitMQ Publishers
+                    │  Logout[All]Service             │
+                    │  RequestOtpLoginService          │
+                    │  ValidateOtpLoginService         │
+                    │  Request/ResetPasswordService    │
+                    └───────────────────────────────┘
+```
+
+### Delegate Pattern
+
+Each REST endpoint is split into two classes to separate concerns:
+
+| Class | Responsibility |
+|-------|---------------|
+| **ResourceImpl** | JAX-RS annotations, `@RolesAllowed`, `@PermitAll`, HTTP status codes |
+| **Delegate** (`@Delegate`) | Business orchestration, service calls, DTO mapping |
+
+The `@Delegate` annotation (from the `common` module) marks the delegate as the CDI-injected implementation of the resource interface.
+
+### Mapper Pattern (Function\<A, B\>)
+
+All data transformations use MapStruct mappers implementing `Function<A, B>`, operating at each architectural boundary:
+
+```
+ViewModel ──[InboundMapper]──► Domain Record ──[OutboundMapper]──► JPA Entity
+    ◄──[ResponseMapper]────            ◄──[EntityMapper]──────
+```
+
+### Repository Pattern (Fine-Grained Ports)
+
+The domain defines **one interface per operation** for maximum flexibility:
+
+| Domain Interface | Outbound Adapter |
+|-----------------|------------------|
+| `UserCredentialsValidateRepository` | REST client → User Service |
+| `RefreshTokenCreateRepository` | JPA (Panache) |
+| `JwtGenerationRepository` | SmallRye JWT (RS256) |
+| `OtpLoginEmailSendRepository` | RabbitMQ publisher |
+| `PasswordResetEmailSendRepository` | RabbitMQ publisher |
+
+---
+
+## Security Details
+
+| Mechanism | Implementation |
+|-----------|---------------|
+| **JWT Algorithm** | RS256 (RSA + SHA-256) via SmallRye JWT |
+| **JWT Claims** | `sub` (userId), `upn` (email), `username`, `role`, `groups` |
+| **Access Token TTL** | 3600 seconds (1 hour) |
+| **Refresh Token TTL** | 30 days (configurable) |
+| **OTP TTL** | 5 minutes (configurable) |
+| **Password Reset TTL** | 15 minutes (configurable) |
+| **Token Hashing** | SHA-256 for OTP and reset tokens — plaintext never stored |
+| **OTP Generation** | `SecureRandom`, 6-digit zero-padded code |
+| **Enumeration Prevention** | Email-based endpoints return `202` regardless of user existence |
+
+---
+
+## Inter-Service Communication
+
+| Direction | Target | Protocol | Purpose |
+|-----------|--------|----------|---------|
+| **Outbound (sync)** | User Service `:8089` | REST | Credential validation, user lookup, password update |
+| **Outbound (async)** | Notification Service | RabbitMQ (`email-requests-out`) | OTP codes and reset links |
+
+---
+
+## Data Model
+
+```
+┌──────────────────────────┐
+│     refresh_tokens       │
+├──────────────────────────┤
+│ id          BIGSERIAL PK │
+│ token       VARCHAR  UQ  │
+│ user_id     BIGINT       │
+│ expires_at  TIMESTAMP    │
+│ revoked     BOOLEAN      │
+│ created_at  TIMESTAMP    │
+└──────────────────────────┘
+
+┌──────────────────────────┐
+│       login_otps         │
+├──────────────────────────┤
+│ id          BIGSERIAL PK │
+│ token       VARCHAR  UQ  │  ← SHA-256 hash
+│ user_id     BIGINT       │
+│ expires_at  TIMESTAMP    │
+│ used        BOOLEAN      │
+│ created_at  TIMESTAMP    │
+└──────────────────────────┘
+
+┌──────────────────────────┐
+│    password_resets        │
+├──────────────────────────┤
+│ id          BIGSERIAL PK │
+│ token       VARCHAR  UQ  │  ← SHA-256 hash
+│ user_id     BIGINT       │
+│ expires_at  TIMESTAMP    │
+│ used        BOOLEAN      │
+│ created_at  TIMESTAMP    │
+└──────────────────────────┘
+```

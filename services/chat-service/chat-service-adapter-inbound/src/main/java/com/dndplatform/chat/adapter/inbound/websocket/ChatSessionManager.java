@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
@@ -36,6 +37,10 @@ public class ChatSessionManager {
 
     public List<WebSocketConnection> getConnectionsForUser(Long userId) {
         return userConnections.getOrDefault(userId, List.of());
+    }
+
+    public Set<Long> getOnlineUserIds() {
+        return Set.copyOf(userConnections.keySet());
     }
 
     public void broadcastToUsers(List<Long> userIds, String message) {

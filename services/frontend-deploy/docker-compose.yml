@@ -67,4 +67,5 @@ services:
 
 volumes:
   frontend-static:
+    name: dnd-frontend-static
   frontend-repo:

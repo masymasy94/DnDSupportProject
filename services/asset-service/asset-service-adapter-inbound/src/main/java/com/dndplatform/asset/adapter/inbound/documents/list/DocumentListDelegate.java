@@ -23,7 +23,11 @@ public class DocumentListDelegate implements DocumentListResource {
     @Override
     public List<DocumentListItemViewModel> listAll() {
         return service.listAll().stream()
-                .map(item -> new DocumentListItemViewModel(item.id(), item.fileName()))
+                .map(item -> new DocumentListItemViewModel(
+                        item.id(),
+                        item.fileName(),
+                        item.ragStatus() != null ? item.ragStatus().name() : null
+                ))
                 .toList();
     }
 }

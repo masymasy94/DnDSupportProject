@@ -77,6 +77,7 @@ CREATE DATABASE chat_db;
 CREATE DATABASE notification_db;
 CREATE DATABASE user_db;
 CREATE DATABASE compendium_db;
+CREATE DATABASE document_qa_db OWNER dnd_user;
 
 -- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE auth_db TO dnd_user;
@@ -88,6 +89,7 @@ GRANT ALL PRIVILEGES ON DATABASE chat_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE notification_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE user_db TO dnd_user;
 GRANT ALL PRIVILEGES ON DATABASE compendium_db TO dnd_user;
+GRANT ALL PRIVILEGES ON DATABASE document_qa_db TO dnd_user;
 EOF
     echo -e "${GREEN}✓ PostgreSQL init script created${NC}"
 fi
@@ -155,6 +157,11 @@ scrape_configs:
     static_configs:
       - targets: ['compendium-service:8090']
 
+  - job_name: 'document-qa-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['document-qa-service:8091']
+
 EOF
     echo -e "${GREEN}✓ Prometheus configuration created${NC}"
 fi
@@ -174,7 +181,7 @@ echo ""
 # Start infrastructure services first (without microservices)
 echo -e "${YELLOW}Starting infrastructure services (this may take a few minutes)...${NC}"
 echo -e "${YELLOW}Services: PostgreSQL, Redis, RabbitMQ, Elasticsearch, MinIO, Vault, Monitoring${NC}"
-docker-compose up -d traefik postgres redis rabbitmq elasticsearch minio vault prometheus grafana jaeger portainer
+docker-compose up -d postgres redis rabbitmq elasticsearch minio vault prometheus grafana jaeger portainer
 
 echo ""
 echo -e "${YELLOW}Waiting for infrastructure services to be ready...${NC}"
@@ -228,6 +235,7 @@ until curl -s http://localhost:8200/v1/sys/health > /dev/null 2>&1; do
 done
 echo -e " ${GREEN}✓${NC}"
 
+
 # Initialize Vault secrets
 echo -n "Initializing Vault secrets... "
 docker-compose up -d vault-init
@@ -258,9 +266,23 @@ echo -e "${BLUE}  Building Maven Projects${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
+# Ensure Java 25 is used for the build
+DETECTED_JAVA_HOME=$(/usr/libexec/java_home -v 25 2>/dev/null)
+if [ -n "$DETECTED_JAVA_HOME" ]; then
+    export JAVA_HOME="$DETECTED_JAVA_HOME"
+    export PATH="$JAVA_HOME/bin:$PATH"
+    echo -e "${GREEN}✓ Using Java 25: $JAVA_HOME${NC}"
+else
+    echo -e "${YELLOW}⚠ Java 25 not found. Build may fail.${NC}"
+fi
+
 # Set Maven command - try to use IntelliJ's bundled Maven or system Maven
 MAVEN_CMD=""
-if [ -x "/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn" ]; then
+INTELLIJ_MVN="$HOME/Library/Application Support/JetBrains/IntelliJIdea2025.3/plugins/maven/lib/maven3/bin/mvn"
+if [ -x "$INTELLIJ_MVN" ]; then
+    MAVEN_CMD="$INTELLIJ_MVN"
+    echo -e "${GREEN}✓ Using IntelliJ bundled Maven${NC}"
+elif [ -x "/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn" ]; then
     MAVEN_CMD="/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn"
     echo -e "${GREEN}✓ Using IntelliJ bundled Maven${NC}"
 elif command -v mvn &> /dev/null; then
@@ -293,7 +315,7 @@ if [ -n "$MAVEN_CMD" ]; then
     # List of multi-module services
     # Note: user-service must be built before auth-service since auth-service depends on user-service-client
     # Note: notification-service must be built before user-service since user-service depends on notification-service-vm
-    MULTI_MODULE_SERVICES=("notification-service" "user-service" "auth-service" "compendium-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service")
+    MULTI_MODULE_SERVICES=("notification-service" "user-service" "auth-service" "compendium-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service" "document-qa-service")
 
     for service in "${MULTI_MODULE_SERVICES[@]}"; do
         if [ -d "services/$service" ] && [ -f "services/$service/pom.xml" ]; then
@@ -335,7 +357,7 @@ echo -e "${BLUE}  Checking Microservices${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service" "notification-service" "user-service" "compendium-service")
+SERVICES=("auth-service" "character-service" "campaign-service" "combat-service" "asset-service" "chat-service" "search-service" "notification-service" "user-service" "compendium-service" "document-qa-service")
 MISSING_DOCKERFILES=()
 
 for service in "${SERVICES[@]}"; do
@@ -384,7 +406,7 @@ else
     SWAGGER_INTERVAL=3
     SWAGGER_FAILED=""
 
-    SWAGGER_SERVICES="auth-service:8081 character-service:8082 campaign-service:8083 combat-service:8084 asset-service:8085 chat-service:8086 search-service:8087 notification-service:8088 user-service:8089 compendium-service:8090"
+    SWAGGER_SERVICES="auth-service:8081 character-service:8082 campaign-service:8083 combat-service:8084 asset-service:8085 chat-service:8086 search-service:8087 notification-service:8088 user-service:8089 compendium-service:8090 document-qa-service:8091"
 
     for entry in $SWAGGER_SERVICES; do
         service="${entry%%:*}"
@@ -491,6 +513,7 @@ if [ ${#MISSING_DOCKERFILES[@]} -eq 0 ]; then
     echo -e "  🔔 Notification Service: ${GREEN}http://localhost:8088/q/swagger-ui/${NC}"
     echo -e "  👤 User Service:         ${GREEN}http://localhost:8089/q/swagger-ui/${NC}"
     echo -e "  📚 Compendium Service:   ${GREEN}http://localhost:8090/q/swagger-ui/${NC}"
+    echo -e "  📄 Document Q&A Service: ${GREEN}http://localhost:8091/q/swagger-ui/${NC}"
     echo ""
 fi
 

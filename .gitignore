@@ -34,5 +34,6 @@ target/
 
 ### Environment files ###
 .env.mailer
+.env.groq
 .env.local
 .env.*.local

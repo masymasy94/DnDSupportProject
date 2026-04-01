@@ -1,6 +1,8 @@
 package com.dndplatform.chat.adapter.inbound.websocket;
 
+import com.dndplatform.chat.domain.DiceRollService;
 import com.dndplatform.chat.domain.MessageSendService;
+import com.dndplatform.chat.domain.model.DiceRollResult;
 import com.dndplatform.chat.domain.model.Message;
 import com.dndplatform.chat.domain.model.MessageType;
 import com.dndplatform.chat.domain.repository.ParticipantFindByConversationRepository;
@@ -37,16 +39,19 @@ public class ChatWebSocketEndpoint {
     private final MessageSendService messageSendService;
     private final ParticipantFindByConversationRepository participantRepository;
     private final JWTParser jwtParser;
+    private final DiceRollService diceRollService;
 
     @Inject
     public ChatWebSocketEndpoint(ChatSessionManager sessionManager,
                                  MessageSendService messageSendService,
                                  ParticipantFindByConversationRepository participantRepository,
-                                 JWTParser jwtParser) {
+                                 JWTParser jwtParser,
+                                 DiceRollService diceRollService) {
         this.sessionManager = sessionManager;
         this.messageSendService = messageSendService;
         this.participantRepository = participantRepository;
         this.jwtParser = jwtParser;
+        this.diceRollService = diceRollService;
     }
 
     @OnOpen
@@ -111,6 +116,8 @@ public class ChatWebSocketEndpoint {
 
             if ("SEND_MESSAGE".equals(incoming.type())) {
                 return handleSendMessage(userId, incoming);
+            } else if ("ROLL_DICE".equals(incoming.type())) {
+                return handleRollDice(userId, incoming);
             } else {
                 return jsonb.toJson(ChatWebSocketMessage.error("Unknown message type: " + incoming.type()));
             }
@@ -162,6 +169,54 @@ public class ChatWebSocketEndpoint {
 
         } catch (IllegalArgumentException e) {
             return jsonb.toJson(ChatWebSocketMessage.error(e.getMessage()));
+        }
+    }
+
+    private String handleRollDice(Long userId, ChatWebSocketIncomingMessage incoming) {
+        if (incoming.conversationId() == null) {
+            return jsonb.toJson(ChatWebSocketMessage.error("conversationId is required"));
+        }
+        String formula = incoming.content();
+        if (formula == null || formula.isBlank()) {
+            return jsonb.toJson(ChatWebSocketMessage.error("content is required (dice formula)"));
+        }
+
+        try {
+            DiceRollResult result = diceRollService.roll(formula);
+
+            String jsonContent = jsonb.toJson(result);
+
+            Message savedMessage = messageSendService.send(
+                    incoming.conversationId(),
+                    userId,
+                    jsonContent,
+                    MessageType.DICE_ROLL
+            );
+
+            List<Long> participantIds = participantRepository.findByConversationId(incoming.conversationId())
+                    .stream()
+                    .map(p -> p.userId())
+                    .toList();
+
+            ChatWebSocketMessage outgoing = ChatWebSocketMessage.newMessage(
+                    savedMessage.conversationId(),
+                    savedMessage.id(),
+                    savedMessage.senderId(),
+                    savedMessage.content(),
+                    savedMessage.messageType().name(),
+                    savedMessage.createdAt()
+            );
+
+            String outgoingJson = jsonb.toJson(outgoing);
+            sessionManager.broadcastToUsers(participantIds, outgoingJson);
+
+            return outgoingJson;
+
+        } catch (IllegalArgumentException e) {
+            return jsonb.toJson(ChatWebSocketMessage.error("Invalid dice formula: " + e.getMessage()));
+        } catch (Exception e) {
+            log.log(Level.WARNING, "Dice roll failed", e);
+            return jsonb.toJson(ChatWebSocketMessage.error("Dice roll failed: " + e.getMessage()));
         }
     }
 
