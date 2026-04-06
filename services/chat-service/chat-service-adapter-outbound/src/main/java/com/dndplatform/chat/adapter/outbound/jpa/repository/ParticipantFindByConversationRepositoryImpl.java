@@ -27,8 +27,7 @@ public class ParticipantFindByConversationRepositoryImpl implements ParticipantF
     public List<ConversationParticipant> findByConversationId(Long conversationId) {
         log.info(() -> "Finding participants: conversationId=%d".formatted(conversationId));
 
-        return panacheRepository.find("conversation.id = ?1 AND leftAt IS NULL", conversationId)
-                .list()
+        return panacheRepository.findActiveByConversationId(conversationId)
                 .stream()
                 .map(mapper)
                 .toList();

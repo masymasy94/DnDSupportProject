@@ -1,6 +1,5 @@
 package com.dndplatform.campaign.adapter.outbound.jpa.repository;
 
-import com.dndplatform.campaign.adapter.outbound.jpa.entity.CampaignNoteEntity;
 import com.dndplatform.campaign.adapter.outbound.jpa.mapper.CampaignEntityMapper;
 import com.dndplatform.campaign.domain.model.CampaignNote;
 import com.dndplatform.campaign.domain.repository.CampaignNoteFindVisibleRepository;
@@ -14,10 +13,13 @@ import java.util.logging.Logger;
 public class CampaignNoteFindVisibleRepositoryJpa implements CampaignNoteFindVisibleRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignNotePanacheRepository panacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignNoteFindVisibleRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignNoteFindVisibleRepositoryJpa(CampaignNotePanacheRepository panacheRepository,
+                                                CampaignEntityMapper mapper) {
+        this.panacheRepository = panacheRepository;
         this.mapper = mapper;
     }
 
@@ -25,10 +27,7 @@ public class CampaignNoteFindVisibleRepositoryJpa implements CampaignNoteFindVis
     public List<CampaignNote> findVisibleNotes(Long campaignId, Long userId) {
         log.info(() -> "Finding visible notes for campaign %d, user %d".formatted(campaignId, userId));
 
-        return CampaignNoteEntity.<CampaignNoteEntity>find(
-                "campaign.id = ?1 and (visibility = 'PUBLIC' or authorId = ?2)",
-                campaignId, userId
-        ).list().stream()
+        return panacheRepository.findVisibleNotes(campaignId, userId).stream()
                 .map(mapper::toCampaignNote)
                 .toList();
     }

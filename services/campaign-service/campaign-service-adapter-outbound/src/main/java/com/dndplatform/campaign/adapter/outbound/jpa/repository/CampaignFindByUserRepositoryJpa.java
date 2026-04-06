@@ -6,6 +6,7 @@ import com.dndplatform.campaign.domain.model.CampaignSummary;
 import com.dndplatform.campaign.domain.model.PagedResult;
 import com.dndplatform.campaign.domain.model.PagedResultBuilder;
 import com.dndplatform.campaign.domain.repository.CampaignFindByUserRepository;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -17,10 +18,13 @@ import java.util.logging.Logger;
 public class CampaignFindByUserRepositoryJpa implements CampaignFindByUserRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignPanacheRepository panacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignFindByUserRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignFindByUserRepositoryJpa(CampaignPanacheRepository panacheRepository,
+                                           CampaignEntityMapper mapper) {
+        this.panacheRepository = panacheRepository;
         this.mapper = mapper;
     }
 
@@ -28,10 +32,7 @@ public class CampaignFindByUserRepositoryJpa implements CampaignFindByUserReposi
     public PagedResult findByUserId(Long userId, int page, int size) {
         log.info(() -> "Finding campaigns for user %d - page: %d, size: %d".formatted(userId, page, size));
 
-        var query = CampaignEntity.find(
-                "id IN (SELECT m.campaign.id FROM CampaignMemberEntity m WHERE m.userId = ?1)",
-                userId
-        );
+        PanacheQuery<CampaignEntity> query = panacheRepository.findByMemberUserId(userId);
 
         long totalElements = query.count();
         int totalPages = (int) Math.ceil((double) totalElements / size);

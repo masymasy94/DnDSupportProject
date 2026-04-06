@@ -5,8 +5,6 @@ import com.dndplatform.documentqa.domain.model.SourceReferenceBuilder;
 import com.dndplatform.documentqa.domain.repository.DocumentChunkSearchRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,11 +15,14 @@ public class DocumentChunkSearchRepositoryJpa implements DocumentChunkSearchRepo
 
     private final Logger log = Logger.getLogger(getClass().getName());
 
+    private final DocumentChunkPanacheRepository panacheRepository;
+
     @Inject
-    EntityManager entityManager;
+    public DocumentChunkSearchRepositoryJpa(DocumentChunkPanacheRepository panacheRepository) {
+        this.panacheRepository = panacheRepository;
+    }
 
     @Override
-    @SuppressWarnings("unchecked")
     public List<SourceReference> searchSimilar(float[] queryEmbedding, List<String> documentIds, int topK) {
         log.info(() -> "Searching similar chunks, topK=%d, filter=%d documents".formatted(
                 topK, documentIds != null ? documentIds.size() : 0));
@@ -29,23 +30,7 @@ public class DocumentChunkSearchRepositoryJpa implements DocumentChunkSearchRepo
         boolean hasFilter = documentIds != null && !documentIds.isEmpty();
         String queryStr = toVectorString(queryEmbedding);
 
-        String sql = """
-                SELECT dc.document_id, di.file_name, dc.content,
-                       1 - (dc.embedding <=> CAST(:query AS vector)) AS score
-                FROM document_chunks dc
-                JOIN document_ingestions di ON dc.document_id = di.document_id
-                WHERE (:hasFilter = false OR dc.document_id IN (:ids))
-                ORDER BY dc.embedding <=> CAST(:query AS vector)
-                LIMIT :k
-                """;
-
-        Query query = entityManager.createNativeQuery(sql)
-                .setParameter("query", queryStr)
-                .setParameter("hasFilter", hasFilter)
-                .setParameter("ids", hasFilter ? documentIds : List.of(""))
-                .setParameter("k", topK);
-
-        List<Object[]> results = query.getResultList();
+        List<Object[]> results = panacheRepository.searchSimilar(queryStr, hasFilter, documentIds, topK);
 
         List<SourceReference> references = new ArrayList<>();
         for (Object[] row : results) {

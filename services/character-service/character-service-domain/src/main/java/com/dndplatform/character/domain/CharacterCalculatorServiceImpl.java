@@ -147,7 +147,7 @@ public class CharacterCalculatorServiceImpl implements CharacterProficiencyBonus
 
     @Override
     public int calculateModifier(int abilityScore) {
-        return (abilityScore - 10) / 2;
+        return Math.floorDiv(abilityScore - 10, 2);
     }
 
     @Override

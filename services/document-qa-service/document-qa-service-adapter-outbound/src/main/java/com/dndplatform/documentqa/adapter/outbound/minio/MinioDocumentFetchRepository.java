@@ -14,12 +14,15 @@ import java.util.logging.Logger;
 public class MinioDocumentFetchRepository implements DocumentFetchRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final MinioClient minioClient;
+    private final String bucketName;
 
     @Inject
-    MinioClient minioClient;
-
-    @ConfigProperty(name = "minio.bucket")
-    String bucketName;
+    public MinioDocumentFetchRepository(MinioClient minioClient,
+                                        @ConfigProperty(name = "minio.bucket") String bucketName) {
+        this.minioClient = minioClient;
+        this.bucketName = bucketName;
+    }
 
     @Override
     public InputStream fetch(String documentId, String fileName) {

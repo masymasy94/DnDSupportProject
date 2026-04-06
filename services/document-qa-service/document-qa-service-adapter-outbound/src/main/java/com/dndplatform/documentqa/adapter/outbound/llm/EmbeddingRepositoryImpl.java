@@ -19,8 +19,12 @@ public class EmbeddingRepositoryImpl implements EmbeddingRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
 
+    private final EmbeddingModel embeddingModel;
+
     @Inject
-    EmbeddingModel embeddingModel;
+    public EmbeddingRepositoryImpl(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
 
     @Override
     public float[] embed(String text) {

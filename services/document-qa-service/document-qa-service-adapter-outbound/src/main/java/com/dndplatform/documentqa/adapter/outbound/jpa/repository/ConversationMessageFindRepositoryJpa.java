@@ -4,8 +4,8 @@ import com.dndplatform.documentqa.adapter.outbound.jpa.entity.ConversationMessag
 import com.dndplatform.documentqa.domain.model.ConversationMessage;
 import com.dndplatform.documentqa.domain.model.ConversationMessageBuilder;
 import com.dndplatform.documentqa.domain.repository.ConversationMessageFindRepository;
-import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -15,13 +15,18 @@ public class ConversationMessageFindRepositoryJpa implements ConversationMessage
 
     private final Logger log = Logger.getLogger(getClass().getName());
 
+    private final ConversationMessagePanacheRepository panacheRepository;
+
+    @Inject
+    public ConversationMessageFindRepositoryJpa(ConversationMessagePanacheRepository panacheRepository) {
+        this.panacheRepository = panacheRepository;
+    }
+
     @Override
     public List<ConversationMessage> findByConversationId(Long conversationId) {
         log.info(() -> "Finding messages for conversation: %d".formatted(conversationId));
 
-        List<ConversationMessageEntity> entities = ConversationMessageEntity
-                .find("conversation.id", Sort.ascending("createdAt"), conversationId)
-                .list();
+        List<ConversationMessageEntity> entities = panacheRepository.findByConversationId(conversationId);
 
         return entities.stream().map(this::toDomain).toList();
     }

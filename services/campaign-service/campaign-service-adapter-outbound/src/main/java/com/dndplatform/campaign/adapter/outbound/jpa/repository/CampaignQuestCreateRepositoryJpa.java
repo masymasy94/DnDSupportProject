@@ -18,10 +18,16 @@ import java.util.logging.Logger;
 public class CampaignQuestCreateRepositoryJpa implements CampaignQuestCreateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignPanacheRepository campaignPanacheRepository;
+    private final CampaignQuestPanacheRepository questPanacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignQuestCreateRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignQuestCreateRepositoryJpa(CampaignPanacheRepository campaignPanacheRepository,
+                                            CampaignQuestPanacheRepository questPanacheRepository,
+                                            CampaignEntityMapper mapper) {
+        this.campaignPanacheRepository = campaignPanacheRepository;
+        this.questPanacheRepository = questPanacheRepository;
         this.mapper = mapper;
     }
 
@@ -30,7 +36,7 @@ public class CampaignQuestCreateRepositoryJpa implements CampaignQuestCreateRepo
     public CampaignQuest save(CampaignQuestCreate input) {
         log.info(() -> "Saving quest for campaign %d".formatted(input.campaignId()));
 
-        CampaignEntity campaign = CampaignEntity.findById(input.campaignId());
+        CampaignEntity campaign = campaignPanacheRepository.findById(input.campaignId());
         if (campaign == null) {
             throw new NotFoundException("Campaign not found with ID: %d".formatted(input.campaignId()));
         }
@@ -44,7 +50,7 @@ public class CampaignQuestCreateRepositoryJpa implements CampaignQuestCreateRepo
         entity.priority = input.priority().name();
         entity.createdAt = LocalDateTime.now();
 
-        entity.persist();
+        questPanacheRepository.persist(entity);
 
         log.info(() -> "Quest saved with ID: %d".formatted(entity.id));
         return mapper.toCampaignQuest(entity);

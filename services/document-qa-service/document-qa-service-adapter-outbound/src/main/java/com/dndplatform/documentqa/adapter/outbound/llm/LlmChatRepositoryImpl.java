@@ -20,8 +20,12 @@ public class LlmChatRepositoryImpl implements LlmChatRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
 
+    private final DynamicChatModelProvider dynamicChatModelProvider;
+
     @Inject
-    DynamicChatModelProvider dynamicChatModelProvider;
+    public LlmChatRepositoryImpl(DynamicChatModelProvider dynamicChatModelProvider) {
+        this.dynamicChatModelProvider = dynamicChatModelProvider;
+    }
 
     @Override
     public String chat(Long userId, String systemPrompt, List<ConversationMessage> history,

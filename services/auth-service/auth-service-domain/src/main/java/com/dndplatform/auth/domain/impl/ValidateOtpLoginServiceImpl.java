@@ -13,6 +13,7 @@ import com.dndplatform.common.exception.UnauthorizedException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
@@ -25,18 +26,21 @@ public class ValidateOtpLoginServiceImpl implements ValidateOtpLoginService {
     private final OtpLoginTokenMarkUsedRepository otpLoginTokenMarkUsedRepository;
     private final RefreshTokenCreateRepository refreshTokenCreateRepository;
     private final JwtGenerationRepository jwtGenerationRepository;
+    private final Clock clock;
 
     @Inject
     public ValidateOtpLoginServiceImpl(UserFindByEmailRepository userFindByEmailRepository,
                                        OtpLoginTokenFindByTokenRepository otpLoginTokenFindByTokenRepository,
                                        OtpLoginTokenMarkUsedRepository otpLoginTokenMarkUsedRepository,
                                        RefreshTokenCreateRepository refreshTokenCreateRepository,
-                                       JwtGenerationRepository jwtGenerationRepository) {
+                                       JwtGenerationRepository jwtGenerationRepository,
+                                       Clock clock) {
         this.userFindByEmailRepository = userFindByEmailRepository;
         this.otpLoginTokenFindByTokenRepository = otpLoginTokenFindByTokenRepository;
         this.otpLoginTokenMarkUsedRepository = otpLoginTokenMarkUsedRepository;
         this.refreshTokenCreateRepository = refreshTokenCreateRepository;
         this.jwtGenerationRepository = jwtGenerationRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -57,14 +61,14 @@ public class ValidateOtpLoginServiceImpl implements ValidateOtpLoginService {
         return jwtGenerationRepository.generateTokenPair(user, refreshToken);
     }
 
-    private static void validateToken(OtpLoginToken token, Long userId) {
+    private void validateToken(OtpLoginToken token, Long userId) {
         if (!token.userId().equals(userId)) {
             throw new UnauthorizedException("Invalid email or OTP code");
         }
         if (Boolean.TRUE.equals(token.used())) {
             throw new UnauthorizedException("OTP code has already been used");
         }
-        if (token.expiresAt().isBefore(LocalDateTime.now())) {
+        if (token.expiresAt().isBefore(LocalDateTime.now(clock))) {
             throw new UnauthorizedException("OTP code has expired");
         }
     }

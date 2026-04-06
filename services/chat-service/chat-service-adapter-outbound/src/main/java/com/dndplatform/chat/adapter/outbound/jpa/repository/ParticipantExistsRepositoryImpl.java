@@ -22,7 +22,6 @@ public class ParticipantExistsRepositoryImpl implements ParticipantExistsReposit
         log.info(() -> "Checking if user is participant: conversationId=%d, userId=%d"
                 .formatted(conversationId, userId));
 
-        return panacheRepository.count("conversation.id = ?1 AND userId = ?2 AND leftAt IS NULL",
-                conversationId, userId) > 0;
+        return panacheRepository.existsByConversationIdAndUserId(conversationId, userId);
     }
 }

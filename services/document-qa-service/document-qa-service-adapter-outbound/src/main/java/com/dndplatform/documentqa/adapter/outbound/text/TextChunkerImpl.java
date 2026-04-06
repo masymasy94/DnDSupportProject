@@ -2,6 +2,7 @@ package com.dndplatform.documentqa.adapter.outbound.text;
 
 import com.dndplatform.documentqa.domain.impl.TextChunker;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.text.BreakIterator;
@@ -15,11 +16,16 @@ public class TextChunkerImpl implements TextChunker {
 
     private final Logger log = Logger.getLogger(getClass().getName());
 
-    @ConfigProperty(name = "rag.chunk.size", defaultValue = "1000")
-    int chunkSize;
+    private final int chunkSize;
+    private final int overlap;
 
-    @ConfigProperty(name = "rag.chunk.overlap", defaultValue = "200")
-    int overlap;
+    @Inject
+    public TextChunkerImpl(
+            @ConfigProperty(name = "rag.chunk.size", defaultValue = "1000") int chunkSize,
+            @ConfigProperty(name = "rag.chunk.overlap", defaultValue = "200") int overlap) {
+        this.chunkSize = chunkSize;
+        this.overlap = overlap;
+    }
 
     @Override
     public List<String> chunk(String text) {

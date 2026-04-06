@@ -26,9 +26,7 @@ public class CompendiumCacheService {
     private final RedisDataSource redisDataSource;
     private final SpeciesFindByIdResourceRestClient speciesClient;
     private final CharacterClassFindByIdResourceRestClient classClient;
-
-    @ConfigProperty(name = "compendium.cache.ttl", defaultValue = "3600")
-    int cacheTtlSeconds;
+    private final int cacheTtlSeconds;
 
     private ValueCommands<String, String> valueCommands;
 
@@ -36,10 +34,12 @@ public class CompendiumCacheService {
     public CompendiumCacheService(
             RedisDataSource redisDataSource,
             @RestClient SpeciesFindByIdResourceRestClient speciesClient,
-            @RestClient CharacterClassFindByIdResourceRestClient classClient) {
+            @RestClient CharacterClassFindByIdResourceRestClient classClient,
+            @ConfigProperty(name = "compendium.cache.ttl", defaultValue = "3600") int cacheTtlSeconds) {
         this.redisDataSource = redisDataSource;
         this.speciesClient = speciesClient;
         this.classClient = classClient;
+        this.cacheTtlSeconds = cacheTtlSeconds;
     }
 
     @PostConstruct

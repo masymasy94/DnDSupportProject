@@ -18,10 +18,16 @@ import java.util.logging.Logger;
 public class CampaignMemberAddRepositoryJpa implements CampaignMemberAddRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignPanacheRepository campaignPanacheRepository;
+    private final CampaignMemberPanacheRepository memberPanacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignMemberAddRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignMemberAddRepositoryJpa(CampaignPanacheRepository campaignPanacheRepository,
+                                          CampaignMemberPanacheRepository memberPanacheRepository,
+                                          CampaignEntityMapper mapper) {
+        this.campaignPanacheRepository = campaignPanacheRepository;
+        this.memberPanacheRepository = memberPanacheRepository;
         this.mapper = mapper;
     }
 
@@ -30,7 +36,7 @@ public class CampaignMemberAddRepositoryJpa implements CampaignMemberAddReposito
     public CampaignMember add(Long campaignId, Long userId, Long characterId, MemberRole role) {
         log.info(() -> "Adding user %d to campaign %d with role %s".formatted(userId, campaignId, role));
 
-        CampaignEntity campaign = CampaignEntity.findById(campaignId);
+        CampaignEntity campaign = campaignPanacheRepository.findById(campaignId);
         if (campaign == null) {
             throw new NotFoundException("Campaign not found with ID: %d".formatted(campaignId));
         }
@@ -42,7 +48,7 @@ public class CampaignMemberAddRepositoryJpa implements CampaignMemberAddReposito
         entity.role = role.name();
         entity.joinedAt = LocalDateTime.now();
 
-        entity.persist();
+        memberPanacheRepository.persist(entity);
 
         log.info(() -> "Member added with ID: %d".formatted(entity.id));
         return mapper.toCampaignMember(entity);

@@ -5,7 +5,6 @@ import com.dndplatform.documentqa.domain.model.DocumentChunk;
 import com.dndplatform.documentqa.domain.repository.DocumentChunkStoreRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
@@ -16,8 +15,12 @@ public class DocumentChunkStoreRepositoryJpa implements DocumentChunkStoreReposi
 
     private final Logger log = Logger.getLogger(getClass().getName());
 
+    private final DocumentChunkPanacheRepository panacheRepository;
+
     @Inject
-    EntityManager entityManager;
+    public DocumentChunkStoreRepositoryJpa(DocumentChunkPanacheRepository panacheRepository) {
+        this.panacheRepository = panacheRepository;
+    }
 
     @Override
     @Transactional
@@ -33,14 +36,10 @@ public class DocumentChunkStoreRepositoryJpa implements DocumentChunkStoreReposi
             entity.chunkIndex = chunk.chunkIndex();
             entity.content = chunk.content();
 
-            entity.persist();
+            panacheRepository.persist(entity);
 
             String embeddingStr = toVectorString(embedding);
-            entityManager.createNativeQuery(
-                            "UPDATE document_chunks SET embedding = CAST(:emb AS vector) WHERE id = :id")
-                    .setParameter("emb", embeddingStr)
-                    .setParameter("id", entity.id)
-                    .executeUpdate();
+            panacheRepository.updateEmbedding(entity.id, embeddingStr);
         }
 
         log.info(() -> "Stored %d chunks successfully".formatted(chunks.size()));
@@ -51,7 +50,7 @@ public class DocumentChunkStoreRepositoryJpa implements DocumentChunkStoreReposi
     public void deleteByDocumentId(String documentId) {
         log.info(() -> "Deleting chunks for document: %s".formatted(documentId));
 
-        long deleted = DocumentChunkEntity.delete("documentId", documentId);
+        long deleted = panacheRepository.deleteByDocumentId(documentId);
         log.info(() -> "Deleted %d chunks for document: %s".formatted(deleted, documentId));
     }
 

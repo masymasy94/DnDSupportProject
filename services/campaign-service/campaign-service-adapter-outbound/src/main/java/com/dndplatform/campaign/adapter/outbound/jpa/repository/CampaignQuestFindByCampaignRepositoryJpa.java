@@ -15,10 +15,13 @@ import java.util.logging.Logger;
 public class CampaignQuestFindByCampaignRepositoryJpa implements CampaignQuestFindByCampaignRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignQuestPanacheRepository panacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignQuestFindByCampaignRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignQuestFindByCampaignRepositoryJpa(CampaignQuestPanacheRepository panacheRepository,
+                                                    CampaignEntityMapper mapper) {
+        this.panacheRepository = panacheRepository;
         this.mapper = mapper;
     }
 
@@ -28,9 +31,9 @@ public class CampaignQuestFindByCampaignRepositoryJpa implements CampaignQuestFi
 
         List<CampaignQuestEntity> entities;
         if (status == null) {
-            entities = CampaignQuestEntity.find("campaign.id", campaignId).list();
+            entities = panacheRepository.findByCampaignId(campaignId);
         } else {
-            entities = CampaignQuestEntity.find("campaign.id = ?1 and status = ?2", campaignId, status.name()).list();
+            entities = panacheRepository.findByCampaignIdAndStatus(campaignId, status.name());
         }
 
         return entities.stream()

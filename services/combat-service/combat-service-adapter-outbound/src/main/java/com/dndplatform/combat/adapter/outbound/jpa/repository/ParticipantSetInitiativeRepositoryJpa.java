@@ -1,10 +1,10 @@
 package com.dndplatform.combat.adapter.outbound.jpa.repository;
 
-import com.dndplatform.combat.adapter.outbound.jpa.entity.EncounterEntity;
 import com.dndplatform.combat.adapter.outbound.jpa.entity.EncounterParticipantEntity;
 import com.dndplatform.combat.domain.repository.ParticipantSetInitiativeRepository;
 import com.dndplatform.common.exception.NotFoundException;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.util.Comparator;
@@ -15,16 +15,20 @@ import java.util.logging.Logger;
 public class ParticipantSetInitiativeRepositoryJpa implements ParticipantSetInitiativeRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final EncounterPanacheRepository encounterRepository;
+
+    @Inject
+    public ParticipantSetInitiativeRepositoryJpa(EncounterPanacheRepository encounterRepository) {
+        this.encounterRepository = encounterRepository;
+    }
 
     @Override
     @Transactional
     public void setInitiatives(Long encounterId, Map<Long, Integer> initiativeMap) {
         log.info(() -> "Setting initiatives for encounter %d".formatted(encounterId));
 
-        EncounterEntity encounter = EncounterEntity.findById(encounterId);
-        if (encounter == null) {
-            throw new NotFoundException("Encounter not found with ID: %d".formatted(encounterId));
-        }
+        var encounter = encounterRepository.findByIdOptional(encounterId)
+                .orElseThrow(() -> new NotFoundException("Encounter not found with ID: %d".formatted(encounterId)));
 
         for (EncounterParticipantEntity pe : encounter.participants) {
             Integer initiative = initiativeMap.get(pe.id);
@@ -41,7 +45,7 @@ public class ParticipantSetInitiativeRepositoryJpa implements ParticipantSetInit
             pe.isActive = (i == 0);
         }
 
-        encounter.persist();
+        encounterRepository.persist(encounter);
         log.info(() -> "Initiatives set for encounter %d".formatted(encounterId));
     }
 }

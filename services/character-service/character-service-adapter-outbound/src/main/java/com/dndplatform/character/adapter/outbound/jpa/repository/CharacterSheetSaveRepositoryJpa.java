@@ -2,16 +2,22 @@ package com.dndplatform.character.adapter.outbound.jpa.repository;
 
 import com.dndplatform.character.adapter.outbound.jpa.entity.CharacterSheetEntity;
 import com.dndplatform.character.domain.repository.CharacterSheetSaveRepository;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.util.logging.Logger;
 
 @ApplicationScoped
-public class CharacterSheetSaveRepositoryJpa implements CharacterSheetSaveRepository, PanacheRepository<CharacterSheetEntity> {
+public class CharacterSheetSaveRepositoryJpa implements CharacterSheetSaveRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CharacterSheetPanacheRepository panacheRepository;
+
+    @Inject
+    public CharacterSheetSaveRepositoryJpa(CharacterSheetPanacheRepository panacheRepository) {
+        this.panacheRepository = panacheRepository;
+    }
 
     @Override
     @Transactional
@@ -19,7 +25,7 @@ public class CharacterSheetSaveRepositoryJpa implements CharacterSheetSaveReposi
         log.info(() -> "Saving character sheet for character ID: %d".formatted(characterId));
 
         // Delete existing sheet if any (upsert behavior)
-        delete("characterId", characterId);
+        panacheRepository.deleteByCharacterId(characterId);
 
         CharacterSheetEntity entity = new CharacterSheetEntity();
         entity.characterId = characterId;
@@ -27,6 +33,6 @@ public class CharacterSheetSaveRepositoryJpa implements CharacterSheetSaveReposi
         entity.contentType = contentType;
         entity.fileSize = (long) pdfData.length;
         entity.pdfData = pdfData;
-        persist(entity);
+        panacheRepository.persist(entity);
     }
 }

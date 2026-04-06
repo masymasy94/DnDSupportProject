@@ -17,10 +17,13 @@ import java.util.logging.Logger;
 public class CampaignQuestUpdateRepositoryJpa implements CampaignQuestUpdateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignQuestPanacheRepository panacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignQuestUpdateRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignQuestUpdateRepositoryJpa(CampaignQuestPanacheRepository panacheRepository,
+                                            CampaignEntityMapper mapper) {
+        this.panacheRepository = panacheRepository;
         this.mapper = mapper;
     }
 
@@ -29,7 +32,7 @@ public class CampaignQuestUpdateRepositoryJpa implements CampaignQuestUpdateRepo
     public CampaignQuest update(CampaignQuestUpdate input) {
         log.info(() -> "Updating quest: %d".formatted(input.id()));
 
-        CampaignQuestEntity entity = CampaignQuestEntity.findById(input.id());
+        CampaignQuestEntity entity = panacheRepository.findById(input.id());
         if (entity == null) {
             throw new NotFoundException("Quest not found with ID: %d".formatted(input.id()));
         }
@@ -48,7 +51,7 @@ public class CampaignQuestUpdateRepositoryJpa implements CampaignQuestUpdateRepo
         }
         entity.updatedAt = LocalDateTime.now();
 
-        entity.persist();
+        panacheRepository.persist(entity);
 
         log.info(() -> "Quest %d updated successfully".formatted(input.id()));
         return mapper.toCampaignQuest(entity);

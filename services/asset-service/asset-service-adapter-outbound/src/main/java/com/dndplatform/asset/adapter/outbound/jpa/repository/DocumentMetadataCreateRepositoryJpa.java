@@ -4,6 +4,7 @@ import com.dndplatform.asset.adapter.outbound.jpa.entity.DocumentMetadataEntity;
 import com.dndplatform.asset.domain.model.Document;
 import com.dndplatform.asset.domain.repository.DocumentMetadataCreateRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
@@ -11,6 +12,13 @@ import java.time.ZoneOffset;
 
 @ApplicationScoped
 public class DocumentMetadataCreateRepositoryJpa implements DocumentMetadataCreateRepository {
+
+    private final DocumentMetadataPanacheRepository panacheRepository;
+
+    @Inject
+    public DocumentMetadataCreateRepositoryJpa(DocumentMetadataPanacheRepository panacheRepository) {
+        this.panacheRepository = panacheRepository;
+    }
 
     @Override
     @Transactional
@@ -25,6 +33,6 @@ public class DocumentMetadataCreateRepositoryJpa implements DocumentMetadataCrea
                 ? LocalDateTime.ofInstant(document.uploadedAt(), ZoneOffset.UTC)
                 : LocalDateTime.now();
         entity.ragStatus = "PENDING";
-        entity.persist();
+        panacheRepository.persist(entity);
     }
 }

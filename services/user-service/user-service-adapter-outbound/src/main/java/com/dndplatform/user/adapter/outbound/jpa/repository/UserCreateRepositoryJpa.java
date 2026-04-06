@@ -1,11 +1,9 @@
 package com.dndplatform.user.adapter.outbound.jpa.repository;
 
-import com.dndplatform.user.adapter.outbound.jpa.entity.UserEntity;
 import com.dndplatform.user.adapter.outbound.jpa.mapper.UserEntityMapper;
 import com.dndplatform.user.adapter.outbound.jpa.mapper.UserMapper;
 import com.dndplatform.user.domain.model.User;
 import com.dndplatform.user.domain.repository.UserCreateRepository;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -13,16 +11,19 @@ import jakarta.transaction.Transactional;
 import java.util.logging.Logger;
 
 @ApplicationScoped
-public class UserCreateRepositoryJpa implements UserCreateRepository, PanacheRepository<UserEntity> {
+public class UserCreateRepositoryJpa implements UserCreateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
     private final UserEntityMapper entityMapper;
     private final UserMapper domainMapper;
+    private final UserPanacheRepository panacheRepository;
 
     @Inject
-    public UserCreateRepositoryJpa(UserEntityMapper entityMapper, UserMapper domainMapper) {
+    public UserCreateRepositoryJpa(UserEntityMapper entityMapper, UserMapper domainMapper,
+                                   UserPanacheRepository panacheRepository) {
         this.entityMapper = entityMapper;
         this.domainMapper = domainMapper;
+        this.panacheRepository = panacheRepository;
     }
 
     @Override
@@ -31,7 +32,7 @@ public class UserCreateRepositoryJpa implements UserCreateRepository, PanacheRep
         log.info(() -> "Creating user %s".formatted(user));
 
         var entity = entityMapper.apply(user);
-        persist(entity);
+        panacheRepository.persist(entity);
         return domainMapper.apply(entity);
     }
 }

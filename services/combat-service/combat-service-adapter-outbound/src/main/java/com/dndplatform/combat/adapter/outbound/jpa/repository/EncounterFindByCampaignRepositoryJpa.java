@@ -1,6 +1,5 @@
 package com.dndplatform.combat.adapter.outbound.jpa.repository;
 
-import com.dndplatform.combat.adapter.outbound.jpa.entity.EncounterEntity;
 import com.dndplatform.combat.adapter.outbound.jpa.mapper.EncounterEntityMapper;
 import com.dndplatform.combat.domain.model.Encounter;
 import com.dndplatform.combat.domain.repository.EncounterFindByCampaignRepository;
@@ -15,17 +14,22 @@ public class EncounterFindByCampaignRepositoryJpa implements EncounterFindByCamp
 
     private final Logger log = Logger.getLogger(getClass().getName());
     private final EncounterEntityMapper mapper;
+    private final EncounterPanacheRepository panacheRepository;
 
     @Inject
-    public EncounterFindByCampaignRepositoryJpa(EncounterEntityMapper mapper) {
+    public EncounterFindByCampaignRepositoryJpa(EncounterEntityMapper mapper,
+                                                EncounterPanacheRepository panacheRepository) {
         this.mapper = mapper;
+        this.panacheRepository = panacheRepository;
     }
 
     @Override
     public List<Encounter> findByCampaign(Long campaignId) {
         log.info(() -> "Finding encounters for campaign: %d".formatted(campaignId));
 
-        List<EncounterEntity> entities = EncounterEntity.find("campaignId", campaignId).list();
-        return entities.stream().map(mapper::toEncounter).toList();
+        return panacheRepository.findByCampaignId(campaignId)
+                .stream()
+                .map(mapper::toEncounter)
+                .toList();
     }
 }

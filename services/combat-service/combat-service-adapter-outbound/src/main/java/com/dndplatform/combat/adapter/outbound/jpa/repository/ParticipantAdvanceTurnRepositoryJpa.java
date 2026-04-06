@@ -1,26 +1,29 @@
 package com.dndplatform.combat.adapter.outbound.jpa.repository;
 
-import com.dndplatform.combat.adapter.outbound.jpa.entity.EncounterParticipantEntity;
 import com.dndplatform.combat.domain.repository.ParticipantAdvanceTurnRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
-import java.util.List;
 import java.util.logging.Logger;
 
 @ApplicationScoped
 public class ParticipantAdvanceTurnRepositoryJpa implements ParticipantAdvanceTurnRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final ParticipantPanacheRepository participantRepository;
+
+    @Inject
+    public ParticipantAdvanceTurnRepositoryJpa(ParticipantPanacheRepository participantRepository) {
+        this.participantRepository = participantRepository;
+    }
 
     @Override
     @Transactional
     public void advanceTurn(Long encounterId) {
         log.info(() -> "Advancing turn for encounter %d".formatted(encounterId));
 
-        List<EncounterParticipantEntity> participants = EncounterParticipantEntity
-                .find("encounter.id = ?1 order by sortOrder asc", encounterId)
-                .list();
+        var participants = participantRepository.findByEncounterIdOrderBySortOrder(encounterId);
 
         if (participants.isEmpty()) return;
 
@@ -34,12 +37,12 @@ public class ParticipantAdvanceTurnRepositoryJpa implements ParticipantAdvanceTu
 
         if (activeIndex >= 0) {
             participants.get(activeIndex).isActive = false;
-            participants.get(activeIndex).persist();
+            participantRepository.persist(participants.get(activeIndex));
         }
 
         int nextIndex = (activeIndex + 1) % participants.size();
         participants.get(nextIndex).isActive = true;
-        participants.get(nextIndex).persist();
+        participantRepository.persist(participants.get(nextIndex));
 
         log.info(() -> "Turn advanced for encounter %d".formatted(encounterId));
     }

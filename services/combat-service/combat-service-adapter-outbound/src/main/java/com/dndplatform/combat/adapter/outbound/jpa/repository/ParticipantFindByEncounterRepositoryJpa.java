@@ -1,6 +1,5 @@
 package com.dndplatform.combat.adapter.outbound.jpa.repository;
 
-import com.dndplatform.combat.adapter.outbound.jpa.entity.EncounterParticipantEntity;
 import com.dndplatform.combat.adapter.outbound.jpa.mapper.EncounterEntityMapper;
 import com.dndplatform.combat.domain.model.EncounterParticipant;
 import com.dndplatform.combat.domain.repository.ParticipantFindByEncounterRepository;
@@ -15,20 +14,22 @@ public class ParticipantFindByEncounterRepositoryJpa implements ParticipantFindB
 
     private final Logger log = Logger.getLogger(getClass().getName());
     private final EncounterEntityMapper mapper;
+    private final ParticipantPanacheRepository participantRepository;
 
     @Inject
-    public ParticipantFindByEncounterRepositoryJpa(EncounterEntityMapper mapper) {
+    public ParticipantFindByEncounterRepositoryJpa(EncounterEntityMapper mapper,
+                                                   ParticipantPanacheRepository participantRepository) {
         this.mapper = mapper;
+        this.participantRepository = participantRepository;
     }
 
     @Override
     public List<EncounterParticipant> findByEncounterId(Long encounterId) {
         log.info(() -> "Finding participants for encounter: %d".formatted(encounterId));
 
-        List<EncounterParticipantEntity> entities = EncounterParticipantEntity
-                .find("encounter.id = ?1 order by sortOrder asc", encounterId)
-                .list();
-
-        return entities.stream().map(mapper::toParticipant).toList();
+        return participantRepository.findByEncounterIdOrderBySortOrder(encounterId)
+                .stream()
+                .map(mapper::toParticipant)
+                .toList();
     }
 }

@@ -1,12 +1,11 @@
 package com.dndplatform.auth.adapter.outbound.jpa.repository;
 
-import com.dndplatform.auth.adapter.outbound.jpa.entity.OtpLoginEntity;
 import com.dndplatform.auth.adapter.outbound.jpa.entity.OtpLoginEntityBuilder;
 import com.dndplatform.auth.domain.model.OtpLoginToken;
 import com.dndplatform.auth.domain.model.OtpLoginTokenBuilder;
 import com.dndplatform.auth.domain.repository.OtpLoginTokenCreateRepository;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -18,12 +17,18 @@ import static com.dndplatform.auth.adapter.outbound.jpa.util.TokenUtil.sha256;
 
 @Transactional
 @ApplicationScoped
-public class OtpLoginTokenCreateRepositoryJpa implements OtpLoginTokenCreateRepository, PanacheRepository<OtpLoginEntity> {
+public class OtpLoginTokenCreateRepositoryJpa implements OtpLoginTokenCreateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final OtpLoginPanacheRepository panacheRepository;
+    private final long tokenExpiryMinutes;
 
-    @ConfigProperty(name = "otp-login.token-expiry-minutes", defaultValue = "5")
-    long tokenExpiryMinutes;
+    @Inject
+    public OtpLoginTokenCreateRepositoryJpa(OtpLoginPanacheRepository panacheRepository,
+                                            @ConfigProperty(name = "otp-login.token-expiry-minutes", defaultValue = "5") long tokenExpiryMinutes) {
+        this.panacheRepository = panacheRepository;
+        this.tokenExpiryMinutes = tokenExpiryMinutes;
+    }
 
     @Override
     public OtpLoginToken create(long userId) {
@@ -40,7 +45,7 @@ public class OtpLoginTokenCreateRepositoryJpa implements OtpLoginTokenCreateRepo
                 .withUsed(false)
                 .withCreatedAt(now)
                 .build();
-        persist(entity);
+        panacheRepository.persist(entity);
 
         return OtpLoginTokenBuilder.builder()
                 .withId(entity.id)

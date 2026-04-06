@@ -27,12 +27,6 @@ public class ConversationFindByIdRepositoryImpl implements ConversationFindByIdR
     public Optional<Conversation> findById(Long id) {
         log.info(() -> "Finding conversation by id: %d".formatted(id));
 
-        return panacheRepository.find("""
-                SELECT c FROM ConversationEntity c
-                LEFT JOIN FETCH c.participants
-                WHERE c.id = ?1
-                """, id)
-                .firstResultOptional()
-                .map(mapper);
+        return panacheRepository.findByIdWithParticipants(id).map(mapper);
     }
 }

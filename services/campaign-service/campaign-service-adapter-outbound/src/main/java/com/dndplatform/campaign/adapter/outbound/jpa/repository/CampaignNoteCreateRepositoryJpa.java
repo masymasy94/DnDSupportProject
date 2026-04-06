@@ -18,10 +18,16 @@ import java.util.logging.Logger;
 public class CampaignNoteCreateRepositoryJpa implements CampaignNoteCreateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignPanacheRepository campaignPanacheRepository;
+    private final CampaignNotePanacheRepository notePanacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignNoteCreateRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignNoteCreateRepositoryJpa(CampaignPanacheRepository campaignPanacheRepository,
+                                           CampaignNotePanacheRepository notePanacheRepository,
+                                           CampaignEntityMapper mapper) {
+        this.campaignPanacheRepository = campaignPanacheRepository;
+        this.notePanacheRepository = notePanacheRepository;
         this.mapper = mapper;
     }
 
@@ -30,7 +36,7 @@ public class CampaignNoteCreateRepositoryJpa implements CampaignNoteCreateReposi
     public CampaignNote save(CampaignNoteCreate input) {
         log.info(() -> "Saving note for campaign %d".formatted(input.campaignId()));
 
-        CampaignEntity campaign = CampaignEntity.findById(input.campaignId());
+        CampaignEntity campaign = campaignPanacheRepository.findById(input.campaignId());
         if (campaign == null) {
             throw new NotFoundException("Campaign not found with ID: %d".formatted(input.campaignId()));
         }
@@ -43,7 +49,7 @@ public class CampaignNoteCreateRepositoryJpa implements CampaignNoteCreateReposi
         entity.visibility = input.visibility().name();
         entity.createdAt = LocalDateTime.now();
 
-        entity.persist();
+        notePanacheRepository.persist(entity);
 
         log.info(() -> "Note saved with ID: %d".formatted(entity.id));
         return mapper.toCampaignNote(entity);

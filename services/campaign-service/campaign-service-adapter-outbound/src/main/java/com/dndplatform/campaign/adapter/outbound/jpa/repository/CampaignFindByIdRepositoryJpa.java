@@ -14,10 +14,13 @@ import java.util.logging.Logger;
 public class CampaignFindByIdRepositoryJpa implements CampaignFindByIdRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignPanacheRepository panacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignFindByIdRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignFindByIdRepositoryJpa(CampaignPanacheRepository panacheRepository,
+                                         CampaignEntityMapper mapper) {
+        this.panacheRepository = panacheRepository;
         this.mapper = mapper;
     }
 
@@ -25,7 +28,6 @@ public class CampaignFindByIdRepositoryJpa implements CampaignFindByIdRepository
     public Optional<Campaign> findById(Long id) {
         log.info(() -> "Finding campaign by ID: %d".formatted(id));
 
-        CampaignEntity entity = CampaignEntity.find("id", id).firstResult();
-        return Optional.ofNullable(entity).map(mapper::toCampaign);
+        return panacheRepository.findByIdOptional(id).map(mapper::toCampaign);
     }
 }

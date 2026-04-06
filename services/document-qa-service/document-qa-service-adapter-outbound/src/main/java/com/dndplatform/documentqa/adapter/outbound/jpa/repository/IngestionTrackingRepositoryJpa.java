@@ -6,6 +6,7 @@ import com.dndplatform.documentqa.domain.model.DocumentIngestionBuilder;
 import com.dndplatform.documentqa.domain.model.IngestionStatus;
 import com.dndplatform.documentqa.domain.repository.IngestionTrackingRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
@@ -16,6 +17,13 @@ import java.util.logging.Logger;
 public class IngestionTrackingRepositoryJpa implements IngestionTrackingRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+
+    private final DocumentIngestionPanacheRepository panacheRepository;
+
+    @Inject
+    public IngestionTrackingRepositoryJpa(DocumentIngestionPanacheRepository panacheRepository) {
+        this.panacheRepository = panacheRepository;
+    }
 
     @Override
     @Transactional
@@ -30,7 +38,7 @@ public class IngestionTrackingRepositoryJpa implements IngestionTrackingReposito
         entity.status = IngestionStatus.PENDING.name();
         entity.startedAt = LocalDateTime.now();
 
-        entity.persist();
+        panacheRepository.persist(entity);
 
         log.info(() -> "Ingestion tracking created for document: %s".formatted(documentId));
     }
@@ -40,7 +48,7 @@ public class IngestionTrackingRepositoryJpa implements IngestionTrackingReposito
     public void updateStatus(String documentId, IngestionStatus status, Integer chunkCount, String errorMessage) {
         log.info(() -> "Updating ingestion status for document %s to %s".formatted(documentId, status));
 
-        DocumentIngestionEntity entity = DocumentIngestionEntity.findById(documentId);
+        DocumentIngestionEntity entity = panacheRepository.findByIdOptional(documentId).orElse(null);
         if (entity == null) {
             log.warning(() -> "Ingestion tracking not found for document: %s".formatted(documentId));
             return;
@@ -60,7 +68,7 @@ public class IngestionTrackingRepositoryJpa implements IngestionTrackingReposito
     @Override
     @Transactional
     public void delete(String documentId) {
-        long deleted = DocumentIngestionEntity.delete("documentId", documentId);
+        long deleted = panacheRepository.deleteByDocumentId(documentId);
         if (deleted > 0) {
             log.info(() -> "Deleted ingestion tracking for document: %s".formatted(documentId));
         }
@@ -70,8 +78,7 @@ public class IngestionTrackingRepositoryJpa implements IngestionTrackingReposito
     public Optional<DocumentIngestion> findByDocumentId(String documentId) {
         log.info(() -> "Finding ingestion tracking for document: %s".formatted(documentId));
 
-        DocumentIngestionEntity entity = DocumentIngestionEntity.findById(documentId);
-        return Optional.ofNullable(entity).map(this::toDomain);
+        return panacheRepository.findByIdOptional(documentId).map(this::toDomain);
     }
 
     private DocumentIngestion toDomain(DocumentIngestionEntity entity) {

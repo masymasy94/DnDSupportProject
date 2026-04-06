@@ -17,10 +17,13 @@ import java.util.logging.Logger;
 public class CampaignUpdateRepositoryJpa implements CampaignUpdateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignPanacheRepository panacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignUpdateRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignUpdateRepositoryJpa(CampaignPanacheRepository panacheRepository,
+                                       CampaignEntityMapper mapper) {
+        this.panacheRepository = panacheRepository;
         this.mapper = mapper;
     }
 
@@ -29,7 +32,7 @@ public class CampaignUpdateRepositoryJpa implements CampaignUpdateRepository {
     public Campaign update(CampaignUpdate input) {
         log.info(() -> "Updating campaign: %d".formatted(input.id()));
 
-        CampaignEntity entity = CampaignEntity.findById(input.id());
+        CampaignEntity entity = panacheRepository.findById(input.id());
         if (entity == null) {
             throw new NotFoundException("Campaign not found with ID: %d".formatted(input.id()));
         }
@@ -51,7 +54,7 @@ public class CampaignUpdateRepositoryJpa implements CampaignUpdateRepository {
         }
         entity.updatedAt = LocalDateTime.now();
 
-        entity.persist();
+        panacheRepository.persist(entity);
 
         log.info(() -> "Campaign %d updated successfully".formatted(input.id()));
         return mapper.toCampaign(entity);

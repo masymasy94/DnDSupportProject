@@ -11,6 +11,7 @@ import com.dndplatform.common.exception.UnauthorizedException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
@@ -22,16 +23,19 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     private final PasswordResetTokenMarkUsedRepository passwordResetTokenMarkUsedRepository;
     private final UserUpdatePasswordRepository userUpdatePasswordRepository;
     private final RefreshTokenRevokeAllRepository refreshTokenRevokeAllRepository;
+    private final Clock clock;
 
     @Inject
     public ResetPasswordServiceImpl(PasswordResetTokenFindByTokenRepository passwordResetTokenFindByTokenRepository,
                                     PasswordResetTokenMarkUsedRepository passwordResetTokenMarkUsedRepository,
                                     UserUpdatePasswordRepository userUpdatePasswordRepository,
-                                    RefreshTokenRevokeAllRepository refreshTokenRevokeAllRepository) {
+                                    RefreshTokenRevokeAllRepository refreshTokenRevokeAllRepository,
+                                    Clock clock) {
         this.passwordResetTokenFindByTokenRepository = passwordResetTokenFindByTokenRepository;
         this.passwordResetTokenMarkUsedRepository = passwordResetTokenMarkUsedRepository;
         this.userUpdatePasswordRepository = userUpdatePasswordRepository;
         this.refreshTokenRevokeAllRepository = refreshTokenRevokeAllRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -50,11 +54,11 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
         log.info(() -> "Password successfully reset for user id: %s".formatted(token.userId()));
     }
 
-    private static void validateToken(PasswordResetToken token) {
+    private void validateToken(PasswordResetToken token) {
         if (Boolean.TRUE.equals(token.used())) {
             throw new UnauthorizedException("Password reset token has already been used");
         }
-        if (token.expiresAt().isBefore(LocalDateTime.now())) {
+        if (token.expiresAt().isBefore(LocalDateTime.now(clock))) {
             throw new UnauthorizedException("Password reset token has expired");
         }
     }

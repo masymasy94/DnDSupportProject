@@ -5,7 +5,6 @@ import com.dndplatform.auth.adapter.outbound.jpa.entity.RefreshTokenEntityBuilde
 import com.dndplatform.auth.adapter.outbound.jpa.mapper.RefreshTokenMapper;
 import com.dndplatform.auth.domain.model.RefreshToken;
 import com.dndplatform.auth.domain.repository.RefreshTokenCreateRepository;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -17,16 +16,20 @@ import java.util.logging.Logger;
 
 @Transactional
 @ApplicationScoped
-public class RefreshTokenCreateRepositoryJpa implements RefreshTokenCreateRepository, PanacheRepository<RefreshTokenEntity> {
+public class RefreshTokenCreateRepositoryJpa implements RefreshTokenCreateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
     private final RefreshTokenMapper mapper;
-    @ConfigProperty(name = "jwt.refresh-token-expiry-days", defaultValue = "30")
-    long refreshTokenExpiryDays;
+    private final RefreshTokenPanacheRepository panacheRepository;
+    private final long refreshTokenExpiryDays;
 
     @Inject
-    public RefreshTokenCreateRepositoryJpa(RefreshTokenMapper mapper) {
+    public RefreshTokenCreateRepositoryJpa(RefreshTokenMapper mapper,
+                                           RefreshTokenPanacheRepository panacheRepository,
+                                           @ConfigProperty(name = "jwt.refresh-token-expiry-days", defaultValue = "30") long refreshTokenExpiryDays) {
         this.mapper = mapper;
+        this.panacheRepository = panacheRepository;
+        this.refreshTokenExpiryDays = refreshTokenExpiryDays;
     }
 
     @Override
@@ -34,9 +37,9 @@ public class RefreshTokenCreateRepositoryJpa implements RefreshTokenCreateReposi
 
         log.info(() -> "Creating refresh token for user %s".formatted(userId));
 
-        LocalDateTime now =  LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
         var entity = buildRefreshTokenEntity(userId, now, now.plusDays(refreshTokenExpiryDays));
-        persist(entity);
+        panacheRepository.persist(entity);
 
         return mapper.apply(entity);
     }

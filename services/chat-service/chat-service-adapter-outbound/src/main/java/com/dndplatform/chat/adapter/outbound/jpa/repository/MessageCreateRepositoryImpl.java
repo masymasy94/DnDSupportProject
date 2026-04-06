@@ -1,13 +1,11 @@
 package com.dndplatform.chat.adapter.outbound.jpa.repository;
 
-import com.dndplatform.chat.adapter.outbound.jpa.entity.ConversationEntity;
 import com.dndplatform.chat.adapter.outbound.jpa.entity.MessageEntity;
 import com.dndplatform.chat.adapter.outbound.jpa.mapper.MessageMapper;
 import com.dndplatform.chat.domain.model.Message;
 import com.dndplatform.chat.domain.repository.MessageCreateRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
@@ -18,16 +16,16 @@ public class MessageCreateRepositoryImpl implements MessageCreateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
     private final MessagePanacheRepository panacheRepository;
+    private final ConversationPanacheRepository conversationPanacheRepository;
     private final MessageMapper mapper;
-    private final EntityManager entityManager;
 
     @Inject
     public MessageCreateRepositoryImpl(MessagePanacheRepository panacheRepository,
-                                        MessageMapper mapper,
-                                        EntityManager entityManager) {
+                                        ConversationPanacheRepository conversationPanacheRepository,
+                                        MessageMapper mapper) {
         this.panacheRepository = panacheRepository;
+        this.conversationPanacheRepository = conversationPanacheRepository;
         this.mapper = mapper;
-        this.entityManager = entityManager;
     }
 
     @Override
@@ -36,7 +34,7 @@ public class MessageCreateRepositoryImpl implements MessageCreateRepository {
         log.info(() -> "Creating message: conversationId=%d, senderId=%d"
                 .formatted(message.conversationId(), message.senderId()));
 
-        var conversationRef = entityManager.getReference(ConversationEntity.class, message.conversationId());
+        var conversationRef = conversationPanacheRepository.findById(message.conversationId());
 
         var entity = new MessageEntity();
         entity.conversation = conversationRef;
@@ -48,12 +46,8 @@ public class MessageCreateRepositoryImpl implements MessageCreateRepository {
         panacheRepository.persist(entity);
 
         // Update conversation's updated_at timestamp
-        entityManager.createQuery("""
-                UPDATE ConversationEntity c SET c.updatedAt = :now WHERE c.id = :id
-                """)
-                .setParameter("now", LocalDateTime.now())
-                .setParameter("id", message.conversationId())
-                .executeUpdate();
+        conversationPanacheRepository.update("updatedAt = ?1 where id = ?2",
+                LocalDateTime.now(), message.conversationId());
 
         return mapper.apply(entity);
     }

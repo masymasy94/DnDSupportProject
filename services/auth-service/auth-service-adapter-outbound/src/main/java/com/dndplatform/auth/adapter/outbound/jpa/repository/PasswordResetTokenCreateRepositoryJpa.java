@@ -1,12 +1,11 @@
 package com.dndplatform.auth.adapter.outbound.jpa.repository;
 
-import com.dndplatform.auth.adapter.outbound.jpa.entity.PasswordResetEntity;
 import com.dndplatform.auth.adapter.outbound.jpa.entity.PasswordResetEntityBuilder;
 import com.dndplatform.auth.domain.model.PasswordResetToken;
 import com.dndplatform.auth.domain.model.PasswordResetTokenBuilder;
 import com.dndplatform.auth.domain.repository.PasswordResetTokenCreateRepository;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -18,12 +17,18 @@ import static com.dndplatform.auth.adapter.outbound.jpa.util.TokenUtil.sha256;
 
 @Transactional
 @ApplicationScoped
-public class PasswordResetTokenCreateRepositoryJpa implements PasswordResetTokenCreateRepository, PanacheRepository<PasswordResetEntity> {
+public class PasswordResetTokenCreateRepositoryJpa implements PasswordResetTokenCreateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final PasswordResetPanacheRepository panacheRepository;
+    private final long tokenExpiryMinutes;
 
-    @ConfigProperty(name = "password-reset.token-expiry-minutes", defaultValue = "15")
-    long tokenExpiryMinutes;
+    @Inject
+    public PasswordResetTokenCreateRepositoryJpa(PasswordResetPanacheRepository panacheRepository,
+                                                 @ConfigProperty(name = "password-reset.token-expiry-minutes", defaultValue = "15") long tokenExpiryMinutes) {
+        this.panacheRepository = panacheRepository;
+        this.tokenExpiryMinutes = tokenExpiryMinutes;
+    }
 
     @Override
     public PasswordResetToken create(long userId) {
@@ -40,7 +45,7 @@ public class PasswordResetTokenCreateRepositoryJpa implements PasswordResetToken
                 .withUsed(false)
                 .withCreatedAt(now)
                 .build();
-        persist(entity);
+        panacheRepository.persist(entity);
 
         return PasswordResetTokenBuilder.builder()
                 .withId(entity.id)

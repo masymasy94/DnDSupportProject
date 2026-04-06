@@ -1,11 +1,8 @@
 package com.dndplatform.user.adapter.outbound.jpa.repository;
 
-import com.dndplatform.user.adapter.outbound.jpa.entity.UserEntity;
 import com.dndplatform.user.adapter.outbound.jpa.mapper.UserMapper;
 import com.dndplatform.user.domain.model.User;
 import com.dndplatform.user.domain.repository.UserFindAllRepository;
-import io.quarkus.panache.common.Page;
-import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -15,24 +12,24 @@ import java.util.List;
 public class UserFindAllRepositoryJpa implements UserFindAllRepository {
 
     private final UserMapper mapper;
+    private final UserPanacheRepository panacheRepository;
 
     @Inject
-    public UserFindAllRepositoryJpa(UserMapper mapper) {
+    public UserFindAllRepositoryJpa(UserMapper mapper, UserPanacheRepository panacheRepository) {
         this.mapper = mapper;
+        this.panacheRepository = panacheRepository;
     }
 
     @Override
     public List<User> findAll(int page, int size) {
-        return UserEntity.findAll(Sort.by("username"))
-                .page(Page.of(page, size))
-                .list()
+        return panacheRepository.findAllPaged(page, size)
                 .stream()
-                .map(e -> mapper.apply((UserEntity) e))
+                .map(mapper)
                 .toList();
     }
 
     @Override
     public long count() {
-        return UserEntity.count();
+        return panacheRepository.count();
     }
 }

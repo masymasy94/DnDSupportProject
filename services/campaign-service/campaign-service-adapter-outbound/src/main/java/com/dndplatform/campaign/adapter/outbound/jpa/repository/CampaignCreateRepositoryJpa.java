@@ -5,7 +5,6 @@ import com.dndplatform.campaign.adapter.outbound.jpa.mapper.CampaignEntityMapper
 import com.dndplatform.campaign.domain.model.Campaign;
 import com.dndplatform.campaign.domain.model.CampaignCreate;
 import com.dndplatform.campaign.domain.repository.CampaignCreateRepository;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -14,13 +13,16 @@ import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
 @ApplicationScoped
-public class CampaignCreateRepositoryJpa implements CampaignCreateRepository, PanacheRepository<CampaignEntity> {
+public class CampaignCreateRepositoryJpa implements CampaignCreateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignPanacheRepository panacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignCreateRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignCreateRepositoryJpa(CampaignPanacheRepository panacheRepository,
+                                       CampaignEntityMapper mapper) {
+        this.panacheRepository = panacheRepository;
         this.mapper = mapper;
     }
 
@@ -38,7 +40,7 @@ public class CampaignCreateRepositoryJpa implements CampaignCreateRepository, Pa
         entity.imageUrl = input.imageUrl();
         entity.createdAt = LocalDateTime.now();
 
-        persist(entity);
+        panacheRepository.persist(entity);
 
         log.info(() -> "Campaign saved with ID: %d".formatted(entity.id));
         return mapper.toCampaign(entity);

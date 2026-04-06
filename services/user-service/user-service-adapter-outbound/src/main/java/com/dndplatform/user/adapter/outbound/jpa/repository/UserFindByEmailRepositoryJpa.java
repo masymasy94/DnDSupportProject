@@ -1,29 +1,27 @@
 package com.dndplatform.user.adapter.outbound.jpa.repository;
 
-import com.dndplatform.user.adapter.outbound.jpa.entity.UserEntity;
 import com.dndplatform.user.adapter.outbound.jpa.mapper.UserMapper;
 import com.dndplatform.user.domain.model.User;
 import com.dndplatform.user.domain.repository.UserFindByEmailRepository;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.Optional;
 
 @ApplicationScoped
-public class UserFindByEmailRepositoryJpa implements UserFindByEmailRepository, PanacheRepository<UserEntity> {
+public class UserFindByEmailRepositoryJpa implements UserFindByEmailRepository {
 
     private final UserMapper mapper;
+    private final UserPanacheRepository panacheRepository;
 
     @Inject
-    public UserFindByEmailRepositoryJpa(UserMapper mapper) {
+    public UserFindByEmailRepositoryJpa(UserMapper mapper, UserPanacheRepository panacheRepository) {
         this.mapper = mapper;
+        this.panacheRepository = panacheRepository;
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return find("email", email)
-                .firstResultOptional()
-                .map(mapper);
+        return panacheRepository.findByEmail(email).map(mapper);
     }
 }

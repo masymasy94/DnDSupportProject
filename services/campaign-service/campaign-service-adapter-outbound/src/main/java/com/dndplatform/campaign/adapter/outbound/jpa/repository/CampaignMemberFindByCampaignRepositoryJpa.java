@@ -1,6 +1,5 @@
 package com.dndplatform.campaign.adapter.outbound.jpa.repository;
 
-import com.dndplatform.campaign.adapter.outbound.jpa.entity.CampaignMemberEntity;
 import com.dndplatform.campaign.adapter.outbound.jpa.mapper.CampaignEntityMapper;
 import com.dndplatform.campaign.domain.model.CampaignMember;
 import com.dndplatform.campaign.domain.repository.CampaignMemberFindByCampaignRepository;
@@ -14,10 +13,13 @@ import java.util.logging.Logger;
 public class CampaignMemberFindByCampaignRepositoryJpa implements CampaignMemberFindByCampaignRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final CampaignMemberPanacheRepository panacheRepository;
     private final CampaignEntityMapper mapper;
 
     @Inject
-    public CampaignMemberFindByCampaignRepositoryJpa(CampaignEntityMapper mapper) {
+    public CampaignMemberFindByCampaignRepositoryJpa(CampaignMemberPanacheRepository panacheRepository,
+                                                     CampaignEntityMapper mapper) {
+        this.panacheRepository = panacheRepository;
         this.mapper = mapper;
     }
 
@@ -25,8 +27,7 @@ public class CampaignMemberFindByCampaignRepositoryJpa implements CampaignMember
     public List<CampaignMember> findByCampaignId(Long campaignId) {
         log.info(() -> "Finding members for campaign %d".formatted(campaignId));
 
-        return CampaignMemberEntity.<CampaignMemberEntity>find("campaign.id", campaignId)
-                .list().stream()
+        return panacheRepository.findByCampaignId(campaignId).stream()
                 .map(mapper::toCampaignMember)
                 .toList();
     }

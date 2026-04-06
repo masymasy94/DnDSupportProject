@@ -19,10 +19,13 @@ public class EncounterCreateRepositoryJpa implements EncounterCreateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
     private final EncounterEntityMapper mapper;
+    private final EncounterPanacheRepository panacheRepository;
 
     @Inject
-    public EncounterCreateRepositoryJpa(EncounterEntityMapper mapper) {
+    public EncounterCreateRepositoryJpa(EncounterEntityMapper mapper,
+                                        EncounterPanacheRepository panacheRepository) {
         this.mapper = mapper;
+        this.panacheRepository = panacheRepository;
     }
 
     @Override
@@ -55,7 +58,7 @@ public class EncounterCreateRepositoryJpa implements EncounterCreateRepository {
             }
         }
 
-        entity.persist();
+        panacheRepository.persist(entity);
 
         log.info(() -> "Encounter saved with ID: %d".formatted(entity.id));
         return mapper.toEncounter(entity);

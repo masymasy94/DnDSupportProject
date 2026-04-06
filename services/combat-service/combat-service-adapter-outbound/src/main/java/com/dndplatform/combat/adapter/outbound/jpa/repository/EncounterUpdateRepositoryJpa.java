@@ -1,6 +1,5 @@
 package com.dndplatform.combat.adapter.outbound.jpa.repository;
 
-import com.dndplatform.combat.adapter.outbound.jpa.entity.EncounterEntity;
 import com.dndplatform.combat.adapter.outbound.jpa.entity.EncounterParticipantEntity;
 import com.dndplatform.combat.adapter.outbound.jpa.mapper.EncounterEntityMapper;
 import com.dndplatform.combat.domain.model.Encounter;
@@ -10,7 +9,6 @@ import com.dndplatform.combat.domain.repository.EncounterUpdateRepository;
 import com.dndplatform.common.exception.NotFoundException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
@@ -21,12 +19,13 @@ public class EncounterUpdateRepositoryJpa implements EncounterUpdateRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
     private final EncounterEntityMapper mapper;
-    private final EntityManager entityManager;
+    private final EncounterPanacheRepository panacheRepository;
 
     @Inject
-    public EncounterUpdateRepositoryJpa(EncounterEntityMapper mapper, EntityManager entityManager) {
+    public EncounterUpdateRepositoryJpa(EncounterEntityMapper mapper,
+                                        EncounterPanacheRepository panacheRepository) {
         this.mapper = mapper;
-        this.entityManager = entityManager;
+        this.panacheRepository = panacheRepository;
     }
 
     @Override
@@ -34,10 +33,8 @@ public class EncounterUpdateRepositoryJpa implements EncounterUpdateRepository {
     public Encounter update(EncounterUpdate input) {
         log.info(() -> "Updating encounter: %d".formatted(input.id()));
 
-        EncounterEntity entity = EncounterEntity.findById(input.id());
-        if (entity == null) {
-            throw new NotFoundException("Encounter not found with ID: %d".formatted(input.id()));
-        }
+        var entity = panacheRepository.findByIdOptional(input.id())
+                .orElseThrow(() -> new NotFoundException("Encounter not found with ID: %d".formatted(input.id())));
 
         if (input.name() != null) entity.name = input.name();
         if (input.description() != null) entity.description = input.description();
@@ -47,7 +44,7 @@ public class EncounterUpdateRepositoryJpa implements EncounterUpdateRepository {
 
         if (input.participants() != null) {
             entity.participants.clear();
-            entityManager.flush();
+            panacheRepository.flush();
 
             for (ParticipantCreate pc : input.participants()) {
                 EncounterParticipantEntity pe = new EncounterParticipantEntity();
@@ -63,7 +60,7 @@ public class EncounterUpdateRepositoryJpa implements EncounterUpdateRepository {
             }
         }
 
-        entity.persist();
+        panacheRepository.persist(entity);
 
         log.info(() -> "Encounter %d updated successfully".formatted(input.id()));
         return mapper.toEncounter(entity);
