@@ -13,6 +13,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 @ApplicationScoped
@@ -24,16 +25,19 @@ public class UserRegisterServiceImpl implements UserRegisterService {
     private final UserCreateRepository userCreateRepository;
     private final EmailSendRepository emailSendRepository;
     private final UserRegisteredEventMapper userRegisteredEventMapper;
+    private final Clock clock;
 
     @Inject
     public UserRegisterServiceImpl(UserValidationRepository userValidationRepository,
                                    UserCreateRepository userCreateRepository,
                                    EmailSendRepository emailSendRepository,
-                                   UserRegisteredEventMapper userRegisteredEventMapper) {
+                                   UserRegisteredEventMapper userRegisteredEventMapper,
+                                   Clock clock) {
         this.userValidationRepository = userValidationRepository;
         this.userCreateRepository = userCreateRepository;
         this.emailSendRepository = emailSendRepository;
         this.userRegisteredEventMapper = userRegisteredEventMapper;
+        this.clock = clock;
     }
 
     @Override
@@ -47,14 +51,14 @@ public class UserRegisterServiceImpl implements UserRegisterService {
     }
 
     @Nonnull
-    private static User getUser(UserRegister userRegister, String passwordHash) {
+    private User getUser(UserRegister userRegister, String passwordHash) {
         return UserBuilder.builder()
                 .withUsername(userRegister.username())
                 .withEmail(userRegister.email())
                 .withPasswordHash(passwordHash)
                 .withRole(DEFAULT_ROLE)
                 .withActive(true)
-                .withCreatedAt(LocalDateTime.now())
+                .withCreatedAt(LocalDateTime.now(clock))
                 .build();
     }
 

@@ -13,6 +13,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
@@ -23,12 +24,15 @@ public class DirectConversationCreateServiceImpl implements DirectConversationCr
     private final Logger log = Logger.getLogger(getClass().getName());
     private final ConversationCreateRepository conversationCreateRepository;
     private final ConversationFindDirectRepository findDirectRepository;
+    private final Clock clock;
 
     @Inject
     public DirectConversationCreateServiceImpl(ConversationCreateRepository conversationCreateRepository,
-                                               ConversationFindDirectRepository findDirectRepository) {
+                                               ConversationFindDirectRepository findDirectRepository,
+                                               Clock clock) {
         this.conversationCreateRepository = conversationCreateRepository;
         this.findDirectRepository = findDirectRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -56,11 +60,11 @@ public class DirectConversationCreateServiceImpl implements DirectConversationCr
     }
 
 
-    private static Conversation getConversation(Long createdBy, List<ConversationParticipant> participants) {
+    private Conversation getConversation(Long createdBy, List<ConversationParticipant> participants) {
         return ConversationBuilder.builder()
                 .withType(ConversationType.DIRECT)
                 .withCreatedBy(createdBy)
-                .withCreatedAt(LocalDateTime.now())
+                .withCreatedAt(LocalDateTime.now(clock))
                 .withParticipants(participants)
                 .build();
     }
@@ -69,7 +73,7 @@ public class DirectConversationCreateServiceImpl implements DirectConversationCr
         return ConversationParticipantBuilder.builder()
                 .withUserId(userId)
                 .withRole(role)
-                .withJoinedAt(LocalDateTime.now())
+                .withJoinedAt(LocalDateTime.now(clock))
                 .build();
     }
 }

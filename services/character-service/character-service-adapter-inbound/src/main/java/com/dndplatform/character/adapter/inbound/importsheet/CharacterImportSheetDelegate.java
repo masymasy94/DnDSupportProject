@@ -6,7 +6,7 @@ import com.dndplatform.character.adapter.inbound.importsheet.parser.PdfCharacter
 import com.dndplatform.character.domain.CharacterCreateService;
 import com.dndplatform.character.domain.model.Character;
 import com.dndplatform.character.domain.model.CharacterCreate;
-import com.dndplatform.character.domain.repository.CharacterSheetRepository;
+import com.dndplatform.character.domain.repository.CharacterSheetSaveRepository;
 import com.dndplatform.character.view.model.CharacterImportSheetResource;
 import com.dndplatform.character.view.model.vm.CharacterViewModel;
 import com.dndplatform.common.annotations.Delegate;
@@ -26,14 +26,14 @@ public class CharacterImportSheetDelegate implements CharacterImportSheetResourc
     private final PdfCharacterSheetParser parser;
     private final PdfFieldToCharacterMapper fieldMapper;
     private final CharacterCreateService createService;
-    private final CharacterSheetRepository sheetRepository;
+    private final CharacterSheetSaveRepository sheetRepository;
     private final CharacterViewModelMapper viewModelMapper;
 
     @Inject
     public CharacterImportSheetDelegate(PdfCharacterSheetParser parser,
                                         PdfFieldToCharacterMapper fieldMapper,
                                         CharacterCreateService createService,
-                                        CharacterSheetRepository sheetRepository,
+                                        CharacterSheetSaveRepository sheetRepository,
                                         CharacterViewModelMapper viewModelMapper) {
         this.parser = parser;
         this.fieldMapper = fieldMapper;

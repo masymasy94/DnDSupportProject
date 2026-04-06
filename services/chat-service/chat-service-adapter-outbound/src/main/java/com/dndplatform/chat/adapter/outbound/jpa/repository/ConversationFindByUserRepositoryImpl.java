@@ -27,13 +27,7 @@ public class ConversationFindByUserRepositoryImpl implements ConversationFindByU
     public List<Conversation> findByUserId(Long userId) {
         log.info(() -> "Finding conversations for user: %d".formatted(userId));
 
-        return panacheRepository.find("""
-                SELECT DISTINCT c FROM ConversationEntity c
-                JOIN FETCH c.participants p
-                WHERE p.userId = ?1 AND p.leftAt IS NULL
-                ORDER BY c.updatedAt DESC NULLS LAST, c.createdAt DESC
-                """, userId)
-                .list()
+        return panacheRepository.findActiveByUserId(userId)
                 .stream()
                 .map(mapper)
                 .toList();

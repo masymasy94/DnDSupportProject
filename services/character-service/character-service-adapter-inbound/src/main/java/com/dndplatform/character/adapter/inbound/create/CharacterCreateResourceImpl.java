@@ -13,7 +13,6 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -42,12 +41,10 @@ import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeT
 public class CharacterCreateResourceImpl implements CharacterCreateResource {
 
     private final CharacterCreateDelegate delegate;
-    private final JsonWebToken jwt;
 
     @Inject
-    public CharacterCreateResourceImpl(@Delegate CharacterCreateResource delegate, JsonWebToken jwt) {
+    public CharacterCreateResourceImpl(@Delegate CharacterCreateResource delegate) {
         this.delegate = (CharacterCreateDelegate) delegate;
-        this.jwt = jwt;
     }
 
     @POST
@@ -66,10 +63,6 @@ public class CharacterCreateResourceImpl implements CharacterCreateResource {
             @APIResponse(
                     responseCode = "401",
                     description = "Unauthorized - missing or invalid token"
-            ),
-            @APIResponse(
-                    responseCode = "404",
-                    description = "Invalid compendium reference (species, class, background, or alignment not found)"
             )
     })
     @SecurityRequirement(name = "bearer")
@@ -82,7 +75,6 @@ public class CharacterCreateResourceImpl implements CharacterCreateResource {
             )
             CreateCharacterRequest request) {
 
-        Long userId = Long.parseLong(jwt.getSubject());
-        return delegate.createWithUserId(request, userId);
+        return delegate.create(request);
     }
 }

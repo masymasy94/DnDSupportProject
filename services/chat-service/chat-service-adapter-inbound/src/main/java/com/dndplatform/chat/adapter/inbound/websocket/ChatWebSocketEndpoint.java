@@ -1,8 +1,5 @@
 package com.dndplatform.chat.adapter.inbound.websocket;
 
-import com.dndplatform.chat.domain.MessageSendService;
-import com.dndplatform.chat.domain.model.Message;
-import com.dndplatform.chat.domain.model.MessageType;
 import com.dndplatform.chat.domain.repository.ParticipantFindByConversationRepository;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnError;
@@ -30,30 +27,28 @@ public class ChatWebSocketEndpoint {
     private final Logger log = Logger.getLogger(getClass().getName());
     private final Jsonb jsonb = JsonbBuilder.create();
 
-    // Store connection -> userId mapping
     private final Map<String, Long> connectionUserMap = new ConcurrentHashMap<>();
 
     private final ChatSessionManager sessionManager;
-    private final MessageSendService messageSendService;
-    private final ParticipantFindByConversationRepository participantRepository;
     private final JWTParser jwtParser;
+    private final ChatWebSocketMessageHandler messageHandler;
+    private final ParticipantFindByConversationRepository participantRepository;
 
     @Inject
     public ChatWebSocketEndpoint(ChatSessionManager sessionManager,
-                                 MessageSendService messageSendService,
-                                 ParticipantFindByConversationRepository participantRepository,
-                                 JWTParser jwtParser) {
+                                 JWTParser jwtParser,
+                                 ChatWebSocketMessageHandler messageHandler,
+                                 ParticipantFindByConversationRepository participantRepository) {
         this.sessionManager = sessionManager;
-        this.messageSendService = messageSendService;
-        this.participantRepository = participantRepository;
         this.jwtParser = jwtParser;
+        this.messageHandler = messageHandler;
+        this.participantRepository = participantRepository;
     }
 
     @OnOpen
     public void onOpen(WebSocketConnection connection) {
         log.info(() -> "WebSocket connection opened: " + connection.id());
 
-        // Extract token from query parameter (query() returns raw query string like "token=xxx")
         String token = parseQueryParam(connection.handshakeRequest().query(), "token");
 
         if (token == null || token.isBlank()) {
@@ -109,60 +104,35 @@ public class ChatWebSocketEndpoint {
         try {
             ChatWebSocketIncomingMessage incoming = jsonb.fromJson(message, ChatWebSocketIncomingMessage.class);
 
+            ChatWebSocketMessage result;
             if ("SEND_MESSAGE".equals(incoming.type())) {
-                return handleSendMessage(userId, incoming);
+                result = messageHandler.handleSendMessage(userId, incoming.conversationId(), incoming.content(), incoming.messageType());
+            } else if ("ROLL_DICE".equals(incoming.type())) {
+                result = messageHandler.handleRollDice(userId, incoming.conversationId(), incoming.content());
             } else {
-                return jsonb.toJson(ChatWebSocketMessage.error("Unknown message type: " + incoming.type()));
+                result = ChatWebSocketMessage.error("Unknown message type: " + incoming.type());
             }
+
+            String resultJson = jsonb.toJson(result);
+
+            // Broadcast successful messages to all conversation participants
+            if ("NEW_MESSAGE".equals(result.type()) && incoming.conversationId() != null) {
+                broadcastToParticipants(incoming.conversationId(), resultJson);
+            }
+
+            return resultJson;
         } catch (Exception e) {
             log.log(Level.WARNING, "Failed to process message", e);
             return jsonb.toJson(ChatWebSocketMessage.error("Failed to process message: " + e.getMessage()));
         }
     }
 
-    private String handleSendMessage(Long senderId, ChatWebSocketIncomingMessage incoming) {
-        if (incoming.conversationId() == null) {
-            return jsonb.toJson(ChatWebSocketMessage.error("conversationId is required"));
-        }
-        if (incoming.content() == null || incoming.content().isBlank()) {
-            return jsonb.toJson(ChatWebSocketMessage.error("content is required"));
-        }
-
-        try {
-            MessageType messageType = incoming.messageType() != null
-                    ? MessageType.valueOf(incoming.messageType())
-                    : MessageType.TEXT;
-
-            Message savedMessage = messageSendService.send(
-                    incoming.conversationId(),
-                    senderId,
-                    incoming.content(),
-                    messageType
-            );
-
-            // Broadcast to all participants
-            List<Long> participantIds = participantRepository.findByConversationId(incoming.conversationId())
-                    .stream()
-                    .map(p -> p.userId())
-                    .toList();
-
-            ChatWebSocketMessage outgoing = ChatWebSocketMessage.newMessage(
-                    savedMessage.conversationId(),
-                    savedMessage.id(),
-                    savedMessage.senderId(),
-                    savedMessage.content(),
-                    savedMessage.messageType().name(),
-                    savedMessage.createdAt()
-            );
-
-            String outgoingJson = jsonb.toJson(outgoing);
-            sessionManager.broadcastToUsers(participantIds, outgoingJson);
-
-            return outgoingJson;
-
-        } catch (IllegalArgumentException e) {
-            return jsonb.toJson(ChatWebSocketMessage.error(e.getMessage()));
-        }
+    private void broadcastToParticipants(Long conversationId, String messageJson) {
+        List<Long> participantIds = participantRepository.findByConversationId(conversationId)
+                .stream()
+                .map(p -> p.userId())
+                .toList();
+        sessionManager.broadcastToUsers(participantIds, messageJson);
     }
 
     private Long extractUserId(JsonWebToken jwt) {

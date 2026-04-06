@@ -11,6 +11,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.util.Map;
 import java.util.logging.Logger;
 
 @ApplicationScoped
@@ -39,10 +40,23 @@ public class SendEmailServiceImpl implements SendEmailService {
 
     @Nonnull
     private static Email getEmail(Email email, EmailTemplateDetails template) {
+        var htmlContent = resolveTemplateVariables(template.htmlContent(), email.templateVariables());
         return EmailBuilder
                 .toBuilder(email)
                 .withSubject(template.subject())
-                .withHtmlBody(template.htmlContent())
+                .withHtmlBody(htmlContent)
                 .build();
+    }
+
+    @Nonnull
+    private static String resolveTemplateVariables(String htmlContent, Map<String, String> variables) {
+        if (variables == null || variables.isEmpty()) {
+            return htmlContent;
+        }
+        var result = htmlContent;
+        for (var entry : variables.entrySet()) {
+            result = result.replace("{" + entry.getKey() + "}", entry.getValue());
+        }
+        return result;
     }
 }

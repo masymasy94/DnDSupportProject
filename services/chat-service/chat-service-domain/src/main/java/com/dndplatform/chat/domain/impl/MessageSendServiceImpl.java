@@ -10,6 +10,7 @@ import com.dndplatform.chat.domain.repository.MessageCreateRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
@@ -19,12 +20,15 @@ public class MessageSendServiceImpl implements MessageSendService {
     private final Logger log = Logger.getLogger(getClass().getName());
     private final MessageCreateRepository messageRepository;
     private final ConversationFindByIdRepository conversationRepository;
+    private final Clock clock;
 
     @Inject
     public MessageSendServiceImpl(MessageCreateRepository messageRepository,
-                                  ConversationFindByIdRepository conversationRepository) {
+                                  ConversationFindByIdRepository conversationRepository,
+                                  Clock clock) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -46,13 +50,13 @@ public class MessageSendServiceImpl implements MessageSendService {
     }
 
 
-    private static Message getMessage(Long conversationId, Long senderId, String content, MessageType messageType) {
+    private Message getMessage(Long conversationId, Long senderId, String content, MessageType messageType) {
         return MessageBuilder.builder()
                 .withConversationId(conversationId)
                 .withSenderId(senderId)
                 .withContent(content)
                 .withMessageType(messageType != null ? messageType : MessageType.TEXT)
-                .withCreatedAt(LocalDateTime.now())
+                .withCreatedAt(LocalDateTime.now(clock))
                 .build();
     }
 }

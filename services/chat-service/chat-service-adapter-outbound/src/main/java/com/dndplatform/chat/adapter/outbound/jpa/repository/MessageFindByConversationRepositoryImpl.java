@@ -4,7 +4,6 @@ import com.dndplatform.chat.adapter.outbound.jpa.mapper.MessageMapper;
 import com.dndplatform.chat.domain.model.Message;
 import com.dndplatform.chat.domain.model.PagedResult;
 import com.dndplatform.chat.domain.repository.MessageFindByConversationRepository;
-import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -29,9 +28,7 @@ public class MessageFindByConversationRepositoryImpl implements MessageFindByCon
         log.info(() -> "Finding messages: conversationId=%d, page=%d, pageSize=%d"
                 .formatted(conversationId, page, pageSize));
 
-        var query = panacheRepository.find("conversation.id = ?1 AND deletedAt IS NULL",
-                Sort.by("createdAt").descending(),
-                conversationId);
+        var query = panacheRepository.queryByConversationId(conversationId);
 
         long totalElements = query.count();
 

@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 @ApplicationScoped
-public class CharacterCalculatorServiceImpl implements CharacterCalculatorService {
+public class CharacterCalculatorServiceImpl implements CharacterProficiencyBonusCalculator,
+        CharacterModifierCalculator, CharacterMaxHpCalculator, CharacterSpellcastingAbilityProvider,
+        CharacterHitDieProvider, CharacterBaseSpeedProvider, CharacterSpellSlotsCalculator {
 
     private final Logger log = Logger.getLogger(getClass().getName());
 
@@ -145,7 +147,7 @@ public class CharacterCalculatorServiceImpl implements CharacterCalculatorServic
 
     @Override
     public int calculateModifier(int abilityScore) {
-        return (abilityScore - 10) / 2;
+        return Math.floorDiv(abilityScore - 10, 2);
     }
 
     @Override

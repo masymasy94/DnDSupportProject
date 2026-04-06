@@ -1,10 +1,8 @@
 package com.dndplatform.compendium.adapter.outbound.jpa.repository;
 
-import com.dndplatform.compendium.adapter.outbound.jpa.entity.ProficiencyTypeEntity;
 import com.dndplatform.compendium.adapter.outbound.jpa.mapper.ProficiencyTypeMapper;
 import com.dndplatform.compendium.domain.model.ProficiencyType;
 import com.dndplatform.compendium.domain.repository.ProficiencyTypeFindAllRepository;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -13,13 +11,15 @@ import java.util.List;
 import java.util.logging.Logger;
 
 @ApplicationScoped
-public class ProficiencyTypeFindAllRepositoryImpl implements ProficiencyTypeFindAllRepository, PanacheRepository<ProficiencyTypeEntity> {
+public class ProficiencyTypeFindAllRepositoryImpl implements ProficiencyTypeFindAllRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
+    private final ProficiencyTypePanacheRepository panacheRepository;
     private final ProficiencyTypeMapper mapper;
 
     @Inject
-    public ProficiencyTypeFindAllRepositoryImpl(ProficiencyTypeMapper mapper) {
+    public ProficiencyTypeFindAllRepositoryImpl(ProficiencyTypePanacheRepository panacheRepository, ProficiencyTypeMapper mapper) {
+        this.panacheRepository = panacheRepository;
         this.mapper = mapper;
     }
 
@@ -27,7 +27,7 @@ public class ProficiencyTypeFindAllRepositoryImpl implements ProficiencyTypeFind
     public List<ProficiencyType> findAllProficiencyTypes() {
         log.info(() -> "Finding all proficiency types");
 
-        return findAll(Sort.by("name")).list().stream()
+        return panacheRepository.listAll(Sort.by("name")).stream()
                 .map(mapper)
                 .toList();
     }

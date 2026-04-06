@@ -6,6 +6,7 @@ import com.dndplatform.auth.domain.model.RefreshToken;
 import com.dndplatform.auth.domain.model.User;
 import io.smallrye.jwt.build.Jwt;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.Instant;
@@ -17,10 +18,15 @@ import java.util.logging.Logger;
 public class JwtGenerationRepositoryImpl implements JwtGenerationRepository {
 
     private final Logger log = Logger.getLogger(getClass().getName());
-    @ConfigProperty(name = "jwt.issuer", defaultValue = "dnd-platform")
-    String issuer;
-    @ConfigProperty(name = "jwt.access-token-expiry-seconds", defaultValue = "3600")
-    long accessTokenExpirySeconds;
+    private final String issuer;
+    private final long accessTokenExpirySeconds;
+
+    @Inject
+    public JwtGenerationRepositoryImpl(@ConfigProperty(name = "jwt.issuer", defaultValue = "dnd-platform") String issuer,
+                                       @ConfigProperty(name = "jwt.access-token-expiry-seconds", defaultValue = "3600") long accessTokenExpirySeconds) {
+        this.issuer = issuer;
+        this.accessTokenExpirySeconds = accessTokenExpirySeconds;
+    }
 
 
 

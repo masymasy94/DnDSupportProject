@@ -11,6 +11,7 @@ import com.dndplatform.chat.domain.repository.ConversationCreateRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +22,13 @@ public class GroupConversationCreateServiceImpl implements GroupConversationCrea
 
     private final Logger log = Logger.getLogger(getClass().getName());
     private final ConversationCreateRepository conversationCreateRepository;
+    private final Clock clock;
 
     @Inject
-    public GroupConversationCreateServiceImpl(ConversationCreateRepository conversationCreateRepository) {
+    public GroupConversationCreateServiceImpl(ConversationCreateRepository conversationCreateRepository,
+                                             Clock clock) {
         this.conversationCreateRepository = conversationCreateRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -51,7 +55,7 @@ public class GroupConversationCreateServiceImpl implements GroupConversationCrea
                 .withName(name)
                 .withType(ConversationType.GROUP)
                 .withCreatedBy(createdBy)
-                .withCreatedAt(LocalDateTime.now())
+                .withCreatedAt(LocalDateTime.now(clock))
                 .withParticipants(participants)
                 .build();
 
@@ -62,7 +66,7 @@ public class GroupConversationCreateServiceImpl implements GroupConversationCrea
         return ConversationParticipantBuilder.builder()
                 .withUserId(userId)
                 .withRole(role)
-                .withJoinedAt(LocalDateTime.now())
+                .withJoinedAt(LocalDateTime.now(clock))
                 .build();
     }
 }

@@ -1,0 +1,137 @@
+# Traefik dynamic configuration — file provider
+# Routes are defined here (not in Docker labels) so they persist when
+# Sablier stops containers. Sablier discovers containers via Docker
+# labels (sablier.enable / sablier.group) separately.
+
+http:
+
+  middlewares:
+    sablier-dnd:
+      plugin:
+        sablier:
+          sablierUrl: http://sablier:10000
+          group: dnd-app
+          sessionDuration: 30m
+          blocking:
+            timeout: 2m
+
+  services:
+    auth:
+      loadBalancer:
+        servers:
+          - url: http://auth-service:8081
+    character:
+      loadBalancer:
+        servers:
+          - url: http://character-service:8082
+    campaign:
+      loadBalancer:
+        servers:
+          - url: http://campaign-service:8083
+    combat:
+      loadBalancer:
+        servers:
+          - url: http://combat-service:8084
+    asset:
+      loadBalancer:
+        servers:
+          - url: http://asset-service:8085
+    chat:
+      loadBalancer:
+        servers:
+          - url: http://chat-service:8086
+    search:
+      loadBalancer:
+        servers:
+          - url: http://search-service:8087
+    notification:
+      loadBalancer:
+        servers:
+          - url: http://notification-service:8088
+    user:
+      loadBalancer:
+        servers:
+          - url: http://user-service:8089
+    compendium:
+      loadBalancer:
+        servers:
+          - url: http://compendium-service:8090
+    document-qa:
+      loadBalancer:
+        servers:
+          - url: http://document-qa-service:8091
+
+  routers:
+    auth:
+      rule: "PathPrefix(`/auth`)"
+      entryPoints:
+        - web
+      service: auth
+    character:
+      rule: "PathPrefix(`/characters`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: character
+    campaign:
+      rule: "PathPrefix(`/api/campaigns`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: campaign
+    combat:
+      rule: "PathPrefix(`/api/combat`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: combat
+    asset:
+      rule: "PathPrefix(`/api/assets`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: asset
+    chat:
+      rule: "PathPrefix(`/api/chat`) || PathPrefix(`/ws/chat`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: chat
+    search:
+      rule: "PathPrefix(`/api/search`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: search
+    notification:
+      rule: "PathPrefix(`/api/notifications`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: notification
+    user:
+      rule: "PathPrefix(`/users`)"
+      entryPoints:
+        - web
+      service: user
+    compendium:
+      rule: "PathPrefix(`/api/compendium`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: compendium
+    document-qa:
+      rule: "PathPrefix(`/api/document-qa`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-dnd
+      service: document-qa
