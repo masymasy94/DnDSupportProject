@@ -487,9 +487,91 @@ Work happens on `feature/integration` (already active). One commit per service (
 
 ## FIXME Tracker (populated during execution)
 
-| Service | File | Line | Type | Note |
-|---|---|---|---|---|
-| _empty_ | | | | |
+74 FIXMEs total, all collected during the rewrite. Grouped by category for the
+final walkthrough. Each entry follows the form
+`// FIXME(integration-tests-rewrite): <description>` in the source.
+
+### Category 1 — POST creating a resource returns 200 instead of 201
+
+REST resource creation should return `201 Created`. The product currently
+responds `200 OK` for `POST` endpoints that create a resource.
+
+| Service | Endpoint | Tests affected |
+|---|---|---|
+| user-service | `POST /users` | `UserRegisterIntegrationTest`, `UserFindByIdIntegrationTest`, `UserUpdatePasswordIntegrationTest` (3 sites) |
+| campaign-service | `POST /campaigns`, `POST /campaigns/{id}/notes`, `POST /campaigns/{id}/quests`, `POST /campaigns/{id}/members` | All 18 campaign tests use a `createCampaign()` helper that hits one of these (~30 sites) |
+| auth-service | `POST /auth/login-tokens` | `CreateLoginTokensIntegrationTest` (1 site) |
+| chat-service | `POST /api/chat/conversations`, `POST /api/chat/conversations/{id}/messages` | `ConversationCreateIntegrationTest` (2), `MessageSendIntegrationTest` (1) |
+
+### Category 2 — POST initiating an async operation returns 200/204 instead of 202
+
+Async operations (email send, password reset request, OTP request, ingestion
+trigger) should return `202 Accepted`. The product mixes 200/202/204.
+
+| Service | Endpoint | Tests affected |
+|---|---|---|
+| notification-service | `POST /emails` | `SyncSendEmailIntegrationTest.shouldSendEmailUsingTemplate` |
+| auth-service | `POST /auth/password-resets` | `RequestPasswordResetIntegrationTest.shouldRequestPasswordReset` |
+| auth-service | `POST /auth/otp-login-requests` | `RequestOtpLoginIntegrationTest.shouldRequestOtpLogin` |
+| document-qa-service | `POST /api/document-qa/ingestion/{docId}` | `TriggerIngestionIntegrationTest.shouldRespondToTriggerRequest` |
+
+### Category 3 — Missing resource returns 400 instead of 404
+
+`GET /resources/{id}` for a missing id should return `404 Not Found`. The
+product returns `400 Bad Request` (or a mix). This affects chat-service,
+combat-service, document-qa-service.
+
+| Service | Endpoints | Tests affected |
+|---|---|---|
+| chat-service | `GET /api/chat/conversations/{id}`, `PUT /api/chat/conversations/{id}/read`, `GET /api/chat/conversations/{id}/messages` | 3 tests |
+| combat-service | `PUT /encounters/{id}`, `DELETE /encounters/{id}`, `POST /encounters/{id}/complete`, `POST /encounters/{id}/initiative`, `PUT /encounters/{id}/turns/next`, `GET /encounters/{id}/turns`, `GET /encounters/{id}/difficulty`, `POST /encounters/{id}/participants`, `PUT /encounters/{eid}/participants/{pid}`, `DELETE /encounters/{eid}/participants/{pid}` | 10 tests |
+| document-qa-service | `GET /api/document-qa/conversations/{id}`, `GET /api/document-qa/conversations/{id}/messages`, `GET /api/document-qa/ingestion/{docId}/status` | 3 tests |
+
+### Category 4 — DELETE on missing resource returns mix of 200/204/400/404
+
+DELETE should be either `204 No Content` (idempotent) or `404 Not Found`
+(strict). The product returns `200/204/400/404` inconsistently.
+
+| Service | Endpoint | Tests affected |
+|---|---|---|
+| auth-service | `DELETE /auth/login-tokens/{token}`, `DELETE /auth/login-tokens` | `LogoutIntegrationTest`, `LogoutAllIntegrationTest` |
+| document-qa-service | `DELETE /api/document-qa/llm/configurations/{id}`, `DELETE /api/document-qa/llm/user-configurations/{id}`, `DELETE /api/document-qa/conversations/{id}` | 3 tests |
+
+### Category 5 — Activate on missing resource returns mix of 204/400/404
+
+| Service | Endpoint | Tests affected |
+|---|---|---|
+| document-qa-service | `PUT /api/document-qa/llm/configurations/{id}/activate`, `PUT /api/document-qa/llm/user-configurations/{id}/activate` | `ActivateSystemLlmConfigurationIntegrationTest`, `ActivateUserLlmConfigurationIntegrationTest` |
+
+### Category 6 — Invalid token returns mix of 400/401/404
+
+Invalid tokens should return `401 Unauthorized`. The product mixes 400/401/404.
+
+| Service | Endpoint | Tests affected |
+|---|---|---|
+| auth-service | `POST /auth/login-tokens/refreshed` | `RefreshLoginTokensIntegrationTest.shouldFailForInvalidRefreshToken` |
+| auth-service | `PUT /auth/password-resets` | `ResetPasswordIntegrationTest.shouldFailForInvalidResetToken` |
+| auth-service | `POST /auth/otp-login-tokens` | `ValidateOtpLoginIntegrationTest.shouldFailForInvalidOtpToken` |
+
+### Category 7 — Missing required field returns 400 or 401
+
+Missing required fields in a POST body should return `400 Bad Request`
+(validation), but auth-service collapses some into `401 Unauthorized`.
+
+| Service | Endpoint | Tests affected |
+|---|---|---|
+| auth-service | `POST /auth/login-tokens` (missing username) | `CreateLoginTokensIntegrationTest.shouldFailWhenUsernameIsMissing` |
+| auth-service | `POST /auth/login-tokens/refreshed` (missing refreshToken) | `RefreshLoginTokensIntegrationTest.shouldFailWhenRefreshTokenIsMissing` |
+
+### Category 8 — Empty multipart body returns mix of 400/415
+
+Empty multipart should be `400 Bad Request` (missing parts) or `415 Unsupported Media Type` (no boundary). The product is inconsistent.
+
+| Service | Endpoint | Tests affected |
+|---|---|---|
+| asset-service | `POST /api/assets/documents/batch` (empty multipart) | `DocumentUploadBatchIntegrationTest.shouldRespondToEmptyBatchRequest` |
+| character-service | `POST /characters/import-sheet` (no file) | `CharacterImportSheetIntegrationTest.shouldFailWhenFileIsMissing` |
+| character-service | `PUT /characters/{id}` (missing character) | `CharacterUpdateIntegrationTest.shouldFailWhenCharacterNotFound` |
 
 ---
 
