@@ -5,20 +5,39 @@ import com.dndplatform.campaign.adapter.outbound.jpa.entity.CampaignMemberEntity
 import com.dndplatform.campaign.adapter.outbound.jpa.entity.CampaignNoteEntity;
 import com.dndplatform.campaign.adapter.outbound.jpa.entity.CampaignQuestEntity;
 import com.dndplatform.campaign.view.model.vm.CampaignViewModel;
+import com.dndplatform.campaign.view.model.vm.CreateCampaignRequest;
+import com.dndplatform.campaign.view.model.vm.CreateCampaignRequestBuilder;
+import com.dndplatform.campaign.view.model.vm.CreateNoteRequest;
+import com.dndplatform.campaign.view.model.vm.CreateNoteRequestBuilder;
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class CampaignNoteCreateIntegrationTest {
+
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private CreateCampaignRequest createCampaignTemplate;
+
+    @InjectRandom
+    private CreateNoteRequest createNoteTemplate;
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
@@ -26,69 +45,102 @@ class CampaignNoteCreateIntegrationTest {
     @DeleteEntities(from = CampaignNoteEntity.class)
     @DeleteEntities(from = CampaignQuestEntity.class)
     @DeleteEntities(from = CampaignEntity.class)
-    void shouldCreateNote() {
+    void shouldCreateNote() throws JsonProcessingException {
+        // given
+        var createCampaignRequest = CreateCampaignRequestBuilder.toBuilder(createCampaignTemplate)
+                .withUserId(1L) // hardcoded: matches @TestSecurity user
+                .withName("Note Create") // hardcoded: deterministic name
+                .withDescription("desc") // hardcoded: arbitrary
+                .withMaxPlayers(4) // hardcoded: arbitrary in valid range
+                .withImageUrl(null) // hardcoded: optional
+                .build();
         var campaign = given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"userId":1,"name":"Note Create","description":"desc","maxPlayers":4}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(createCampaignRequest))
         .when()
-            .post("/campaigns")
+                .post("/campaigns")
         .then()
-            .statusCode(200)
-            .extract().as(CampaignViewModel.class);
+                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .extract().as(CampaignViewModel.class);
 
+        var noteRequest = CreateNoteRequestBuilder.toBuilder(createNoteTemplate)
+                .withUserId(1L) // hardcoded: matches @TestSecurity user
+                .withTitle("Session 1") // hardcoded: deterministic title
+                .withContent("The party entered the dungeon.") // hardcoded: deterministic content
+                .withVisibility("PUBLIC") // hardcoded: enum-like product field
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"userId":1,"title":"Session 1","content":"The party entered the dungeon.","visibility":"PUBLIC"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(noteRequest))
         .when()
-            .post("/campaigns/" + campaign.id() + "/notes")
+                .post("/campaigns/{id}/notes", campaign.id())
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .body("title", org.hamcrest.Matchers.equalTo("Session 1"));
+                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .contentType(JSON)
+                .body("title", equalTo("Session 1"));
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn400WhenTitleIsBlank() {
+    void shouldFailWhenTitleIsBlank() throws JsonProcessingException {
+        // given
+        var request = CreateNoteRequestBuilder.toBuilder(createNoteTemplate)
+                .withUserId(1L) // hardcoded: matches @TestSecurity user
+                .withTitle("") // hardcoded: triggers @NotBlank
+                .withContent("content") // hardcoded: arbitrary, isolate failure to title
+                .withVisibility("PUBLIC") // hardcoded: arbitrary
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"userId":1,"title":"","content":"content","visibility":"PUBLIC"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/campaigns/1/notes")
+                .post("/campaigns/{id}/notes", 1L) // hardcoded: arbitrary, validation fails first
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn404WhenCampaignNotFound() {
+    void shouldFailWhenCampaignNotFound() throws JsonProcessingException {
+        // given
+        var request = CreateNoteRequestBuilder.toBuilder(createNoteTemplate)
+                .withUserId(1L) // hardcoded: matches @TestSecurity user
+                .withTitle("Title") // hardcoded: arbitrary, isolate failure to missing campaign
+                .withContent("content") // hardcoded: arbitrary
+                .withVisibility("PUBLIC") // hardcoded: arbitrary
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"userId":1,"title":"Title","content":"content","visibility":"PUBLIC"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/campaigns/999999/notes")
+                .post("/campaigns/{id}/notes", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(404);
+                .statusCode(404);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() throws JsonProcessingException {
+        // given
+        var request = CreateNoteRequestBuilder.toBuilder(createNoteTemplate)
+                .withUserId(1L) // hardcoded: arbitrary, auth fails first
+                .withTitle("Title") // hardcoded: arbitrary, auth fails first
+                .withContent("content") // hardcoded: arbitrary
+                .withVisibility("PUBLIC") // hardcoded: arbitrary
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"userId":1,"title":"Title","content":"content","visibility":"PUBLIC"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/campaigns/1/notes")
+                .post("/campaigns/{id}/notes", 1L) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }
