@@ -140,7 +140,7 @@ void shouldRegisterNewUser() {
     // when
     var response = given()
             .contentType(JSON)
-            .body(jsonb.toJson(request))
+            .body(objectMapper.writeValueAsString(request))
     .when()
             .post("/users")
     .then()
@@ -191,7 +191,7 @@ Tests sending malformed payloads expecting 4xx. No `@Transactional`, no `@Delete
 class UserRegisterValidationIntegrationTest {
 
     @Inject
-    Jsonb jsonb;
+    ObjectMapper objectMapper;
 
     @InjectRandom
     private UserRegisterViewModel payloadTemplate;
@@ -206,7 +206,7 @@ class UserRegisterValidationIntegrationTest {
         // when / then
         given()
                 .contentType(JSON)
-                .body(jsonb.toJson(request))
+                .body(objectMapper.writeValueAsString(request))
         .when()
                 .post("/users")
         .then()
@@ -226,7 +226,7 @@ Creates/reads/updates/deletes an entity. `@Transactional`, `@DeleteEntities` wit
 class UserRegisterIntegrationTest {
 
     @Inject
-    Jsonb jsonb;
+    ObjectMapper objectMapper;
 
     @InjectRandom
     private UserRegisterViewModel payloadTemplate;
@@ -251,7 +251,7 @@ class UserRegisterIntegrationTest {
         // when
         var response = given()
                 .contentType(JSON)
-                .body(jsonb.toJson(request))
+                .body(objectMapper.writeValueAsString(request))
         .when()
                 .post("/users")
         .then()
@@ -279,7 +279,7 @@ Test requiring a pre-existing entity to verify a conflict (409, 403, 404).
 class UserRegisterConflictIntegrationTest {
 
     @Inject
-    Jsonb jsonb;
+    ObjectMapper objectMapper;
 
     @InjectRandom
     private UserRegisterViewModel payloadTemplate;
@@ -296,7 +296,7 @@ class UserRegisterConflictIntegrationTest {
         // when / then
         given()
                 .contentType(JSON)
-                .body(jsonb.toJson(request))
+                .body(objectMapper.writeValueAsString(request))
         .when()
                 .post("/users")
         .then()
@@ -319,7 +319,7 @@ void shouldCreateCampaign() { ... }
 void shouldFailWhenNotAuthenticated() {
     given()
             .contentType(JSON)
-            .body(jsonb.toJson(payloadTemplate))
+            .body(objectMapper.writeValueAsString(payloadTemplate))
     .when()
             .post("/campaigns")
     .then()
@@ -339,7 +339,7 @@ Typical for `auth-service` calling `user-service`, or `document-qa-service` call
 class CreateLoginTokensIntegrationTest {
 
     @Inject
-    Jsonb jsonb;
+    ObjectMapper objectMapper;
 
     @InjectMockServer(UserServiceWireMockResource.class)
     private WireMockServer userServiceServer;
@@ -365,7 +365,7 @@ class CreateLoginTokensIntegrationTest {
         // when
         var response = given()
                 .contentType(JSON)
-                .body(jsonb.toJson(request))
+                .body(objectMapper.writeValueAsString(request))
         .when()
                 .post("/auth/login-tokens")
         .then()
@@ -394,15 +394,17 @@ Unblocks everything. Build gate: `mvn -pl services/common-test test` must pass b
 |---|---|---|---|
 | 0 | `common-test` | new utilities | Pre-phase, unblocks the rest |
 | 1 | **user-service** | 7 | Smallest. **Reference implementation.** Pure CRUD. |
-| 2 | auth-service | 8 | Category E (WireMock on user-service) |
-| 3 | campaign-service | 24 | CRUD + JWT-heavy. High volume. |
-| 4 | character-service | 3 | Multipart upload, partially blocked |
-| 5 | combat-service | 11 | CRUD + JWT |
-| 6 | chat-service | 6 | CRUD + JWT |
-| 7 | notification-service | 3 | Email template (Category B) |
-| 8 | asset-service | 2 | Document upload (multipart) |
-| 9 | compendium-service | ~30 | Read-only on Flyway seed, no DB write. Mostly Category A. |
-| 10 | document-qa-service | ~14 | LLM mock + ingestion. Category E heavy. |
+| 2 | notification-service | 3 | Smallest after user-service. Category B template. |
+| 3 | asset-service | 5 | Multipart upload. |
+| 4 | character-service | 5 | Multipart + partially-disabled tests. |
+| 5 | chat-service | 7 | CRUD + JWT. |
+| 6 | auth-service | 8 | Category E (WireMock on user-service). |
+| 7 | combat-service | 13 | CRUD + JWT. |
+| 8 | document-qa-service | 15 | LLM mock + ingestion. Category E heavy. |
+| 9 | campaign-service | 18 | CRUD + JWT-heavy. High volume. |
+| 10 | compendium-service | 36 | Read-only on Flyway seed, no DB write. Mostly Category A. |
+
+Total: 117 integration test files across 10 services. Order is roughly ascending by file count, so volume scales gradually as confidence in the templates grows.
 
 `search-service` is intentionally excluded: it currently has zero integration tests. Adding tests for it is out of scope for this rewrite (would be a separate spec).
 
@@ -495,5 +497,5 @@ Work happens on `feature/integration` (already active). One commit per service (
 
 - `@InjectRandom` is project-internal (`com.dndplatform.common.test`), not the same as the parameter-level `@Random` already present. Both coexist: `@Random` for method parameters, `@InjectRandom` for test instance fields.
 - `@NamedParam` defaults to the field name; the `value()` override is provided for cases where the JPQL placeholder name differs from the Java field name (avoid using it unless strictly necessary).
-- `Jsonb` is used (not `ObjectMapper`) because Quarkus REST default serializer is JSON-B.
+- Jackson `ObjectMapper` is used (not `Jsonb`) because the project depends on `quarkus-rest-jackson`. The `ObjectMapper` is available as a CDI bean and matches the server-side serializer to avoid format drift (dates, naming, nulls).
 - `anyOf` workarounds are NEVER acceptable in the final state; they only survive temporarily inside the rewrite as `FIXME` markers.
