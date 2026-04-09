@@ -1,54 +1,79 @@
 package integration.auth;
 
 import com.dndplatform.auth.adapter.outbound.jpa.entity.RefreshTokenEntity;
+import com.dndplatform.auth.view.model.vm.CreateLoginTokensViewModel;
+import com.dndplatform.auth.view.model.vm.CreateLoginTokensViewModelBuilder;
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import integration.resource.UserServiceWireMockResource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class CreateLoginTokensIntegrationTest {
+
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private CreateLoginTokensViewModel payloadTemplate;
 
     @Test
     @DeleteEntities(from = RefreshTokenEntity.class)
-    void shouldCreateLoginTokens() {
+    void shouldCreateLoginTokens() throws JsonProcessingException {
+        // given
+        var request = CreateLoginTokensViewModelBuilder.toBuilder(payloadTemplate)
+                .withUsername("gandalf") // hardcoded: matches stub in UserServiceWireMockResource
+                .withPassword("YouShallNotPass1") // hardcoded: must match the stubbed credentials check
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"username":"gandalf","password":"YouShallNotPass1"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/login-tokens")
+                .post("/auth/login-tokens")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(201)))
-            .contentType(ContentType.JSON)
-            .body("accessToken", org.hamcrest.Matchers.notNullValue())
-            .body("refreshToken", org.hamcrest.Matchers.notNullValue());
+                // FIXME(integration-tests-rewrite): POST that creates a token resource should return 201, not 200
+                .statusCode(anyOf(equalTo(200), equalTo(201)))
+                .contentType(JSON)
+                .body("accessToken", notNullValue())
+                .body("refreshToken", notNullValue());
     }
 
     @Test
-    void shouldReturn400WhenUsernameIsMissing() {
+    void shouldFailWhenUsernameIsMissing() throws JsonProcessingException {
+        // given
+        var request = CreateLoginTokensViewModelBuilder.toBuilder(payloadTemplate)
+                .withUsername(null) // hardcoded: triggers @NotBlank
+                .withPassword("YouShallNotPass1") // hardcoded: arbitrary, isolate failure to username
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"password":"YouShallNotPass1"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/login-tokens")
+                .post("/auth/login-tokens")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(401)));
+                // FIXME(integration-tests-rewrite): missing required field should be 400 (validation),
+                // not 401 (which mixes auth failure with bad request).
+                .statusCode(anyOf(equalTo(400), equalTo(401)));
     }
 }

@@ -1,50 +1,73 @@
 package integration.auth;
 
 import com.dndplatform.auth.adapter.outbound.jpa.entity.OtpLoginEntity;
+import com.dndplatform.auth.view.model.vm.ValidateOtpLoginViewModel;
+import com.dndplatform.auth.view.model.vm.ValidateOtpLoginViewModelBuilder;
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import integration.resource.UserServiceWireMockResource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class ValidateOtpLoginIntegrationTest {
+
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private ValidateOtpLoginViewModel payloadTemplate;
 
     @Test
     @DeleteEntities(from = OtpLoginEntity.class)
-    void shouldReturnErrorForInvalidOtpToken() {
+    void shouldFailForInvalidOtpToken() throws JsonProcessingException {
+        // given
+        var request = ValidateOtpLoginViewModelBuilder.toBuilder(payloadTemplate)
+                .withEmail("gandalf@shire.com") // hardcoded: matches stub email
+                .withOtpCode("invalid") // hardcoded: code guaranteed not to match any DB record
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"email":"gandalf@shire.com","otp":"invalid"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/otp-login-tokens")
+                .post("/auth/otp-login-tokens")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(401),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): invalid OTP should be 401, the product mixes 400/401/404.
+                .statusCode(anyOf(equalTo(400), equalTo(401), equalTo(404)));
     }
 
     @Test
-    void shouldReturn400WhenEmailIsMissing() {
+    void shouldFailWhenEmailIsMissing() throws JsonProcessingException {
+        // given
+        var request = ValidateOtpLoginViewModelBuilder.toBuilder(payloadTemplate)
+                .withEmail(null) // hardcoded: triggers @NotBlank on email
+                .withOtpCode("123456") // hardcoded: arbitrary, isolate failure to email
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"otp":"123456"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/otp-login-tokens")
+                .post("/auth/otp-login-tokens")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 }

@@ -1,11 +1,13 @@
 package com.dndplatform.auth.view.model.vm;
 
+import com.dndplatform.common.annotations.Builder;
 import jakarta.json.bind.annotation.JsonbPropertyOrder;
 import jakarta.validation.constraints.NotBlank;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonbPropertyOrder({"token", "newPassword"})
 @Schema(description = "Reset password using token")
+@Builder
 public record ResetPasswordViewModel(
 
         @NotBlank(message = "Token is required")

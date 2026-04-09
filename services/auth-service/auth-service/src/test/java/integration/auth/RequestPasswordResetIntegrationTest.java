@@ -1,63 +1,89 @@
 package integration.auth;
 
 import com.dndplatform.auth.adapter.outbound.jpa.entity.PasswordResetEntity;
+import com.dndplatform.auth.view.model.vm.RequestPasswordResetViewModel;
+import com.dndplatform.auth.view.model.vm.RequestPasswordResetViewModelBuilder;
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import integration.resource.UserServiceWireMockResource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class RequestPasswordResetIntegrationTest {
+
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private RequestPasswordResetViewModel payloadTemplate;
 
     @Test
     @DeleteEntities(from = PasswordResetEntity.class)
-    void shouldRequestPasswordReset() {
+    void shouldRequestPasswordReset() throws JsonProcessingException {
+        // given
+        var request = RequestPasswordResetViewModelBuilder.toBuilder(payloadTemplate)
+                .withEmail("gandalf@shire.com") // hardcoded: matches the email-lookup stub in UserServiceWireMockResource
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"email":"gandalf@shire.com"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/password-resets")
+                .post("/auth/password-resets")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(202),
-                org.hamcrest.Matchers.equalTo(204)));
+                // FIXME(integration-tests-rewrite): POST that initiates an async operation should consistently
+                // return 202 (Accepted). The product mixes 200/202/204.
+                .statusCode(anyOf(equalTo(200), equalTo(202), equalTo(204)));
     }
 
     @Test
-    void shouldReturn400WhenEmailIsInvalid() {
+    void shouldFailWhenEmailIsInvalid() throws JsonProcessingException {
+        // given
+        var request = RequestPasswordResetViewModelBuilder.toBuilder(payloadTemplate)
+                .withEmail("not-an-email") // hardcoded: triggers @Email validation
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"email":"not-an-email"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/password-resets")
+                .post("/auth/password-resets")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 
     @Test
-    void shouldReturn400WhenEmailIsBlank() {
+    void shouldFailWhenEmailIsBlank() throws JsonProcessingException {
+        // given
+        var request = RequestPasswordResetViewModelBuilder.toBuilder(payloadTemplate)
+                .withEmail("") // hardcoded: triggers @NotBlank
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"email":""}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/password-resets")
+                .post("/auth/password-resets")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 }

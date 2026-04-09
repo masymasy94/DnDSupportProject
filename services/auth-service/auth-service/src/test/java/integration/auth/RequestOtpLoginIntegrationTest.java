@@ -1,63 +1,89 @@
 package integration.auth;
 
 import com.dndplatform.auth.adapter.outbound.jpa.entity.OtpLoginEntity;
+import com.dndplatform.auth.view.model.vm.RequestOtpLoginViewModel;
+import com.dndplatform.auth.view.model.vm.RequestOtpLoginViewModelBuilder;
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import integration.resource.UserServiceWireMockResource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class RequestOtpLoginIntegrationTest {
+
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private RequestOtpLoginViewModel payloadTemplate;
 
     @Test
     @DeleteEntities(from = OtpLoginEntity.class)
-    void shouldRequestOtpLogin() {
+    void shouldRequestOtpLogin() throws JsonProcessingException {
+        // given
+        var request = RequestOtpLoginViewModelBuilder.toBuilder(payloadTemplate)
+                .withEmail("gandalf@shire.com") // hardcoded: matches the email-lookup stub in UserServiceWireMockResource
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"email":"gandalf@shire.com"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/otp-login-requests")
+                .post("/auth/otp-login-requests")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(202),
-                org.hamcrest.Matchers.equalTo(204)));
+                // FIXME(integration-tests-rewrite): POST that initiates an async OTP send should be 202.
+                // The product mixes 200/202/204.
+                .statusCode(anyOf(equalTo(200), equalTo(202), equalTo(204)));
     }
 
     @Test
-    void shouldReturn400WhenEmailIsInvalid() {
+    void shouldFailWhenEmailIsInvalid() throws JsonProcessingException {
+        // given
+        var request = RequestOtpLoginViewModelBuilder.toBuilder(payloadTemplate)
+                .withEmail("not-an-email") // hardcoded: triggers @Email validation
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"email":"not-an-email"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/otp-login-requests")
+                .post("/auth/otp-login-requests")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 
     @Test
-    void shouldReturn400WhenEmailIsBlank() {
+    void shouldFailWhenEmailIsBlank() throws JsonProcessingException {
+        // given
+        var request = RequestOtpLoginViewModelBuilder.toBuilder(payloadTemplate)
+                .withEmail("") // hardcoded: triggers @NotBlank
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"email":""}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/otp-login-requests")
+                .post("/auth/otp-login-requests")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 }

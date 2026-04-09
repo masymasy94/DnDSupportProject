@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
@@ -20,15 +22,16 @@ class LogoutIntegrationTest {
     @Test
     @DeleteEntities(from = RefreshTokenEntity.class)
     void shouldLogoutWithRefreshToken() {
-        // Logout by refresh token path — tolerant of 200/204/404 depending on token presence
+        // when / then
+        // Logout by refresh token. With no token in DB, the product accepts and returns 200/204,
+        // or returns 404 depending on its delete-strict policy.
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: arbitrary user id
         .when()
-            .delete("/auth/login-tokens/some-refresh-token")
+                .delete("/auth/login-tokens/{token}", "some-refresh-token") // hardcoded: arbitrary token, may not exist
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(204),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): DELETE on non-existent should consistently return 204
+                // (idempotent) or 404 (strict). The product mixes 200/204/404.
+                .statusCode(anyOf(equalTo(200), equalTo(204), equalTo(404)));
     }
 }

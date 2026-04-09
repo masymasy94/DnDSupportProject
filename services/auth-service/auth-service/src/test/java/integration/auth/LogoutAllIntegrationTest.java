@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
@@ -20,13 +22,14 @@ class LogoutAllIntegrationTest {
     @Test
     @DeleteEntities(from = RefreshTokenEntity.class)
     void shouldLogoutAllSessions() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: arbitrary user id
         .when()
-            .delete("/auth/login-tokens")
+                .delete("/auth/login-tokens")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(204)));
+                // FIXME(integration-tests-rewrite): DELETE all should consistently return 204 (no body),
+                // not a mix of 200/204.
+                .statusCode(anyOf(equalTo(200), equalTo(204)));
     }
 }

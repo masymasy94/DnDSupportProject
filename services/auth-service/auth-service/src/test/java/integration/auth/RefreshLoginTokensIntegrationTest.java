@@ -1,52 +1,75 @@
 package integration.auth;
 
 import com.dndplatform.auth.adapter.outbound.jpa.entity.RefreshTokenEntity;
+import com.dndplatform.auth.view.model.vm.RefreshTokenViewModel;
+import com.dndplatform.auth.view.model.vm.RefreshTokenViewModelBuilder;
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import integration.resource.UserServiceWireMockResource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class RefreshLoginTokensIntegrationTest {
+
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private RefreshTokenViewModel payloadTemplate;
 
     @Test
     @DeleteEntities(from = RefreshTokenEntity.class)
-    void shouldReturn400OrUnauthorizedForInvalidRefreshToken() {
+    void shouldFailForInvalidRefreshToken() throws JsonProcessingException {
+        // given
+        var request = RefreshTokenViewModelBuilder.toBuilder(payloadTemplate)
+                .withToken("invalid-token") // hardcoded: token guaranteed not to exist in DB
+                .withUserId(1L) // hardcoded: arbitrary user id
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"refreshToken":"invalid-token","userId":1}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/login-tokens/refreshed")
+                .post("/auth/login-tokens/refreshed")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(401),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): missing/invalid refresh token should be 401, not
+                // a mix of 400/401/404. Decide canonical mapping in final pass.
+                .statusCode(anyOf(equalTo(400), equalTo(401), equalTo(404)));
     }
 
     @Test
-    void shouldReturn400WhenRefreshTokenIsMissing() {
+    void shouldFailWhenRefreshTokenIsMissing() throws JsonProcessingException {
+        // given
+        var request = RefreshTokenViewModelBuilder.toBuilder(payloadTemplate)
+                .withToken(null) // hardcoded: triggers @NotBlank
+                .withUserId(1L) // hardcoded: arbitrary, isolate failure to token
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/auth/login-tokens/refreshed")
+                .post("/auth/login-tokens/refreshed")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(401)));
+                // FIXME(integration-tests-rewrite): missing required field should be 400, not 401.
+                .statusCode(anyOf(equalTo(400), equalTo(401)));
     }
 }
