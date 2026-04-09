@@ -9,11 +9,13 @@ import com.dndplatform.test.entity.PrepareEntities;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -26,44 +28,47 @@ class ConversationFindByIdIntegrationTest {
     @DeleteEntities(from = ConversationParticipantEntity.class)
     @DeleteEntities(from = ConversationEntity.class)
     void shouldFindConversationById() {
+        // given
         var conversationId = given()
-            .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
+                .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
         .when()
-            .get("/api/chat/conversations")
+                .get("/api/chat/conversations")
         .then()
-            .statusCode(200)
-            .extract().body().jsonPath().getLong("[0].id");
+                .statusCode(200)
+                .extract().body().jsonPath().getLong("[0].id");
 
+        // when / then
         given()
-            .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
+                .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
         .when()
-            .get("/api/chat/conversations/" + conversationId)
+                .get("/api/chat/conversations/{id}", conversationId)
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON);
+                .statusCode(200)
+                .contentType(JSON);
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturnErrorWhenConversationNotFound() {
-        // Chat-service maps "not found" exceptions to 400 (not 404)
+    void shouldFailWhenConversationNotFound() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
         .when()
-            .get("/api/chat/conversations/999999")
+                .get("/api/chat/conversations/{id}", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): chat-service maps not-found exceptions to 400
+                // instead of 404. The product should return 404 for missing resources.
+                .statusCode(anyOf(equalTo(400), equalTo(404)));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: arbitrary, auth fails first
         .when()
-            .get("/api/chat/conversations/1")
+                .get("/api/chat/conversations/{id}", 1L) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

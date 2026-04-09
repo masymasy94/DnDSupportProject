@@ -9,11 +9,11 @@ import com.dndplatform.test.entity.PrepareEntities;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 
 @QuarkusTest
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -26,34 +26,37 @@ class ConversationFindByUserIntegrationTest {
     @DeleteEntities(from = ConversationParticipantEntity.class)
     @DeleteEntities(from = ConversationEntity.class)
     void shouldFindConversationsByUser() {
+        // when / then
         given()
-            .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
+                .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
         .when()
-            .get("/api/chat/conversations")
+                .get("/api/chat/conversations")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON);
+                .statusCode(200)
+                .contentType(JSON);
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldReturnEmptyForUserWithNoConversations() {
+        // when / then
         given()
-            .queryParam("userId", 99999)
+                .queryParam("userId", 99_999L) // hardcoded: user id outside any seeded fixture
         .when()
-            .get("/api/chat/conversations")
+                .get("/api/chat/conversations")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON);
+                .statusCode(200)
+                .contentType(JSON);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: arbitrary, auth fails first
         .when()
-            .get("/api/chat/conversations")
+                .get("/api/chat/conversations")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

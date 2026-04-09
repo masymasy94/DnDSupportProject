@@ -1,5 +1,6 @@
 package com.dndplatform.chat.view.model.vm;
 
+import com.dndplatform.common.annotations.Builder;
 import jakarta.json.bind.annotation.JsonbPropertyOrder;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -8,6 +9,7 @@ import java.util.List;
 
 @JsonbPropertyOrder({"type", "name", "participantIds"})
 @Schema(description = "Request to create a new conversation")
+@Builder
 public record CreateConversationViewModel(
         @NotNull
         @Schema(description = "Conversation type (DIRECT or GROUP)", example = "DIRECT", required = true)

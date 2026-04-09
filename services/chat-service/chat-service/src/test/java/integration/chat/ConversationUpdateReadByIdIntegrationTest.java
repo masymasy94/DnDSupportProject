@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -25,43 +27,46 @@ class ConversationUpdateReadByIdIntegrationTest {
     @DeleteEntities(from = ConversationParticipantEntity.class)
     @DeleteEntities(from = ConversationEntity.class)
     void shouldMarkConversationAsRead() {
+        // given
         var conversationId = given()
-            .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
+                .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
         .when()
-            .get("/api/chat/conversations")
+                .get("/api/chat/conversations")
         .then()
-            .statusCode(200)
-            .extract().body().jsonPath().getLong("[0].id");
+                .statusCode(200)
+                .extract().body().jsonPath().getLong("[0].id");
 
+        // when / then
         given()
-            .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
+                .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
         .when()
-            .put("/api/chat/conversations/" + conversationId + "/read")
+                .put("/api/chat/conversations/{id}/read", conversationId)
         .then()
-            .statusCode(204);
+                .statusCode(204);
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturnErrorWhenConversationNotFound() {
-        // Chat-service maps "not found" exceptions to 400 (not 404)
+    void shouldFailWhenConversationNotFound() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
         .when()
-            .put("/api/chat/conversations/999999/read")
+                .put("/api/chat/conversations/{id}/read", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): chat-service maps not-found exceptions to 400
+                // instead of 404.
+                .statusCode(anyOf(equalTo(400), equalTo(404)));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: arbitrary, auth fails first
         .when()
-            .put("/api/chat/conversations/1/read")
+                .put("/api/chat/conversations/{id}/read", 1L) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

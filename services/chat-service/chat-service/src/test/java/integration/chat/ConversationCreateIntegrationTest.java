@@ -3,87 +3,124 @@ package integration.chat;
 import com.dndplatform.chat.adapter.outbound.jpa.entity.ConversationEntity;
 import com.dndplatform.chat.adapter.outbound.jpa.entity.ConversationParticipantEntity;
 import com.dndplatform.chat.adapter.outbound.jpa.entity.MessageEntity;
+import com.dndplatform.chat.view.model.vm.CreateConversationViewModel;
+import com.dndplatform.chat.view.model.vm.CreateConversationViewModelBuilder;
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.List;
+
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class ConversationCreateIntegrationTest {
 
-    @Test
-    @TestSecurity(user = "1", roles = "PLAYER")
-    @DeleteEntities(from = MessageEntity.class)
-    @DeleteEntities(from = ConversationParticipantEntity.class)
-    @DeleteEntities(from = ConversationEntity.class)
-    void shouldCreateGroupConversation() {
-        given()
-            .contentType(ContentType.JSON)
-            .queryParam("userId", 1)
-            .body("""
-                {"type":"GROUP","name":"Party Chat","participantIds":[2,3]}
-                """)
-        .when()
-            .post("/api/chat/conversations")
-        .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(201)));
-    }
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private CreateConversationViewModel payloadTemplate;
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     @DeleteEntities(from = MessageEntity.class)
     @DeleteEntities(from = ConversationParticipantEntity.class)
     @DeleteEntities(from = ConversationEntity.class)
-    void shouldCreateDirectConversation() {
+    void shouldCreateGroupConversation() throws JsonProcessingException {
+        // given
+        var request = CreateConversationViewModelBuilder.toBuilder(payloadTemplate)
+                .withType("GROUP") // hardcoded: enum-like product field, validated against allowed values
+                .withName("Party Chat") // hardcoded: required for GROUP type
+                .withParticipantIds(List.of(2L, 3L)) // hardcoded: deterministic participants for the group
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .queryParam("userId", 1)
-            .body("""
-                {"type":"DIRECT","participantIds":[2]}
-                """)
+                .contentType(JSON)
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/api/chat/conversations")
+                .post("/api/chat/conversations")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(201)));
+                // FIXME(integration-tests-rewrite): POST that creates a resource should return 201, not 200
+                .statusCode(anyOf(equalTo(200), equalTo(201)));
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn400WhenTypeIsMissing() {
+    @DeleteEntities(from = MessageEntity.class)
+    @DeleteEntities(from = ConversationParticipantEntity.class)
+    @DeleteEntities(from = ConversationEntity.class)
+    void shouldCreateDirectConversation() throws JsonProcessingException {
+        // given
+        var request = CreateConversationViewModelBuilder.toBuilder(payloadTemplate)
+                .withType("DIRECT") // hardcoded: enum-like product field
+                .withName(null) // hardcoded: ignored for DIRECT, sent as null to be explicit
+                .withParticipantIds(List.of(2L)) // hardcoded: single participant for DIRECT
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .queryParam("userId", 1)
-            .body("""
-                {"participantIds":[2]}
-                """)
+                .contentType(JSON)
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/api/chat/conversations")
+                .post("/api/chat/conversations")
         .then()
-            .statusCode(400);
+                // FIXME(integration-tests-rewrite): POST that creates a resource should return 201, not 200
+                .statusCode(anyOf(equalTo(200), equalTo(201)));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    @TestSecurity(user = "1", roles = "PLAYER")
+    void shouldFailWhenTypeIsMissing() throws JsonProcessingException {
+        // given
+        var request = CreateConversationViewModelBuilder.toBuilder(payloadTemplate)
+                .withType(null) // hardcoded: triggers @NotNull on type
+                .withParticipantIds(List.of(2L)) // hardcoded: arbitrary, isolate failure to type
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .queryParam("userId", 1)
-            .body("""
-                {"type":"DIRECT","participantIds":[2]}
-                """)
+                .contentType(JSON)
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/api/chat/conversations")
+                .post("/api/chat/conversations")
         .then()
-            .statusCode(401);
+                .statusCode(400);
+    }
+
+    @Test
+    void shouldFailWhenNotAuthenticated() throws JsonProcessingException {
+        // given
+        var request = CreateConversationViewModelBuilder.toBuilder(payloadTemplate)
+                .withType("DIRECT") // hardcoded: arbitrary valid type, auth fails first
+                .withParticipantIds(List.of(2L)) // hardcoded: arbitrary, auth fails first
+                .build();
+
+        // when / then
+        given()
+                .contentType(JSON)
+                .queryParam("userId", 1) // hardcoded: arbitrary, auth fails first
+                .body(objectMapper.writeValueAsString(request))
+        .when()
+                .post("/api/chat/conversations")
+        .then()
+                .statusCode(401);
     }
 }
