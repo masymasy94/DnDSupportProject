@@ -1,59 +1,102 @@
 package integration.email;
 
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.notificationservice.adapter.outbound.mail.entity.EmailTemplateEntity;
+import com.dndplatform.notificationservice.view.model.vm.CreateEmailTemplateRequestViewModel;
+import com.dndplatform.notificationservice.view.model.vm.CreateEmailTemplateRequestViewModelBuilder;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
+import com.dndplatform.test.entity.NamedParam;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class CreateEmailTemplateIntegrationTest {
 
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private CreateEmailTemplateRequestViewModel payloadTemplate;
+
+    // Same field acts as:
+    //   - value injected into the payload via .withName(name)
+    //   - JPQL :name parameter for @DeleteEntities cleanup
+    @NamedParam
+    @InjectRandom
+    private String name;
+
     @Test
-    @DeleteEntities(from = EmailTemplateEntity.class)
-    void shouldCreateEmailTemplate() {
+    @DeleteEntities(from = EmailTemplateEntity.class, where = "e.name = :name", expectedRowCount = 1)
+    void shouldCreateEmailTemplate() throws JsonProcessingException {
+        // given
+        var request = CreateEmailTemplateRequestViewModelBuilder.toBuilder(payloadTemplate)
+                .withName(name)
+                .withSubject("Welcome!") // hardcoded: arbitrary subject under @Size(max = 255)
+                .withHtmlContent("<html><body>Hi {name}</body></html>") // hardcoded: must be non-blank
+                .withDescription("Welcome email") // hardcoded: under @Size(max = 500)
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"name":"welcome","subject":"Welcome!","htmlContent":"<html><body>Hi {name}</body></html>","description":"Welcome email"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/email-templates")
+                .post("/email-templates")
         .then()
-            .statusCode(201)
-            .contentType(ContentType.JSON)
-            .body("name", org.hamcrest.Matchers.equalTo("welcome"));
+                .statusCode(201)
+                .contentType(JSON)
+                .body("name", equalTo(name));
     }
 
     @Test
-    void shouldReturn400WhenNameIsBlank() {
+    void shouldFailWhenNameIsBlank() throws JsonProcessingException {
+        // given
+        var request = CreateEmailTemplateRequestViewModelBuilder.toBuilder(payloadTemplate)
+                .withName("") // hardcoded: triggers @NotBlank
+                .withSubject("Subject") // hardcoded: arbitrary
+                .withHtmlContent("<html></html>") // hardcoded: must be non-blank
+                .withDescription("desc") // hardcoded: arbitrary
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"name":"","subject":"Subject","htmlContent":"<html></html>","description":"desc"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/email-templates")
+                .post("/email-templates")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 
     @Test
-    void shouldReturn400WhenHtmlContentIsBlank() {
+    void shouldFailWhenHtmlContentIsBlank() throws JsonProcessingException {
+        // given
+        var request = CreateEmailTemplateRequestViewModelBuilder.toBuilder(payloadTemplate)
+                .withName("name") // hardcoded: arbitrary, isolate failure to htmlContent
+                .withSubject("Subject") // hardcoded: arbitrary
+                .withHtmlContent("") // hardcoded: triggers @NotBlank
+                .withDescription("desc") // hardcoded: arbitrary
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"name":"name","subject":"Subject","htmlContent":"","description":"desc"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/email-templates")
+                .post("/email-templates")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 }

@@ -1,5 +1,6 @@
 package com.dndplatform.notificationservice.view.model.vm;
 
+import com.dndplatform.common.annotations.Builder;
 import jakarta.json.bind.annotation.JsonbPropertyOrder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -7,6 +8,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonbPropertyOrder({"name", "subject", "htmlContent", "description"})
 @Schema(description = "Email template creation request")
+@Builder
 public record CreateEmailTemplateRequestViewModel(
 
         @NotBlank(message = "Template name is required")

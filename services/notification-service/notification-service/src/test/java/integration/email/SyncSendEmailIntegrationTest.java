@@ -1,70 +1,111 @@
 package integration.email;
 
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.notificationservice.adapter.outbound.mail.entity.EmailTemplateEntity;
+import com.dndplatform.notificationservice.view.model.vm.EmailSendRequestViewModel;
+import com.dndplatform.notificationservice.view.model.vm.EmailSendRequestViewModelBuilder;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
 import com.dndplatform.test.entity.PrepareEntities;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.Map;
+
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class SyncSendEmailIntegrationTest {
+
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private EmailSendRequestViewModel payloadTemplate;
 
     @Test
     @PrepareEntities(EmailTemplateEntityProvider.class)
     @DeleteEntities(from = EmailTemplateEntity.class)
-    void shouldSendEmailUsingTemplate() {
-        // Get template ID first
+    void shouldSendEmailUsingTemplate() throws JsonProcessingException {
+        // given
         var templateId = given()
         .when()
-            .get("/email-templates")
+                .get("/email-templates")
         .then()
-            .statusCode(200)
-            .extract().body().jsonPath().getLong("templates[0].id");
+                .statusCode(200)
+                .extract().body().jsonPath().getLong("templates[0].id");
 
+        var request = EmailSendRequestViewModelBuilder.toBuilder(payloadTemplate)
+                .withTo("user@example.com") // hardcoded: must satisfy @Email
+                .withCc(null) // hardcoded: random Instancio strings are not valid emails
+                .withBcc(null) // hardcoded: random Instancio strings are not valid emails
+                .withTemplateId(templateId)
+                .withTemplateVariables(Map.of("name", "John")) // hardcoded: matches the {name} placeholder in seeded template
+                .withAttachments(null) // hardcoded: avoid random Instancio attachments triggering serialization edge cases
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"to":"user@example.com","templateId":%d,"templateVariables":{"name":"John"}}
-                """.formatted(templateId))
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/emails")
+                .post("/emails")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(201),
-                org.hamcrest.Matchers.equalTo(202)));
+                // FIXME(integration-tests-rewrite): product returns 200 / 201 / 202 inconsistently;
+                // POST that creates an email send record should be 201, an async accepted should be 202;
+                // 200 has no REST justification.
+                .statusCode(anyOf(equalTo(200), equalTo(201), equalTo(202)));
     }
 
     @Test
-    void shouldReturn400WhenRecipientIsInvalid() {
+    void shouldFailWhenRecipientIsInvalid() throws JsonProcessingException {
+        // given
+        var request = EmailSendRequestViewModelBuilder.toBuilder(payloadTemplate)
+                .withTo("not-an-email") // hardcoded: triggers @Email validation
+                .withCc(null) // hardcoded: random Instancio strings are not valid emails
+                .withBcc(null) // hardcoded: random Instancio strings are not valid emails
+                .withTemplateId(1L) // hardcoded: arbitrary, validation fails before lookup
+                .withAttachments(null) // hardcoded: avoid serializer edge cases
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"to":"not-an-email","templateId":1}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/emails")
+                .post("/emails")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 
     @Test
-    void shouldReturn400WhenTemplateIdIsMissing() {
+    void shouldFailWhenTemplateIdIsMissing() throws JsonProcessingException {
+        // given
+        var request = EmailSendRequestViewModelBuilder.toBuilder(payloadTemplate)
+                .withTo("user@example.com") // hardcoded: valid email
+                .withCc(null) // hardcoded: random Instancio strings are not valid emails
+                .withBcc(null) // hardcoded: random Instancio strings are not valid emails
+                .withTemplateId(null) // hardcoded: triggers @NotNull on templateId
+                .withAttachments(null) // hardcoded: avoid serializer edge cases
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"to":"user@example.com"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
         .when()
-            .post("/emails")
+                .post("/emails")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 }
