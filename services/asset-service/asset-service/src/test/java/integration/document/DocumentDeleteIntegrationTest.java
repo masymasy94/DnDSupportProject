@@ -11,10 +11,10 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 
 import static io.restassured.RestAssured.given;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 
 @QuarkusTest
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -28,35 +28,40 @@ class DocumentDeleteIntegrationTest {
     @PrepareEntities(DocumentMetadataEntityProvider.class)
     @DeleteEntities(from = DocumentMetadataEntity.class)
     void shouldDeleteExistingDocument() {
-        Mockito.doNothing().when(minioDeleteRepository).delete(anyString());
+        // given
+        doNothing().when(minioDeleteRepository).delete(anyString());
 
+        // when / then
         given()
         .when()
-            .delete("/api/assets/documents/" + DocumentMetadataEntityProvider.ID)
+                .delete("/api/assets/documents/{id}", DocumentMetadataEntityProvider.ID) // hardcoded: matches seeded entity ID
         .then()
-            .statusCode(204);
+                .statusCode(204);
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn204EvenForNonexistentDocument() {
+    void shouldSucceedSilentlyForNonexistentDocument() {
+        // given
         // DocumentDeleteServiceImpl is fire-and-forget — no 404 for missing IDs.
         // Both MinIO and metadata delete are best-effort.
-        Mockito.doNothing().when(minioDeleteRepository).delete(anyString());
+        doNothing().when(minioDeleteRepository).delete(anyString());
 
+        // when / then
         given()
         .when()
-            .delete("/api/assets/documents/nonexistent-id")
+                .delete("/api/assets/documents/{id}", "nonexistent-id") // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(204);
+                .statusCode(204);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
         .when()
-            .delete("/api/assets/documents/some-id")
+                .delete("/api/assets/documents/{id}", "some-id") // hardcoded: arbitrary id, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

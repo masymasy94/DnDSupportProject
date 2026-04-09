@@ -5,6 +5,8 @@ import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class DocumentUploadBatchIntegrationTest {
@@ -12,25 +14,26 @@ class DocumentUploadBatchIntegrationTest {
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldRespondToEmptyBatchRequest() {
-        // Empty batch may return 200 (empty result) or 400 depending on validation
+        // when / then
         given()
-            .contentType("multipart/form-data")
+                .contentType("multipart/form-data")
         .when()
-            .post("/api/assets/documents/batch")
+                .post("/api/assets/documents/batch")
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(415)));
+                // FIXME(integration-tests-rewrite): empty batch returns 200 / 400 / 415 inconsistently;
+                // an empty multipart should be 400 (missing required parts) or 415 (no boundary).
+                // 200 has no REST justification. Decide and stabilise in the final pass.
+                .statusCode(anyOf(equalTo(200), equalTo(400), equalTo(415)));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .contentType("multipart/form-data")
+                .contentType("multipart/form-data")
         .when()
-            .post("/api/assets/documents/batch")
+                .post("/api/assets/documents/batch")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

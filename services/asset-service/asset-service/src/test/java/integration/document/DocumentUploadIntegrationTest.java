@@ -15,22 +15,24 @@ class DocumentUploadIntegrationTest {
         + "(missing FileUpload validation). A real happy-path test requires a multipart payload "
         + "with a stub MinIO upload repository — to be added in a follow-up.")
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn400WhenFileMissing() {
+    void shouldFailWhenFileMissing() {
+        // when / then
         given()
-            .contentType("multipart/form-data")
+                .contentType("multipart/form-data")
         .when()
-            .post("/api/assets/documents")
+                .post("/api/assets/documents")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .contentType("multipart/form-data")
+                .contentType("multipart/form-data")
         .when()
-            .post("/api/assets/documents")
+                .post("/api/assets/documents")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

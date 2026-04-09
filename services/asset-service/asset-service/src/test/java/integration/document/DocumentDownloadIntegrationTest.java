@@ -10,6 +10,7 @@ import com.dndplatform.test.entity.PrepareEntitiesExtension;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -27,47 +28,51 @@ class DocumentDownloadIntegrationTest {
     DocumentDownloadRepository minioDownloadRepository;
 
     @Test
-    @org.junit.jupiter.api.Disabled("InputStream-backed streaming response from a Mockito-mocked "
+    @Disabled("InputStream-backed streaming response from a Mockito-mocked "
         + "DocumentDownloadRepository causes REST-Assured to hang. A real happy path requires either a "
         + "real MinIO or a custom QuarkusTestResource that wraps a fake S3 server. Tracked as a follow-up.")
     @TestSecurity(user = "1", roles = "PLAYER")
     @PrepareEntities(DocumentMetadataEntityProvider.class)
     @DeleteEntities(from = DocumentMetadataEntity.class)
     void shouldDownloadExistingDocument() {
+        // given
         var content = new DocumentContent(
-            DocumentMetadataEntityProvider.FILE_NAME,
-            DocumentMetadataEntityProvider.CONTENT_TYPE,
-            DocumentMetadataEntityProvider.SIZE,
-            new ByteArrayInputStream("test pdf content".getBytes())
+                DocumentMetadataEntityProvider.FILE_NAME,
+                DocumentMetadataEntityProvider.CONTENT_TYPE,
+                DocumentMetadataEntityProvider.SIZE,
+                new ByteArrayInputStream("test pdf content".getBytes()) // hardcoded: minimal valid content body
         );
         given(minioDownloadRepository.download(anyString())).willReturn(content);
 
+        // when / then
         io.restassured.RestAssured.given()
         .when()
-            .get("/api/assets/documents/" + DocumentMetadataEntityProvider.ID)
+                .get("/api/assets/documents/{id}", DocumentMetadataEntityProvider.ID) // hardcoded: matches seeded ID
         .then()
-            .statusCode(200);
+                .statusCode(200);
     }
 
     @Test
-    @org.junit.jupiter.api.Disabled("KNOWN BUG: DocumentDownloadDelegate dereferences DocumentContent "
+    @Disabled("KNOWN BUG: DocumentDownloadDelegate dereferences DocumentContent "
         + "without null check (NPE → HTTP 500). The repo returns null for missing IDs but the delegate "
         + "should map to 404. Re-enable after fixing DocumentDownloadDelegate.java:24")
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn404WhenDocumentNotFound() {
+    void shouldFailWhenDocumentNotFound() {
+        // when / then
         io.restassured.RestAssured.given()
         .when()
-            .get("/api/assets/documents/nonexistent-id")
+                .get("/api/assets/documents/{id}", "nonexistent-id") // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(404);
+                .statusCode(404);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         io.restassured.RestAssured.given()
         .when()
-            .get("/api/assets/documents/some-id")
+                .get("/api/assets/documents/{id}", "some-id") // hardcoded: arbitrary id, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

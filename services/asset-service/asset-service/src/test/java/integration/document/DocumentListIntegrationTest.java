@@ -9,14 +9,13 @@ import com.dndplatform.test.entity.PrepareEntitiesExtension;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
-import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -31,7 +30,7 @@ class DocumentListIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Default: empty list
+        // default stub: empty list — overridden per test where needed
         given(documentListRepository.listAll()).willReturn(List.of());
     }
 
@@ -39,38 +38,42 @@ class DocumentListIntegrationTest {
     @TestSecurity(user = "1", roles = "PLAYER")
     @DeleteEntities(from = DocumentMetadataEntity.class)
     void shouldListDocuments() {
+        // given
         given(documentListRepository.listAll()).willReturn(List.of(
-            new DocumentListItem("doc-1", "test.pdf")
+                new DocumentListItem("doc-1", "test.pdf") // hardcoded: deterministic doc id+name for assertions
         ));
 
+        // when / then
         io.restassured.RestAssured.given()
         .when()
-            .get("/api/assets/documents")
+                .get("/api/assets/documents")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .body("size()", greaterThanOrEqualTo(1))
-            .body("fileName", hasItem(equalTo("test.pdf")));
+                .statusCode(200)
+                .contentType(JSON)
+                .body("size()", greaterThanOrEqualTo(1))
+                .body("fileName", hasItem(equalTo("test.pdf")));
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldReturnEmptyListWhenNoDocuments() {
+        // when / then
         io.restassured.RestAssured.given()
         .when()
-            .get("/api/assets/documents")
+                .get("/api/assets/documents")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .body("size()", equalTo(0));
+                .statusCode(200)
+                .contentType(JSON)
+                .body("size()", equalTo(0));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         io.restassured.RestAssured.given()
         .when()
-            .get("/api/assets/documents")
+                .get("/api/assets/documents")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }
