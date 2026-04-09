@@ -2,10 +2,10 @@ package integration.docqa;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 
 @QuarkusTest
 class GetUserLlmConfigurationsIntegrationTest {
@@ -13,22 +13,24 @@ class GetUserLlmConfigurationsIntegrationTest {
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldListUserLlmConfigurations() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
         .when()
-            .get("/api/document-qa/llm/user-configurations")
+                .get("/api/document-qa/llm/user-configurations")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON);
+                .statusCode(200)
+                .contentType(JSON);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: arbitrary, auth fails first
         .when()
-            .get("/api/document-qa/llm/user-configurations")
+                .get("/api/document-qa/llm/user-configurations")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

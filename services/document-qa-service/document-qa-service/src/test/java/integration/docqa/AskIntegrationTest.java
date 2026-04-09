@@ -2,11 +2,11 @@ package integration.docqa;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 
 @QuarkusTest
 class AskIntegrationTest {
@@ -16,24 +16,26 @@ class AskIntegrationTest {
         + "so empty/malformed bodies bypass validation and crash the delegate (HTTP 500). "
         + "Re-enable after adding @Valid AskRequest in AskResourceImpl.java:37")
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn400ForInvalidAskRequest() {
+    void shouldFailForInvalidAskRequest() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("{}")
+                .contentType(JSON)
+                .body("{}") // hardcoded: empty body to trigger validation
         .when()
-            .post("/api/document-qa/ask")
+                .post("/api/document-qa/ask")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("{}")
+                .contentType(JSON)
+                .body("{}") // hardcoded: arbitrary body, auth fails first
         .when()
-            .post("/api/document-qa/ask")
+                .post("/api/document-qa/ask")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

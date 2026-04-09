@@ -2,36 +2,38 @@ package integration.docqa;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class ActivateUserLlmConfigurationIntegrationTest {
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn404WhenConfigNotFound() {
+    void shouldFailWhenConfigNotFound() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .queryParam("userId", 1)
+                .contentType(JSON)
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
         .when()
-            .put("/api/document-qa/llm/user-configurations/999999/activate")
+                .put("/api/document-qa/llm/user-configurations/{id}/activate", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(204),
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): activate on missing should be 404, not 204/400.
+                .statusCode(anyOf(equalTo(204), equalTo(400), equalTo(404)));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
+                .contentType(JSON)
         .when()
-            .put("/api/document-qa/llm/user-configurations/1/activate")
+                .put("/api/document-qa/llm/user-configurations/{id}/activate", 1L) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

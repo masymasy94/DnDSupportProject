@@ -5,31 +5,33 @@ import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class GetConversationMessagesIntegrationTest {
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn404WhenConversationNotFound() {
+    void shouldFailWhenConversationNotFound() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
         .when()
-            .get("/api/document-qa/conversations/999999/messages")
+                .get("/api/document-qa/conversations/{id}/messages", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): missing conversation should be 404, not 200/400.
+                .statusCode(anyOf(equalTo(200), equalTo(400), equalTo(404)));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: arbitrary, auth fails first
         .when()
-            .get("/api/document-qa/conversations/1/messages")
+                .get("/api/document-qa/conversations/{id}/messages", 1L) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

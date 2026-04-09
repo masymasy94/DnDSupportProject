@@ -5,12 +5,13 @@ import com.dndplatform.documentqa.domain.repository.ConversationFindRepository;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -24,43 +25,53 @@ class GetConversationsIntegrationTest {
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldListConversations() {
-        var conversation = new Conversation(1L, 1L, null, "Test Conversation",
-            LocalDateTime.now(), LocalDateTime.now());
+        // given
+        var conversation = new Conversation(
+                1L, // hardcoded: deterministic id
+                1L, // hardcoded: matches @TestSecurity user
+                null,
+                "Test Conversation", // hardcoded: deterministic title for assertion
+                LocalDateTime.now(),
+                LocalDateTime.now());
         given(repository.findByUserId(anyLong())).willReturn(List.of(conversation));
 
-        io.restassured.RestAssured.given()
-            .queryParam("userId", 1)
+        // when / then
+        given()
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
         .when()
-            .get("/api/document-qa/conversations")
+                .get("/api/document-qa/conversations")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .body("size()", equalTo(1))
-            .body("[0].title", equalTo("Test Conversation"));
+                .statusCode(200)
+                .contentType(JSON)
+                .body("size()", equalTo(1))
+                .body("[0].title", equalTo("Test Conversation"));
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldReturnEmptyListWhenNoConversations() {
+        // given
         given(repository.findByUserId(anyLong())).willReturn(List.of());
 
-        io.restassured.RestAssured.given()
-            .queryParam("userId", 1)
+        // when / then
+        given()
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
         .when()
-            .get("/api/document-qa/conversations")
+                .get("/api/document-qa/conversations")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .body("size()", equalTo(0));
+                .statusCode(200)
+                .contentType(JSON)
+                .body("size()", equalTo(0));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
-        io.restassured.RestAssured.given()
-            .queryParam("userId", 1)
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
+        given()
+                .queryParam("userId", 1) // hardcoded: arbitrary, auth fails first
         .when()
-            .get("/api/document-qa/conversations")
+                .get("/api/document-qa/conversations")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }
