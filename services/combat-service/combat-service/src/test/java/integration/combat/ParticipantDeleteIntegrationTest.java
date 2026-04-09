@@ -5,29 +5,32 @@ import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class ParticipantDeleteIntegrationTest {
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn404WhenNotFound() {
+    void shouldFailWhenNotFound() {
+        // when / then
         given()
-            .queryParam("userId", 1)
+                .queryParam("userId", 1) // hardcoded: matches @TestSecurity user
         .when()
-            .delete("/encounters/999999/participants/999999")
+                .delete("/encounters/{eid}/participants/{pid}", 999_999L, 999_999L) // hardcoded: ids outside any seeded fixture
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): missing participant should be 404, not 400.
+                .statusCode(anyOf(equalTo(400), equalTo(404)));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
         .when()
-            .delete("/encounters/1/participants/1")
+                .delete("/encounters/{eid}/participants/{pid}", 1L, 1L) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

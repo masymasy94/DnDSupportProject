@@ -6,13 +6,14 @@ import com.dndplatform.combat.domain.repository.EncounterFindByIdRepository;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -26,39 +27,53 @@ class EncounterFindByIdIntegrationTest {
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldFindEncounterById() {
-        var encounter = new Encounter(1L, 10L, 1L, "Goblin Ambush", "A roadside ambush",
-            EncounterStatus.DRAFT, 3, 4, null, List.of(),
-            LocalDateTime.now(), LocalDateTime.now());
-
+        // given
+        var encounter = new Encounter(
+                1L, // hardcoded: deterministic id for assertions
+                10L, // hardcoded: arbitrary campaign id
+                1L, // hardcoded: matches @TestSecurity user
+                "Goblin Ambush", // hardcoded: deterministic name for assertions
+                "A roadside ambush", // hardcoded: deterministic description
+                EncounterStatus.DRAFT,
+                3, // hardcoded: arbitrary current round
+                4, // hardcoded: arbitrary turn order
+                null,
+                List.of(),
+                LocalDateTime.now(),
+                LocalDateTime.now());
         given(repository.findById(anyLong())).willReturn(Optional.of(encounter));
 
-        io.restassured.RestAssured.given()
+        // when / then
+        given()
         .when()
-            .get("/encounters/1")
+                .get("/encounters/{id}", 1L) // hardcoded: matches mocked encounter id
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .body("name", equalTo("Goblin Ambush"));
+                .statusCode(200)
+                .contentType(JSON)
+                .body("name", equalTo("Goblin Ambush"));
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn404WhenEncounterNotFound() {
+    void shouldFailWhenEncounterNotFound() {
+        // given
         given(repository.findById(anyLong())).willReturn(Optional.empty());
 
-        io.restassured.RestAssured.given()
+        // when / then
+        given()
         .when()
-            .get("/encounters/999999")
+                .get("/encounters/{id}", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(404);
+                .statusCode(404);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
-        io.restassured.RestAssured.given()
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
+        given()
         .when()
-            .get("/encounters/1")
+                .get("/encounters/{id}", 1L) // hardcoded: arbitrary id, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

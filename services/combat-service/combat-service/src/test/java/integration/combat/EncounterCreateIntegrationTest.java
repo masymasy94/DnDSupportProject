@@ -2,34 +2,36 @@ package integration.combat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 
 @QuarkusTest
 class EncounterCreateIntegrationTest {
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn400WhenBodyIsEmpty() {
+    void shouldFailWhenBodyIsEmpty() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("{}")
+                .contentType(JSON)
+                .body("{}") // hardcoded: malformed body to trigger validation
         .when()
-            .post("/encounters")
+                .post("/encounters")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("{}")
+                .contentType(JSON)
+                .body("{}") // hardcoded: arbitrary body, auth fails first
         .when()
-            .post("/encounters")
+                .post("/encounters")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

@@ -2,36 +2,40 @@ package integration.combat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class ParticipantAddIntegrationTest {
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn400or404WhenEncounterOrBodyInvalid() {
+    void shouldFailWhenEncounterMissingOrBodyInvalid() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("{}")
+                .contentType(JSON)
+                .body("{}") // hardcoded: empty body to trigger validation
         .when()
-            .post("/encounters/999999/participants")
+                .post("/encounters/{id}/participants", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): empty body should be 400, missing encounter should be 404.
+                // Currently the product collapses both into either, depending on order.
+                .statusCode(anyOf(equalTo(400), equalTo(404)));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("{}")
+                .contentType(JSON)
+                .body("{}") // hardcoded: arbitrary body, auth fails first
         .when()
-            .post("/encounters/1/participants")
+                .post("/encounters/{id}/participants", 1L) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

@@ -5,6 +5,8 @@ import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class TurnOrderFindIntegrationTest {
@@ -12,23 +14,23 @@ class TurnOrderFindIntegrationTest {
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldRespondWithEmptyOrNotFound() {
-        // Service returns empty list (200) for nonexistent encounter
+        // when / then
         given()
         .when()
-            .get("/encounters/999999/turns")
+                .get("/encounters/{id}/turns", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(org.hamcrest.Matchers.anyOf(
-                org.hamcrest.Matchers.equalTo(200),
-                org.hamcrest.Matchers.equalTo(400),
-                org.hamcrest.Matchers.equalTo(404)));
+                // FIXME(integration-tests-rewrite): missing encounter should be 404; the product
+                // currently returns either 200 (empty list) or 400/404. Decide canonical mapping.
+                .statusCode(anyOf(equalTo(200), equalTo(400), equalTo(404)));
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
         .when()
-            .get("/encounters/1/turns")
+                .get("/encounters/{id}/turns", 1L) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }
