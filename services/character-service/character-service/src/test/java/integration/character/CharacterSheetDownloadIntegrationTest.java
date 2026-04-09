@@ -11,20 +11,22 @@ class CharacterSheetDownloadIntegrationTest {
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn404WhenCharacterNotFound() {
+    void shouldFailWhenCharacterNotFound() {
+        // when / then
         given()
         .when()
-            .get("/characters/999999/sheet")
+                .get("/characters/{id}/sheet", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(404);
+                .statusCode(404);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
         .when()
-            .get("/characters/1/sheet")
+                .get("/characters/{id}/sheet", 1L) // hardcoded: arbitrary id, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

@@ -2,11 +2,11 @@ package integration.character;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 
 @QuarkusTest
 class CharacterCreateIntegrationTest {
@@ -15,24 +15,26 @@ class CharacterCreateIntegrationTest {
     @Disabled("KNOWN BUG: CharacterCreateResourceImpl missing @Valid annotation. "
         + "Empty bodies bypass validation and crash the delegate (HTTP 500). Re-enable after adding @Valid.")
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn400WhenRequestBodyIsEmpty() {
+    void shouldFailWhenRequestBodyIsEmpty() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("{}")
+                .contentType(JSON)
+                .body("{}") // hardcoded: intentionally malformed body to trigger @Valid
         .when()
-            .post("/characters")
+                .post("/characters")
         .then()
-            .statusCode(400);
+                .statusCode(400);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("{}")
+                .contentType(JSON)
+                .body("{}") // hardcoded: arbitrary body, auth fails first
         .when()
-            .post("/characters")
+                .post("/characters")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }
