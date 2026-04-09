@@ -1,16 +1,17 @@
 package integration.compendium;
 
-import com.dndplatform.compendium.domain.model.SourceType;
 import com.dndplatform.compendium.domain.model.Species;
+import com.dndplatform.compendium.domain.model.SourceType;
 import com.dndplatform.compendium.domain.repository.SpeciesFindByIdRepository;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 
@@ -23,34 +24,42 @@ class SpeciesFindByIdIntegrationTest {
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldReturnSpeciesById() {
-        given(repository.findById(anyInt())).willReturn(Optional.of(new Species(1, "Dwarf", "Stout", SourceType.OFFICIAL, null, null, true)));
+        // given
+        given(repository.findById(anyInt())).willReturn(Optional.of(
+                new Species(1, "Dwarf", "Stout", SourceType.OFFICIAL, null, null, true) // hardcoded: deterministic seed for assertion
+        ));
 
-        io.restassured.RestAssured.given()
+        // when / then
+        io.restassured.RestAssured.given() // FQN: io.restassured.given collides with BDDMockito.given imported above
         .when()
-            .get("/api/compendium/species/1")
+                .get("/api/compendium/species/{id}", 1) // hardcoded: matches mocked id
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON).body("name", org.hamcrest.Matchers.equalTo("Dwarf"));
+                .statusCode(200)
+                .contentType(JSON)
+                .body("name", equalTo("Dwarf"));
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn404WhenSpeciesNotFound() {
+    void shouldFailWhenSpeciesNotFound() {
+        // given
         given(repository.findById(anyInt())).willReturn(Optional.empty());
 
-        io.restassured.RestAssured.given()
+        // when / then
+        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
         .when()
-            .get("/api/compendium/species/999999")
+                .get("/api/compendium/species/{id}", 999_999) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(404);
+                .statusCode(404);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
-        io.restassured.RestAssured.given()
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
+        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
         .when()
-            .get("/api/compendium/species/1")
+                .get("/api/compendium/species/{id}", 1) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

@@ -5,11 +5,12 @@ import com.dndplatform.compendium.domain.repository.ConditionFindByIdRepository;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
+import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 
@@ -22,34 +23,42 @@ class ConditionFindByIdIntegrationTest {
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldReturnConditionById() {
-        given(repository.findById(anyInt())).willReturn(Optional.of(new Condition((short) 1, "Charmed")));
+        // given
+        given(repository.findById(anyInt())).willReturn(Optional.of(
+                new Condition((short) 1, "Charmed") // hardcoded: deterministic seed for assertion
+        ));
 
-        io.restassured.RestAssured.given()
+        // when / then
+        io.restassured.RestAssured.given() // FQN: io.restassured.given collides with BDDMockito.given imported above
         .when()
-            .get("/api/compendium/conditions/1")
+                .get("/api/compendium/conditions/{id}", 1) // hardcoded: matches mocked id
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON).body("name", org.hamcrest.Matchers.equalTo("Charmed"));
+                .statusCode(200)
+                .contentType(JSON)
+                .body("name", equalTo("Charmed"));
     }
 
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
-    void shouldReturn404WhenConditionNotFound() {
+    void shouldFailWhenConditionNotFound() {
+        // given
         given(repository.findById(anyInt())).willReturn(Optional.empty());
 
-        io.restassured.RestAssured.given()
+        // when / then
+        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
         .when()
-            .get("/api/compendium/conditions/999999")
+                .get("/api/compendium/conditions/{id}", 999_999) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(404);
+                .statusCode(404);
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
-        io.restassured.RestAssured.given()
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
+        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
         .when()
-            .get("/api/compendium/conditions/1")
+                .get("/api/compendium/conditions/{id}", 1) // hardcoded: arbitrary, auth fails first
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }
