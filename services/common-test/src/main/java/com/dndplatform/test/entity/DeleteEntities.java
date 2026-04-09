@@ -12,4 +12,10 @@ import java.lang.annotation.Target;
 public @interface DeleteEntities {
     Class<?> from();
     int expectedRowCount() default -1;
+    /**
+     * JPQL where clause body (without the "WHERE" keyword), referencing the
+     * entity alias `e` and named parameters bound to {@link NamedParam} fields
+     * on the test class. Example: {@code where = "e.username = :username"}.
+     */
+    String where() default "";
 }
