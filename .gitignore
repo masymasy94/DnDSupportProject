@@ -26,6 +26,11 @@ bin/
 ### VS Code ###
 .vscode/
 
+### Claude Code / agent workspaces ###
+.claude/
+.agents/
+skills-lock.json
+
 ### Maven ###
 target/
 

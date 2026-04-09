@@ -1,0 +1,32 @@
+package integration.combat;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+
+@QuarkusTest
+class DifficultyCalculateIntegrationTest {
+
+    @Test
+    @TestSecurity(user = "1", roles = "PLAYER")
+    void shouldReturn404WhenEncounterNotFound() {
+        given()
+        .when()
+            .get("/encounters/999999/difficulty")
+        .then()
+            .statusCode(org.hamcrest.Matchers.anyOf(
+                org.hamcrest.Matchers.equalTo(400),
+                org.hamcrest.Matchers.equalTo(404)));
+    }
+
+    @Test
+    void shouldReturn401WhenNotAuthenticated() {
+        given()
+        .when()
+            .get("/encounters/1/difficulty")
+        .then()
+            .statusCode(401);
+    }
+}

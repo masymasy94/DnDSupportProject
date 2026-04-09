@@ -220,6 +220,32 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Integration test support -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-security</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.dndplatform</groupId>
+            <artifactId>common-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock</artifactId>
+            <version>3.12.1</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
