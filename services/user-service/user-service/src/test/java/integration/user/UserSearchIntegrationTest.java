@@ -8,11 +8,11 @@ import com.dndplatform.user.adapter.outbound.jpa.entity.UserEntity;
 import com.dndplatform.user.view.model.vm.PagedUserViewModel;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
@@ -24,17 +24,19 @@ class UserSearchIntegrationTest {
     @PrepareEntities(UserEntityProvider.class)
     @DeleteEntities(from = UserEntity.class)
     void shouldSearchByUsername() {
+        // when
         var response = given()
-            .queryParam("query", UserEntityProvider.USERNAME)
-            .queryParam("page", 0)
-            .queryParam("size", 10)
+                .queryParam("query", UserEntityProvider.USERNAME) // hardcoded: matches seeded user
+                .queryParam("page", 0) // hardcoded: first page
+                .queryParam("size", 10) // hardcoded: arbitrary page size
         .when()
-            .get("/users/search")
+                .get("/users/search")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .extract().as(PagedUserViewModel.class);
+                .statusCode(200)
+                .contentType(JSON)
+                .extract().as(PagedUserViewModel.class);
 
+        // then
         assertThat(response.content()).isNotEmpty();
         assertThat(response.content().getFirst().username()).isEqualTo(UserEntityProvider.USERNAME);
     }
@@ -42,28 +44,31 @@ class UserSearchIntegrationTest {
     @Test
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldReturnEmptyForNoMatch() {
+        // when
         var response = given()
-            .queryParam("query", "nonexistentuser12345")
-            .queryParam("page", 0)
-            .queryParam("size", 10)
+                .queryParam("query", "nonexistentuser12345") // hardcoded: must not match any seed
+                .queryParam("page", 0) // hardcoded: first page
+                .queryParam("size", 10) // hardcoded: arbitrary page size
         .when()
-            .get("/users/search")
+                .get("/users/search")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .extract().as(PagedUserViewModel.class);
+                .statusCode(200)
+                .contentType(JSON)
+                .extract().as(PagedUserViewModel.class);
 
+        // then
         assertThat(response.content()).isEmpty();
         assertThat(response.totalElements()).isZero();
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .queryParam("query", "test")
+                .queryParam("query", "test") // hardcoded: arbitrary query value, not relevant for 401
         .when()
-            .get("/users/search")
+                .get("/users/search")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

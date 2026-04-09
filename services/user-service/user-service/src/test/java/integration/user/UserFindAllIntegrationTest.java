@@ -8,11 +8,11 @@ import com.dndplatform.user.adapter.outbound.jpa.entity.UserEntity;
 import com.dndplatform.user.view.model.vm.PagedUserViewModel;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
@@ -24,16 +24,18 @@ class UserFindAllIntegrationTest {
     @PrepareEntities(UserEntityProvider.class)
     @DeleteEntities(from = UserEntity.class)
     void shouldReturnPagedUsers() {
+        // when
         var response = given()
-            .queryParam("page", 0)
-            .queryParam("size", 10)
+                .queryParam("page", 0) // hardcoded: first page of pagination
+                .queryParam("size", 10) // hardcoded: arbitrary page size
         .when()
-            .get("/users")
+                .get("/users")
         .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .extract().as(PagedUserViewModel.class);
+                .statusCode(200)
+                .contentType(JSON)
+                .extract().as(PagedUserViewModel.class);
 
+        // then
         assertThat(response.content()).isNotEmpty();
         assertThat(response.page()).isZero();
         assertThat(response.size()).isEqualTo(10);
@@ -41,13 +43,14 @@ class UserFindAllIntegrationTest {
     }
 
     @Test
-    void shouldReturn401WhenNotAuthenticated() {
+    void shouldFailWhenNotAuthenticated() {
+        // when / then
         given()
-            .queryParam("page", 0)
-            .queryParam("size", 10)
+                .queryParam("page", 0) // hardcoded: first page
+                .queryParam("size", 10) // hardcoded: arbitrary page size
         .when()
-            .get("/users")
+                .get("/users")
         .then()
-            .statusCode(401);
+                .statusCode(401);
     }
 }

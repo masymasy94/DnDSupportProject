@@ -1,70 +1,108 @@
 package integration.user;
 
+import com.dndplatform.common.test.InjectRandom;
+import com.dndplatform.common.test.RandomExtension;
 import com.dndplatform.test.entity.DeleteEntities;
 import com.dndplatform.test.entity.DeleteEntitiesExtension;
 import com.dndplatform.test.entity.PrepareEntitiesExtension;
 import com.dndplatform.user.adapter.outbound.jpa.entity.UserEntity;
+import com.dndplatform.user.view.model.vm.UserCredentialsValidateViewModel;
+import com.dndplatform.user.view.model.vm.UserCredentialsValidateViewModelBuilder;
+import com.dndplatform.user.view.model.vm.UserRegisterViewModel;
+import com.dndplatform.user.view.model.vm.UserRegisterViewModelBuilder;
+import com.dndplatform.user.view.model.vm.UserUpdatePasswordViewModel;
+import com.dndplatform.user.view.model.vm.UserUpdatePasswordViewModelBuilder;
 import com.dndplatform.user.view.model.vm.UserViewModel;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.UUID;
+
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 
 @QuarkusTest
-@ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
+@ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class UserUpdatePasswordIntegrationTest {
+
+    @Inject
+    ObjectMapper objectMapper;
+
+    @InjectRandom
+    private UserRegisterViewModel registerTemplate;
+
+    @InjectRandom
+    private UserUpdatePasswordViewModel updateTemplate;
+
+    @InjectRandom
+    private UserCredentialsValidateViewModel validateTemplate;
 
     @Test
     @DeleteEntities(from = UserEntity.class)
-    void shouldUpdatePasswordSuccessfully() {
-        // Register user
+    void shouldUpdatePasswordSuccessfully() throws JsonProcessingException {
+        // given
+        // hardcoded username: random Instancio strings can violate @Pattern
+        var safeUsername = "u" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        var registerRequest = UserRegisterViewModelBuilder.toBuilder(registerTemplate)
+                .withUsername(safeUsername)
+                .withEmail(safeUsername + "@example.com") // hardcoded shape: must satisfy @Email
+                .withPassword("OldPassword1") // hardcoded: known password to be replaced
+                .build();
         var registered = given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"username":"pwduser","email":"pwduser@test.com","password":"OldPassword1"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(registerRequest))
         .when()
-            .post("/users")
+                .post("/users")
         .then()
-            .statusCode(200)
-            .extract().as(UserViewModel.class);
+                .statusCode(200) // FIXME(integration-tests-rewrite): REST resource creation should return 201
+                .extract().as(UserViewModel.class);
 
-        // Update password
-        given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"newPassword":"NewPassword1"}
-                """)
-        .when()
-            .put("/users/" + registered.id() + "/password")
-        .then()
-            .statusCode(204);
+        var updateRequest = UserUpdatePasswordViewModelBuilder.toBuilder(updateTemplate)
+                .withNewPassword("NewPassword1") // hardcoded: known new password
+                .build();
 
-        // Verify new password works
+        // when
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"username":"pwduser","password":"NewPassword1"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(updateRequest))
         .when()
-            .post("/users/credentials-validation")
+                .put("/users/{id}/password", registered.id())
         .then()
-            .statusCode(200);
+                .statusCode(204);
+
+        // then
+        var validateRequest = UserCredentialsValidateViewModelBuilder.toBuilder(validateTemplate)
+                .withUsername(safeUsername) // hardcoded: matches the registered user
+                .withPassword("NewPassword1") // hardcoded: must match the new password set above
+                .build();
+        given()
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(validateRequest))
+        .when()
+                .post("/users/credentials-validation")
+        .then()
+                .statusCode(200);
     }
 
     @Test
-    void shouldReturn204EvenForNonexistentUser() {
-        // Update password is fire-and-forget — no 404 for missing user
+    void shouldSucceedSilentlyForNonexistentUser() throws JsonProcessingException {
+        // given
+        // The update-password endpoint is fire-and-forget by design — no 404 for missing user.
+        var updateRequest = UserUpdatePasswordViewModelBuilder.toBuilder(updateTemplate)
+                .withNewPassword("NewPassword1") // hardcoded: arbitrary non-blank password
+                .build();
+
+        // when / then
         given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"newPassword":"NewPassword1"}
-                """)
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(updateRequest))
         .when()
-            .put("/users/999999/password")
+                .put("/users/{id}/password", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-            .statusCode(204);
+                .statusCode(204);
     }
 }
