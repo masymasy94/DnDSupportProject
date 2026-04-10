@@ -38,7 +38,7 @@ class UserRegisterIntegrationTest {
     //   - value injected into the payload via .withUsername(username)
     //   - JPQL :username parameter for @DeleteEntities cleanup
     @NamedParam
-    private String username;
+    private String username = "cleanup-fallback";
 
     @Test
     @DeleteEntities(from = UserEntity.class, where = "e.username = :username", expectedRowCount = 1)

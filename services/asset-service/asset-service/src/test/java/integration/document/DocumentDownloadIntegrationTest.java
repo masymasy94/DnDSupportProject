@@ -45,7 +45,7 @@ class DocumentDownloadIntegrationTest {
         given(minioDownloadRepository.download(anyString())).willReturn(content);
 
         // when / then
-        io.restassured.RestAssured.given()
+        given()
         .when()
                 .get("/api/assets/documents/{id}", DocumentMetadataEntityProvider.ID) // hardcoded: matches seeded ID
         .then()
@@ -59,7 +59,7 @@ class DocumentDownloadIntegrationTest {
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldFailWhenDocumentNotFound() {
         // when / then
-        io.restassured.RestAssured.given()
+        given()
         .when()
                 .get("/api/assets/documents/{id}", "nonexistent-id") // hardcoded: id outside any seeded fixture
         .then()
@@ -69,7 +69,7 @@ class DocumentDownloadIntegrationTest {
     @Test
     void shouldFailWhenNotAuthenticated() {
         // when / then
-        io.restassured.RestAssured.given()
+        given()
         .when()
                 .get("/api/assets/documents/{id}", "some-id") // hardcoded: arbitrary id, auth fails first
         .then()

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -30,7 +31,7 @@ class SpeciesFindAllIntegrationTest {
         ));
 
         // when / then
-        io.restassured.RestAssured.given() // FQN: io.restassured.given collides with BDDMockito.given imported above
+        given()
         .when()
                 .get("/api/compendium/species")
         .then()
@@ -47,7 +48,7 @@ class SpeciesFindAllIntegrationTest {
         given(repository.findAllSpecies()).willReturn(List.of());
 
         // when / then
-        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
+        given()
         .when()
                 .get("/api/compendium/species")
         .then()
@@ -59,7 +60,7 @@ class SpeciesFindAllIntegrationTest {
     @Test
     void shouldFailWhenNotAuthenticated() {
         // when / then
-        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
+        given()
         .when()
                 .get("/api/compendium/species")
         .then()

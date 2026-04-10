@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -32,7 +33,7 @@ class MonsterFindAllIntegrationTest {
                 ), 0, 20, 1L)); // hardcoded: page=0, size=20, total=1 — default pagination snapshot
 
         // when / then
-        io.restassured.RestAssured.given() // FQN: io.restassured.given collides with BDDMockito.given imported above
+        given()
         .when()
                 .get("/api/compendium/monsters")
         .then()
@@ -48,7 +49,7 @@ class MonsterFindAllIntegrationTest {
                 .willReturn(new PagedResult<>(List.of(), 0, 20, 0L)); // hardcoded: empty page snapshot
 
         // when / then
-        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
+        given()
         .when()
                 .get("/api/compendium/monsters")
         .then()
@@ -59,7 +60,7 @@ class MonsterFindAllIntegrationTest {
     @Test
     void shouldFailWhenNotAuthenticated() {
         // when / then
-        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
+        given()
         .when()
                 .get("/api/compendium/monsters")
         .then()

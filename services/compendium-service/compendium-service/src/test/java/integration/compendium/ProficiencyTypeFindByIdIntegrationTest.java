@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -29,7 +30,7 @@ class ProficiencyTypeFindByIdIntegrationTest {
         ));
 
         // when / then
-        io.restassured.RestAssured.given() // FQN: io.restassured.given collides with BDDMockito.given imported above
+        given()
         .when()
                 .get("/api/compendium/proficiency-types/{id}", 1) // hardcoded: matches mocked id
         .then()
@@ -45,7 +46,7 @@ class ProficiencyTypeFindByIdIntegrationTest {
         given(repository.findById(anyInt())).willReturn(Optional.empty());
 
         // when / then
-        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
+        given()
         .when()
                 .get("/api/compendium/proficiency-types/{id}", 999_999) // hardcoded: id outside any seeded fixture
         .then()
@@ -55,7 +56,7 @@ class ProficiencyTypeFindByIdIntegrationTest {
     @Test
     void shouldFailWhenNotAuthenticated() {
         // when / then
-        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
+        given()
         .when()
                 .get("/api/compendium/proficiency-types/{id}", 1) // hardcoded: arbitrary, auth fails first
         .then()

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -33,7 +34,7 @@ class EquipmentFindAllIntegrationTest {
                 ), 0, 20, 1L)); // hardcoded: page=0, size=20, total=1 — default pagination snapshot
 
         // when / then
-        io.restassured.RestAssured.given() // FQN: io.restassured.given collides with BDDMockito.given imported above
+        given()
         .when()
                 .get("/api/compendium/equipment")
         .then()
@@ -49,7 +50,7 @@ class EquipmentFindAllIntegrationTest {
                 .willReturn(new PagedResult<>(List.of(), 0, 20, 0L)); // hardcoded: empty page snapshot
 
         // when / then
-        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
+        given()
         .when()
                 .get("/api/compendium/equipment")
         .then()
@@ -60,7 +61,7 @@ class EquipmentFindAllIntegrationTest {
     @Test
     void shouldFailWhenNotAuthenticated() {
         // when / then
-        io.restassured.RestAssured.given() // FQN: collides with BDDMockito.given
+        given()
         .when()
                 .get("/api/compendium/equipment")
         .then()

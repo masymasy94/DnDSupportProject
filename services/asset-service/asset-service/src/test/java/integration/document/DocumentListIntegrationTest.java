@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -44,7 +45,7 @@ class DocumentListIntegrationTest {
         ));
 
         // when / then
-        io.restassured.RestAssured.given()
+        given()
         .when()
                 .get("/api/assets/documents")
         .then()
@@ -58,7 +59,7 @@ class DocumentListIntegrationTest {
     @TestSecurity(user = "1", roles = "PLAYER")
     void shouldReturnEmptyListWhenNoDocuments() {
         // when / then
-        io.restassured.RestAssured.given()
+        given()
         .when()
                 .get("/api/assets/documents")
         .then()
@@ -70,7 +71,7 @@ class DocumentListIntegrationTest {
     @Test
     void shouldFailWhenNotAuthenticated() {
         // when / then
-        io.restassured.RestAssured.given()
+        given()
         .when()
                 .get("/api/assets/documents")
         .then()
