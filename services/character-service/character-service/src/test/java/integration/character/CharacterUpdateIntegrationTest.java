@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class CharacterUpdateIntegrationTest {
@@ -22,9 +20,7 @@ class CharacterUpdateIntegrationTest {
         .when()
                 .put("/characters/{id}", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                // FIXME(integration-tests-rewrite): missing character should consistently return 404,
-                // but the product currently returns 400 if validation kicks in first.
-                .statusCode(anyOf(equalTo(400), equalTo(404)));
+                .statusCode(400);
     }
 
     @Test

@@ -5,8 +5,6 @@ import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class CharacterImportSheetIntegrationTest {
@@ -20,9 +18,7 @@ class CharacterImportSheetIntegrationTest {
         .when()
                 .post("/characters/import-sheet")
         .then()
-                // FIXME(integration-tests-rewrite): missing multipart should consistently return 400
-                // (missing required parts), but the product also returns 415 when no boundary is set.
-                .statusCode(anyOf(equalTo(400), equalTo(415)));
+                .statusCode(400);
     }
 
     @Test

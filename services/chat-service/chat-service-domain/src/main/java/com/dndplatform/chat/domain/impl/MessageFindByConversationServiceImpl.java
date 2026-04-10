@@ -5,6 +5,7 @@ import com.dndplatform.chat.domain.model.Message;
 import com.dndplatform.chat.domain.model.PagedResult;
 import com.dndplatform.chat.domain.repository.ConversationFindByIdRepository;
 import com.dndplatform.chat.domain.repository.MessageFindByConversationRepository;
+import com.dndplatform.common.exception.NotFoundException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -34,14 +35,14 @@ public class MessageFindByConversationServiceImpl implements MessageFindByConver
 
         // Verify conversation exists and user is participant
         var conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
+                .orElseThrow(() -> new NotFoundException("Conversation not found: " + conversationId));
 
         boolean isParticipant = conversation.participants() != null &&
                 conversation.participants().stream()
                         .anyMatch(p -> p.userId().equals(userId) && p.leftAt() == null);
 
         if (!isParticipant) {
-            throw new IllegalArgumentException("User is not a participant in this conversation");
+            throw new NotFoundException("Conversation not found or user is not a participant: " + conversationId);
         }
 
         int effectivePage = page < 0 ? DEFAULT_PAGE : page;

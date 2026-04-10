@@ -3,6 +3,7 @@ package com.dndplatform.chat.domain.impl;
 import com.dndplatform.chat.domain.ConversationUpdateReadByIdService;
 import com.dndplatform.chat.domain.repository.ParticipantExistsRepository;
 import com.dndplatform.chat.domain.repository.ParticipantUpdateLastReadRepository;
+import com.dndplatform.common.exception.NotFoundException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -28,7 +29,7 @@ public class ConversationUpdateReadByIdServiceImpl implements ConversationUpdate
                 .formatted(conversationId, userId));
 
         if (!participantExistsRepository.existsByConversationIdAndUserId(conversationId, userId)) {
-            throw new IllegalArgumentException("User is not a participant in this conversation");
+            throw new NotFoundException("Conversation not found or user is not a participant: " + conversationId);
         }
 
         participantUpdateLastReadRepository.updateLastReadAt(conversationId, userId);

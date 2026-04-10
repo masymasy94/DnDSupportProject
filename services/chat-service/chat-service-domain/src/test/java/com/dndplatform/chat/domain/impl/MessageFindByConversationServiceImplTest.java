@@ -8,6 +8,7 @@ import com.dndplatform.chat.domain.model.PagedResult;
 import com.dndplatform.chat.domain.model.ParticipantRole;
 import com.dndplatform.chat.domain.repository.ConversationFindByIdRepository;
 import com.dndplatform.chat.domain.repository.MessageFindByConversationRepository;
+import com.dndplatform.common.exception.NotFoundException;
 import com.dndplatform.common.test.Random;
 import com.dndplatform.common.test.RandomExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,7 +101,7 @@ class MessageFindByConversationServiceImplTest {
         given(conversationRepository.findById(conversationId)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> sut.findByConversationId(conversationId, userId, 0, 10))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Conversation not found");
     }
 
@@ -123,7 +124,7 @@ class MessageFindByConversationServiceImplTest {
         given(conversationRepository.findById(conversationId)).willReturn(Optional.of(conversation));
 
         assertThatThrownBy(() -> sut.findByConversationId(conversationId, userId, 0, 10))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("not a participant");
     }
 
@@ -144,7 +145,7 @@ class MessageFindByConversationServiceImplTest {
         given(conversationRepository.findById(conversationId)).willReturn(Optional.of(conversation));
 
         assertThatThrownBy(() -> sut.findByConversationId(conversationId, userId, 0, 10))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("not a participant");
     }
 }

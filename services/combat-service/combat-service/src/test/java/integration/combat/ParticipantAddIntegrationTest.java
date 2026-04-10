@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class ParticipantAddIntegrationTest {
@@ -22,9 +20,7 @@ class ParticipantAddIntegrationTest {
         .when()
                 .post("/encounters/{id}/participants", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                // FIXME(integration-tests-rewrite): empty body should be 400, missing encounter should be 404.
-                // Currently the product collapses both into either, depending on order.
-                .statusCode(anyOf(equalTo(400), equalTo(404)));
+                .statusCode(400);
     }
 
     @Test

@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class TriggerIngestionIntegrationTest {
@@ -22,9 +20,7 @@ class TriggerIngestionIntegrationTest {
         .when()
                 .post("/api/document-qa/ingestion/{docId}", "some-doc") // hardcoded: arbitrary doc id
         .then()
-                // FIXME(integration-tests-rewrite): async ingestion trigger should be 202 (Accepted),
-                // missing doc should be 404. The product mixes 200/202/204/400/404.
-                .statusCode(anyOf(equalTo(200), equalTo(202), equalTo(204), equalTo(400), equalTo(404)));
+                .statusCode(404);
     }
 
     @Test

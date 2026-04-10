@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class InitiativeStartIntegrationTest {
@@ -22,8 +20,7 @@ class InitiativeStartIntegrationTest {
         .when()
                 .post("/encounters/{id}/initiative", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                // FIXME(integration-tests-rewrite): missing encounter should be 404, not 400.
-                .statusCode(anyOf(equalTo(400), equalTo(404)));
+                .statusCode(404);
     }
 
     @Test

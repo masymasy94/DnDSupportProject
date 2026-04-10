@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class ActivateSystemLlmConfigurationIntegrationTest {
@@ -21,8 +19,7 @@ class ActivateSystemLlmConfigurationIntegrationTest {
         .when()
                 .put("/api/document-qa/llm/configurations/{id}/activate", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                // FIXME(integration-tests-rewrite): activate on missing should be 404, not 204/400.
-                .statusCode(anyOf(equalTo(204), equalTo(400), equalTo(404)));
+                .statusCode(404);
     }
 
     @Test

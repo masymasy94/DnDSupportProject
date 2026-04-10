@@ -5,8 +5,6 @@ import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class GetIngestionStatusIntegrationTest {
@@ -19,8 +17,7 @@ class GetIngestionStatusIntegrationTest {
         .when()
                 .get("/api/document-qa/ingestion/{docId}/status", "nonexistent-doc") // hardcoded: id outside any seeded fixture
         .then()
-                // FIXME(integration-tests-rewrite): missing doc should be 404, not 200/400.
-                .statusCode(anyOf(equalTo(200), equalTo(400), equalTo(404)));
+                .statusCode(404);
     }
 
     @Test

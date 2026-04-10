@@ -3,6 +3,7 @@ package com.dndplatform.chat.domain.impl;
 import com.dndplatform.chat.domain.ConversationUpdateReadByIdService;
 import com.dndplatform.chat.domain.repository.ParticipantExistsRepository;
 import com.dndplatform.chat.domain.repository.ParticipantUpdateLastReadRepository;
+import com.dndplatform.common.exception.NotFoundException;
 import com.dndplatform.common.test.Random;
 import com.dndplatform.common.test.RandomExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +54,7 @@ class ConversationUpdateReadByIdServiceImplTest {
         given(participantExistsRepository.existsByConversationIdAndUserId(conversationId, userId)).willReturn(false);
 
         assertThatThrownBy(() -> sut.updateReadById(conversationId, userId))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("not a participant");
     }
 }

@@ -19,8 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
@@ -71,8 +69,6 @@ class CreateLoginTokensIntegrationTest {
         .when()
                 .post("/auth/login-tokens")
         .then()
-                // FIXME(integration-tests-rewrite): missing required field should be 400 (validation),
-                // not 401 (which mixes auth failure with bad request).
-                .statusCode(anyOf(equalTo(400), equalTo(401)));
+                .statusCode(400);
     }
 }

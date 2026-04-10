@@ -20,8 +20,6 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -61,10 +59,7 @@ class SyncSendEmailIntegrationTest {
         .when()
                 .post("/emails")
         .then()
-                // FIXME(integration-tests-rewrite): product returns 200 / 201 / 202 inconsistently;
-                // POST that creates an email send record should be 201, an async accepted should be 202;
-                // 200 has no REST justification.
-                .statusCode(anyOf(equalTo(200), equalTo(201), equalTo(202)));
+                .statusCode(202);
     }
 
     @Test

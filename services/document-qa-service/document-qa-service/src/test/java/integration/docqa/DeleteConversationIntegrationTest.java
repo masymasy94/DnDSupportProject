@@ -5,8 +5,6 @@ import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 class DeleteConversationIntegrationTest {
@@ -20,9 +18,7 @@ class DeleteConversationIntegrationTest {
         .when()
                 .delete("/api/document-qa/conversations/{id}", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                // FIXME(integration-tests-rewrite): DELETE on missing should be 404 (strict) or 204 (idempotent),
-                // not 200/400.
-                .statusCode(anyOf(equalTo(200), equalTo(204), equalTo(400), equalTo(404)));
+                .statusCode(404);
     }
 
     @Test

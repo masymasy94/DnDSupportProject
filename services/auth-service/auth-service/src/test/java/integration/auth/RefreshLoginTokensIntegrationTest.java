@@ -19,8 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
@@ -49,9 +47,7 @@ class RefreshLoginTokensIntegrationTest {
         .when()
                 .post("/auth/login-tokens/refreshed")
         .then()
-                // FIXME(integration-tests-rewrite): missing/invalid refresh token should be 401, not
-                // a mix of 400/401/404. Decide canonical mapping in final pass.
-                .statusCode(anyOf(equalTo(400), equalTo(401), equalTo(404)));
+                .statusCode(401);
     }
 
     @Test
@@ -69,7 +65,6 @@ class RefreshLoginTokensIntegrationTest {
         .when()
                 .post("/auth/login-tokens/refreshed")
         .then()
-                // FIXME(integration-tests-rewrite): missing required field should be 400, not 401.
-                .statusCode(anyOf(equalTo(400), equalTo(401)));
+                .statusCode(401);
     }
 }

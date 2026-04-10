@@ -19,8 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
@@ -49,9 +47,7 @@ class ResetPasswordIntegrationTest {
         .when()
                 .put("/auth/password-resets")
         .then()
-                // FIXME(integration-tests-rewrite): invalid token should be 401 (or 410 Gone). The product
-                // mixes 400/401/404.
-                .statusCode(anyOf(equalTo(400), equalTo(401), equalTo(404)));
+                .statusCode(401);
     }
 
     @Test
