@@ -59,7 +59,7 @@ class CampaignNoteDeleteIntegrationTest {
         .when()
                 .post("/campaigns/{id}/notes", campaign.id())
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201)
                 .extract().body().jsonPath().getLong("id");
 
         // when / then
@@ -108,7 +108,7 @@ class CampaignNoteDeleteIntegrationTest {
         .when()
                 .post("/campaigns")
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201)
                 .extract().as(CampaignViewModel.class);
     }
 }

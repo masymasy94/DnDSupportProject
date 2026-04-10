@@ -20,6 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.resteasy.reactive.ResponseStatus;
 
 @RequestScoped
 @RunOnVirtualThread
@@ -38,10 +39,11 @@ public class CampaignQuestCreateResourceImpl implements CampaignQuestCreateResou
 
     @POST
     @Override
+    @ResponseStatus(201)
     @Operation(summary = "Create a campaign quest", description = "Create a quest in the campaign")
     @APIResponses({
             @APIResponse(
-                    responseCode = "200",
+                    responseCode = "201",
                     description = "Quest created successfully",
                     content = @Content(schema = @Schema(implementation = CampaignQuestViewModel.class))
             ),

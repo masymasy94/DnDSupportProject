@@ -63,7 +63,7 @@ class CampaignQuestCreateIntegrationTest {
         .when()
                 .post("/campaigns/{id}/quests", campaign.id())
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201)
                 .contentType(JSON)
                 .body("title", equalTo("Find the Artifact"))
                 .body("status", equalTo("ACTIVE"))
@@ -149,7 +149,7 @@ class CampaignQuestCreateIntegrationTest {
         .when()
                 .post("/campaigns")
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201)
                 .extract().as(CampaignViewModel.class);
     }
 }

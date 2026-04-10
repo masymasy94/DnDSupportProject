@@ -42,6 +42,15 @@
             <artifactId>smallrye-common-annotation</artifactId>
         </dependency>
 
+        <!-- ===================== -->
+        <!-- = RESTEASY REACTIVE = -->
+        <!-- ===================== -->
+        <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- ============== -->
         <!-- = JAKARTA EE = -->
         <!-- ============== -->

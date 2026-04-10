@@ -23,6 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.resteasy.reactive.ResponseStatus;
 
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
@@ -50,10 +51,11 @@ public class CampaignCreateResourceImpl implements CampaignCreateResource {
 
     @POST
     @Override
+    @ResponseStatus(201)
     @Operation(summary = "Create a new campaign", description = "Create a new campaign. The caller becomes the Dungeon Master.")
     @APIResponses({
             @APIResponse(
-                    responseCode = "200",
+                    responseCode = "201",
                     description = "Campaign created successfully",
                     content = @Content(schema = @Schema(implementation = CampaignViewModel.class))
             ),

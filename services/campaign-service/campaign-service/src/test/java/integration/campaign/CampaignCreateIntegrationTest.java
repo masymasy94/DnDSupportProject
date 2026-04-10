@@ -57,7 +57,7 @@ class CampaignCreateIntegrationTest {
         .when()
                 .post("/campaigns")
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): REST resource creation should return 201
+                .statusCode(201)
                 .contentType(JSON)
                 .extract().as(CampaignViewModel.class);
 

@@ -50,8 +50,7 @@ class CreateLoginTokensIntegrationTest {
         .when()
                 .post("/auth/login-tokens")
         .then()
-                // FIXME(integration-tests-rewrite): POST that creates a token resource should return 201, not 200
-                .statusCode(anyOf(equalTo(200), equalTo(201)))
+                .statusCode(201)
                 .contentType(JSON)
                 .body("accessToken", notNullValue())
                 .body("refreshToken", notNullValue());

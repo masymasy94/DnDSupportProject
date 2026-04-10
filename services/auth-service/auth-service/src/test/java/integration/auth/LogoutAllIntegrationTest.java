@@ -11,9 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
-
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -28,8 +25,6 @@ class LogoutAllIntegrationTest {
         .when()
                 .delete("/auth/login-tokens")
         .then()
-                // FIXME(integration-tests-rewrite): DELETE all should consistently return 204 (no body),
-                // not a mix of 200/204.
-                .statusCode(anyOf(equalTo(200), equalTo(204)));
+                .statusCode(204);
     }
 }

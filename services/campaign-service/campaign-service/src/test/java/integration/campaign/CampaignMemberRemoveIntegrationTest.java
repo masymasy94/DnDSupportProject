@@ -59,7 +59,7 @@ class CampaignMemberRemoveIntegrationTest {
         .when()
                 .post("/campaigns")
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201)
                 .extract().as(CampaignViewModel.class);
 
         var addMemberRequest = AddMemberRequestBuilder.toBuilder(addMemberTemplate)
@@ -73,7 +73,7 @@ class CampaignMemberRemoveIntegrationTest {
         .when()
                 .post("/campaigns/{id}/members", campaign.id())
         .then()
-                .statusCode(200); // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201);
 
         // when / then
         given()

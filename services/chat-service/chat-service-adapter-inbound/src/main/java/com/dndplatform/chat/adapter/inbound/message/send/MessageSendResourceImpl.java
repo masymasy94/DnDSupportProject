@@ -24,6 +24,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.resteasy.reactive.ResponseStatus;
 
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
@@ -52,9 +53,10 @@ public class MessageSendResourceImpl implements MessageSendResource {
     @POST
     @Path("/{conversationId}/messages")
     @Override
+    @ResponseStatus(201)
     @Operation(summary = "Send message", description = "Send a new message to a conversation")
     @APIResponse(
-            responseCode = "200",
+            responseCode = "201",
             description = "Message sent successfully",
             content = @Content(schema = @Schema(implementation = MessageViewModel.class))
     )

@@ -60,7 +60,7 @@ class CampaignNoteCreateIntegrationTest {
         .when()
                 .post("/campaigns")
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201)
                 .extract().as(CampaignViewModel.class);
 
         var noteRequest = CreateNoteRequestBuilder.toBuilder(createNoteTemplate)
@@ -77,7 +77,7 @@ class CampaignNoteCreateIntegrationTest {
         .when()
                 .post("/campaigns/{id}/notes", campaign.id())
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201)
                 .contentType(JSON)
                 .body("title", equalTo("Session 1"));
     }

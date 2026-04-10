@@ -22,9 +22,6 @@ import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
-
 @QuarkusTest
 @ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
 class ConversationCreateIntegrationTest {
@@ -56,8 +53,7 @@ class ConversationCreateIntegrationTest {
         .when()
                 .post("/api/chat/conversations")
         .then()
-                // FIXME(integration-tests-rewrite): POST that creates a resource should return 201, not 200
-                .statusCode(anyOf(equalTo(200), equalTo(201)));
+                .statusCode(201);
     }
 
     @Test
@@ -81,8 +77,7 @@ class ConversationCreateIntegrationTest {
         .when()
                 .post("/api/chat/conversations")
         .then()
-                // FIXME(integration-tests-rewrite): POST that creates a resource should return 201, not 200
-                .statusCode(anyOf(equalTo(200), equalTo(201)));
+                .statusCode(201);
     }
 
     @Test

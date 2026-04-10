@@ -58,7 +58,7 @@ class UserUpdatePasswordIntegrationTest {
         .when()
                 .post("/users")
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): REST resource creation should return 201
+                .statusCode(201)
                 .extract().as(UserViewModel.class);
 
         var updateRequest = UserUpdatePasswordViewModelBuilder.toBuilder(updateTemplate)

@@ -19,9 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
-
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
 @ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -48,9 +45,7 @@ class RequestOtpLoginIntegrationTest {
         .when()
                 .post("/auth/otp-login-requests")
         .then()
-                // FIXME(integration-tests-rewrite): POST that initiates an async OTP send should be 202.
-                // The product mixes 200/202/204.
-                .statusCode(anyOf(equalTo(200), equalTo(202), equalTo(204)));
+                .statusCode(202);
     }
 
     @Test

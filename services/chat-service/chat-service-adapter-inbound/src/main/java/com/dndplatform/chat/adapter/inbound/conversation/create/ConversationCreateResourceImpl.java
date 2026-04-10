@@ -24,6 +24,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.resteasy.reactive.ResponseStatus;
 
 import static org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType.HTTP;
 
@@ -51,9 +52,10 @@ public class ConversationCreateResourceImpl implements ConversationCreateResourc
 
     @POST
     @Override
+    @ResponseStatus(201)
     @Operation(summary = "Create conversation", description = "Create a new direct or group conversation")
     @APIResponse(
-            responseCode = "200",
+            responseCode = "201",
             description = "Conversation created successfully",
             content = @Content(schema = @Schema(implementation = ConversationViewModel.class))
     )

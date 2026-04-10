@@ -11,9 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
-
 @QuarkusTest
 @QuarkusTestResource(UserServiceWireMockResource.class)
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -30,8 +27,6 @@ class LogoutIntegrationTest {
         .when()
                 .delete("/auth/login-tokens/{token}", "some-refresh-token") // hardcoded: arbitrary token, may not exist
         .then()
-                // FIXME(integration-tests-rewrite): DELETE on non-existent should consistently return 204
-                // (idempotent) or 404 (strict). The product mixes 200/204/404.
-                .statusCode(anyOf(equalTo(200), equalTo(204), equalTo(404)));
+                .statusCode(204);
     }
 }

@@ -62,7 +62,7 @@ class CampaignNoteListIntegrationTest {
         .when()
                 .post("/campaigns/{id}/notes", campaign.id())
         .then()
-                .statusCode(200); // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201);
 
         // when
         var notes = given()
@@ -127,7 +127,7 @@ class CampaignNoteListIntegrationTest {
         .when()
                 .post("/campaigns")
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): POST creation should return 201
+                .statusCode(201)
                 .extract().as(CampaignViewModel.class);
     }
 }

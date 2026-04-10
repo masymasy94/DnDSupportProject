@@ -61,7 +61,7 @@ class UserRegisterIntegrationTest {
         .when()
                 .post("/users")
         .then()
-                .statusCode(200) // FIXME(integration-tests-rewrite): REST resource creation should return 201
+                .statusCode(201)
                 .contentType(JSON)
                 .extract().as(UserViewModel.class);
 

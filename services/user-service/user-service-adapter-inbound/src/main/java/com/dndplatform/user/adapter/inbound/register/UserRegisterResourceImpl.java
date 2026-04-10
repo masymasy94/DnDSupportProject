@@ -18,6 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.resteasy.reactive.ResponseStatus;
 
 @RequestScoped
 @RunOnVirtualThread
@@ -36,6 +37,7 @@ public class UserRegisterResourceImpl implements UserRegisterResource {
 
     @POST
     @Override
+    @ResponseStatus(201)
     @Operation(summary = "Register a new user", description = "Creates a new user account with the provided details")
     @APIResponses({
             @APIResponse(
