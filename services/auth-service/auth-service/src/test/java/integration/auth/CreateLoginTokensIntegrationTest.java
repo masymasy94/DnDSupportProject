@@ -17,6 +17,8 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import com.github.tomakehurst.wiremock.stubbing.StubMapping;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
@@ -87,26 +89,32 @@ class CreateLoginTokensIntegrationTest {
     @Test
     @DeleteEntities(from = RefreshTokenEntity.class)
     void shouldFailWhenUserServiceReturnsServerError() throws JsonProcessingException {
-        // given
+        // given — add a 500-response stub that takes precedence over the default
+        // happy-path stub (most recently added wins at same priority). Keep the
+        // reference so we can remove ONLY this stub in the cleanup phase.
         var server = UserServiceWireMockResource.getServer();
-        server.stubFor(post(urlPathMatching("/users/credentials-validation/?"))
-                .willReturn(aResponse().withStatus(500)));
+        StubMapping errorStub = server.stubFor(
+                post(urlPathMatching("/users/credentials-validation/?"))
+                        .willReturn(aResponse().withStatus(500)));
 
-        var request = CreateLoginTokensViewModelBuilder.toBuilder(payloadTemplate)
-                .withUsername("gandalf") // hardcoded: matches default stub, overridden above
-                .withPassword("YouShallNotPass1") // hardcoded: arbitrary
-                .build();
+        try {
+            var request = CreateLoginTokensViewModelBuilder.toBuilder(payloadTemplate)
+                    .withUsername("gandalf") // hardcoded: matches happy-path stub, overridden here to 500
+                    .withPassword("YouShallNotPass1") // hardcoded: arbitrary, credentials check is mocked
+                    .build();
 
-        // when / then
-        given()
-                .contentType(JSON)
-                .body(objectMapper.writeValueAsString(request))
-        .when()
-                .post("/auth/login-tokens")
-        .then()
-                .statusCode(500);
-
-        // cleanup: restore default stubs
-        server.resetToDefaultMappings();
+            // when / then
+            given()
+                    .contentType(JSON)
+                    .body(objectMapper.writeValueAsString(request))
+            .when()
+                    .post("/auth/login-tokens")
+            .then()
+                    .statusCode(500);
+        } finally {
+            // cleanup: remove only the 500 stub so the happy-path stub from
+            // UserServiceWireMockResource.start() takes over again for subsequent tests.
+            server.removeStubMapping(errorStub);
+        }
     }
 }
