@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - 'gh-pages'
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build, test & coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Verify Docker is available
+        run: docker --version && docker info
+
+      - name: Build, run unit + integration tests, generate JaCoCo
+        run: mvn -B -ntp verify
+
+      - name: Upload JaCoCo per-module reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-reports
+          path: |
+            **/target/site/jacoco/
+            **/target/site/jacoco-it/
+            **/target/site/jacoco-aggregate/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload Surefire + Failsafe reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Enforce JaCoCo coverage threshold (90%)
+        if: always() && hashFiles('**/target/site/jacoco/jacoco.xml') != ''
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          paths: |
+            ${{ github.workspace }}/**/target/site/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 90
+          min-coverage-changed-files: 90
+          title: JaCoCo Coverage Report
+          update-comment: true
+          pass-emoji: ':white_check_mark:'
+          fail-emoji: ':x:'
