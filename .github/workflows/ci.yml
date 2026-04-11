@@ -38,7 +38,7 @@ jobs:
         run: docker --version && docker info
 
       - name: Build, run unit + integration tests, generate JaCoCo
-        run: mvn -B -ntp verify
+        run: mvn -B -ntp -fae verify
 
       - name: Upload JaCoCo per-module reports
         if: always()

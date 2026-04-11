@@ -51,8 +51,7 @@ class SpeciesFindByIdIntegrationTest {
         .when()
                 .get("/api/compendium/species/{id}", 999_999) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404)
-                .contentType(JSON);
+                .statusCode(404); // no contentType: endpoint returns empty body for 404
     }
 
     @Test
