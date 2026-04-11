@@ -1,6 +1,6 @@
 package integration;
 
-import com.dndplatform.common.test.PostgreSQLTestResource;
+import integration.resource.PostgreSQLTestResource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package com.dndplatform.common.test;
+package integration.resource;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -7,14 +7,10 @@ import org.testcontainers.utility.DockerImageName;
 import java.util.Map;
 
 /**
- * Starts a real PostgreSQL container for the test suite via Testcontainers.
- * Registered as a global {@link QuarkusTestResourceLifecycleManager}: annotate any
- * single test class in a module with
- * {@code @QuarkusTestResource(PostgreSQLTestResource.class)} and it applies to
- * ALL tests in that module.
- *
- * <p>The resource overrides the datasource URL, username, and password at runtime,
- * so the static values in {@code application.properties} are placeholders only.
+ * Global QuarkusTestResource that starts a real PostgreSQL container for the
+ * test suite. Annotated on SmokeTest (any single test class suffices, Quarkus
+ * applies test resources globally to the whole module).
+ * Overrides quarkus.datasource.jdbc.url/username/password at runtime.
  */
 public class PostgreSQLTestResource implements QuarkusTestResourceLifecycleManager {
 
