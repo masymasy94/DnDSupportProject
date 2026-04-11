@@ -17,6 +17,10 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 @QuarkusTest
@@ -46,6 +50,11 @@ class RequestPasswordResetIntegrationTest {
                 .post("/auth/password-resets")
         .then()
                 .statusCode(202);
+
+        // then — verify email lookup was called
+        UserServiceWireMockResource.getServer().verify(
+                postRequestedFor(urlPathMatching("/users/email-lookup/?"))
+                        .withRequestBody(matchingJsonPath("$.email", equalTo("gandalf@shire.com"))));
     }
 
     @Test
@@ -62,7 +71,8 @@ class RequestPasswordResetIntegrationTest {
         .when()
                 .post("/auth/password-resets")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -79,6 +89,7 @@ class RequestPasswordResetIntegrationTest {
         .when()
                 .post("/auth/password-resets")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 }

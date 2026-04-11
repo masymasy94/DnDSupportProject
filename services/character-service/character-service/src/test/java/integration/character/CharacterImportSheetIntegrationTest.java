@@ -18,7 +18,8 @@ class CharacterImportSheetIntegrationTest {
         .when()
                 .post("/characters/import-sheet")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

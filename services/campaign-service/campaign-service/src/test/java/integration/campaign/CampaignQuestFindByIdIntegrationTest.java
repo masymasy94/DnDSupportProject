@@ -92,7 +92,8 @@ class CampaignQuestFindByIdIntegrationTest {
         .when()
                 .get("/campaigns/{cid}/quests/{qid}", campaign.id(), 999_999L) // hardcoded qid: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

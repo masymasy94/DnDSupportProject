@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
 @ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -75,7 +77,10 @@ class CampaignMemberAddIntegrationTest {
         .when()
                 .post("/campaigns/{id}/members", campaign.id())
         .then()
-                .statusCode(201);
+                .statusCode(201)
+                .contentType(JSON)
+                .body("userId", equalTo(2))
+                .body("campaignId", notNullValue());
     }
 
     @Test
@@ -94,7 +99,8 @@ class CampaignMemberAddIntegrationTest {
         .when()
                 .post("/campaigns/{id}/members", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test
@@ -113,7 +119,8 @@ class CampaignMemberAddIntegrationTest {
         .when()
                 .post("/campaigns/{id}/members", 1L) // hardcoded: arbitrary, validation fails first
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

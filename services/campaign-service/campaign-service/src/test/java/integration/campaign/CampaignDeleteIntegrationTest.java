@@ -70,7 +70,8 @@ class CampaignDeleteIntegrationTest {
         .when()
                 .get("/campaigns/{id}", created.id())
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test
@@ -82,6 +83,7 @@ class CampaignDeleteIntegrationTest {
         .when()
                 .delete("/campaigns/{id}", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 }

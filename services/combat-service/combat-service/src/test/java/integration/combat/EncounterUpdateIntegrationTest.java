@@ -20,7 +20,8 @@ class EncounterUpdateIntegrationTest {
         .when()
                 .put("/encounters/{id}", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

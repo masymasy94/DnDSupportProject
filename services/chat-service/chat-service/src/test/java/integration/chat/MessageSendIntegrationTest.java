@@ -80,7 +80,8 @@ class MessageSendIntegrationTest {
         .when()
                 .post("/api/chat/conversations/{id}/messages", 1L) // hardcoded: arbitrary, validation fails first
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

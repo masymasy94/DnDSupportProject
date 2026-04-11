@@ -23,7 +23,8 @@ class CreateSystemLlmConfigurationIntegrationTest {
         .when()
                 .post("/api/document-qa/llm/configurations")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

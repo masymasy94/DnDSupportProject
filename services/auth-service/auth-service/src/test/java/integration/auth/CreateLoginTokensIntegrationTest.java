@@ -17,6 +17,12 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.notNullValue;
@@ -52,6 +58,11 @@ class CreateLoginTokensIntegrationTest {
                 .contentType(JSON)
                 .body("accessToken", notNullValue())
                 .body("refreshToken", notNullValue());
+
+        // then — verify user-service was called with correct credentials
+        UserServiceWireMockResource.getServer().verify(
+                postRequestedFor(urlPathMatching("/users/credentials-validation/?"))
+                        .withRequestBody(matchingJsonPath("$.username", equalTo("gandalf"))));
     }
 
     @Test
@@ -69,6 +80,33 @@ class CreateLoginTokensIntegrationTest {
         .when()
                 .post("/auth/login-tokens")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
+    }
+
+    @Test
+    @DeleteEntities(from = RefreshTokenEntity.class)
+    void shouldFailWhenUserServiceReturnsServerError() throws JsonProcessingException {
+        // given
+        var server = UserServiceWireMockResource.getServer();
+        server.stubFor(post(urlPathMatching("/users/credentials-validation/?"))
+                .willReturn(aResponse().withStatus(500)));
+
+        var request = CreateLoginTokensViewModelBuilder.toBuilder(payloadTemplate)
+                .withUsername("gandalf") // hardcoded: matches default stub, overridden above
+                .withPassword("YouShallNotPass1") // hardcoded: arbitrary
+                .build();
+
+        // when / then
+        given()
+                .contentType(JSON)
+                .body(objectMapper.writeValueAsString(request))
+        .when()
+                .post("/auth/login-tokens")
+        .then()
+                .statusCode(500);
+
+        // cleanup: restore default stubs
+        server.resetToDefaultMappings();
     }
 }

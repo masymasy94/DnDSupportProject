@@ -77,7 +77,8 @@ class CreateEmailTemplateIntegrationTest {
         .when()
                 .post("/email-templates")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -97,6 +98,7 @@ class CreateEmailTemplateIntegrationTest {
         .when()
                 .post("/email-templates")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 }

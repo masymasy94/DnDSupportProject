@@ -22,7 +22,8 @@ class DocumentUploadIntegrationTest {
         .when()
                 .post("/api/assets/documents")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

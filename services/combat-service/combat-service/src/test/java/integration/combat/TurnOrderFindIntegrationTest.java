@@ -17,7 +17,8 @@ class TurnOrderFindIntegrationTest {
         .when()
                 .get("/encounters/{id}/turns", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

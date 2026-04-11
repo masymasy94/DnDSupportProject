@@ -20,7 +20,8 @@ class ParticipantUpdateIntegrationTest {
         .when()
                 .put("/encounters/{eid}/participants/{pid}", 999_999L, 999_999L) // hardcoded: ids outside any seeded fixture
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

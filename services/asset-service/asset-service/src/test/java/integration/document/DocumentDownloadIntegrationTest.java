@@ -63,7 +63,8 @@ class DocumentDownloadIntegrationTest {
         .when()
                 .get("/api/assets/documents/{id}", "nonexistent-id") // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

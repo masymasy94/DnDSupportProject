@@ -24,7 +24,8 @@ class CreateUserLlmConfigurationIntegrationTest {
         .when()
                 .post("/api/document-qa/llm/user-configurations")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

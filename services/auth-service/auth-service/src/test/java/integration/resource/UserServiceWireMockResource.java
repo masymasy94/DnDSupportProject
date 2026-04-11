@@ -44,6 +44,14 @@ public class UserServiceWireMockResource implements QuarkusTestResourceLifecycle
         server.stubFor(put(urlPathMatching("/users/\\d+/password"))
             .willReturn(aResponse().withStatus(204)));
 
+        // Catch-all: any unmatched request returns 501 with descriptive body
+        // so test failures are obvious instead of a silent 404
+        server.stubFor(any(anyUrl())
+            .atPriority(Integer.MAX_VALUE)
+            .willReturn(aResponse()
+                    .withStatus(501)
+                    .withBody("WireMock: no stub matched this request")));
+
         return Map.of(
             "quarkus.rest-client.rest_client_user_service.url", server.baseUrl(),
             "rest-client.url", server.baseUrl()

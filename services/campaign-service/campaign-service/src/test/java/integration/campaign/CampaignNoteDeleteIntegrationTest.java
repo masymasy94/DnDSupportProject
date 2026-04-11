@@ -80,7 +80,8 @@ class CampaignNoteDeleteIntegrationTest {
         .when()
                 .delete("/campaigns/{cid}/notes/{nid}", 1L, 999_999L) // hardcoded nid: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

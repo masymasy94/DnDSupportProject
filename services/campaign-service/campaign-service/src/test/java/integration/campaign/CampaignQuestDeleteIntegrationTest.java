@@ -81,7 +81,8 @@ class CampaignQuestDeleteIntegrationTest {
         .when()
                 .delete("/campaigns/{cid}/quests/{qid}", 1L, 999_999L) // hardcoded qid: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

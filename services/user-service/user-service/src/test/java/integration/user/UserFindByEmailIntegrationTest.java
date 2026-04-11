@@ -70,7 +70,8 @@ class UserFindByEmailIntegrationTest {
         .when()
                 .post("/users/email-lookup")
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test
@@ -87,6 +88,7 @@ class UserFindByEmailIntegrationTest {
         .when()
                 .post("/users/email-lookup")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 }

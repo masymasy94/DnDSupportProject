@@ -24,7 +24,8 @@ class AskIntegrationTest {
         .when()
                 .post("/api/document-qa/ask")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

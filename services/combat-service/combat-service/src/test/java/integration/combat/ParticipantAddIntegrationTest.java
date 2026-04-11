@@ -20,7 +20,8 @@ class ParticipantAddIntegrationTest {
         .when()
                 .post("/encounters/{id}/participants", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

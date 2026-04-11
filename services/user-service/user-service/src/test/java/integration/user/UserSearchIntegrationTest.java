@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.SoftAssertions;
 
 @QuarkusTest
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -37,8 +37,10 @@ class UserSearchIntegrationTest {
                 .extract().as(PagedUserViewModel.class);
 
         // then
-        assertThat(response.content()).isNotEmpty();
-        assertThat(response.content().getFirst().username()).isEqualTo(UserEntityProvider.USERNAME);
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(response.content()).isNotEmpty();
+            softly.assertThat(response.content().getFirst().username()).isEqualTo(UserEntityProvider.USERNAME);
+        });
     }
 
     @Test
@@ -57,8 +59,10 @@ class UserSearchIntegrationTest {
                 .extract().as(PagedUserViewModel.class);
 
         // then
-        assertThat(response.content()).isEmpty();
-        assertThat(response.totalElements()).isZero();
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(response.content()).isEmpty();
+            softly.assertThat(response.totalElements()).isZero();
+        });
     }
 
     @Test

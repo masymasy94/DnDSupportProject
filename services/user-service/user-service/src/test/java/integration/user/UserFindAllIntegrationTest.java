@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.SoftAssertions;
 
 @QuarkusTest
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -36,10 +36,12 @@ class UserFindAllIntegrationTest {
                 .extract().as(PagedUserViewModel.class);
 
         // then
-        assertThat(response.content()).isNotEmpty();
-        assertThat(response.page()).isZero();
-        assertThat(response.size()).isEqualTo(10);
-        assertThat(response.totalElements()).isGreaterThanOrEqualTo(1);
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(response.content()).isNotEmpty();
+            softly.assertThat(response.page()).isZero();
+            softly.assertThat(response.size()).isEqualTo(10);
+            softly.assertThat(response.totalElements()).isGreaterThanOrEqualTo(1);
+        });
     }
 
     @Test

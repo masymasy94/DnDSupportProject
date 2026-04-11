@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 @QuarkusTest
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -44,7 +45,8 @@ class MessageFindByConversationIntegrationTest {
                 .get("/api/chat/conversations/{id}/messages", conversationId)
         .then()
                 .statusCode(200)
-                .contentType(JSON);
+                .contentType(JSON)
+                .body("size()", greaterThanOrEqualTo(0));
     }
 
     @Test
@@ -58,7 +60,8 @@ class MessageFindByConversationIntegrationTest {
         .when()
                 .get("/api/chat/conversations/{id}/messages", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

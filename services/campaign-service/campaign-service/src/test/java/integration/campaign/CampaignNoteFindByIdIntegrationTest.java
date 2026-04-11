@@ -91,7 +91,8 @@ class CampaignNoteFindByIdIntegrationTest {
         .when()
                 .get("/campaigns/{cid}/notes/{nid}", campaign.id(), 999_999L) // hardcoded nid: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

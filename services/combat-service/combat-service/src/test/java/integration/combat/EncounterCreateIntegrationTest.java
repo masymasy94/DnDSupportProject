@@ -20,7 +20,8 @@ class EncounterCreateIntegrationTest {
         .when()
                 .post("/encounters")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

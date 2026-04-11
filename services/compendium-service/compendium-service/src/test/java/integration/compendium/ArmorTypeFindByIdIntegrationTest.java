@@ -50,7 +50,8 @@ class ArmorTypeFindByIdIntegrationTest {
         .when()
                 .get("/api/compendium/armor-types/{id}", 999_999) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

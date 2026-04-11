@@ -93,7 +93,8 @@ class CampaignMemberRemoveIntegrationTest {
         .when()
                 .delete("/campaigns/{cid}/members/{mid}", 999_999L, 2L) // hardcoded: cid outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

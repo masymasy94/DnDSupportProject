@@ -22,7 +22,7 @@ import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.SoftAssertions;
 
 @QuarkusTest
 @ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -66,12 +66,14 @@ class UserRegisterIntegrationTest {
                 .extract().as(UserViewModel.class);
 
         // then
-        assertThat(response.id()).isNotNull();
-        assertThat(response.username()).isEqualTo(username);
-        assertThat(response.email()).isEqualTo("user-" + username + "@example.com");
-        assertThat(response.role()).isEqualTo("PLAYER");
-        assertThat(response.active()).isTrue();
-        assertThat(response.createdAt()).isNotNull();
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(response.id()).isNotNull();
+            softly.assertThat(response.username()).isEqualTo(username);
+            softly.assertThat(response.email()).isEqualTo("user-" + username + "@example.com");
+            softly.assertThat(response.role()).isEqualTo("PLAYER");
+            softly.assertThat(response.active()).isTrue();
+            softly.assertThat(response.createdAt()).isNotNull();
+        });
     }
 
     @Test
@@ -90,7 +92,8 @@ class UserRegisterIntegrationTest {
         .when()
                 .post("/users")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -109,7 +112,8 @@ class UserRegisterIntegrationTest {
         .when()
                 .post("/users")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -129,7 +133,8 @@ class UserRegisterIntegrationTest {
         .when()
                 .post("/users")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -149,7 +154,8 @@ class UserRegisterIntegrationTest {
         .when()
                 .post("/users")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -168,7 +174,8 @@ class UserRegisterIntegrationTest {
         .when()
                 .post("/users")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -189,7 +196,8 @@ class UserRegisterIntegrationTest {
         .when()
                 .post("/users")
         .then()
-                .statusCode(409);
+                .statusCode(409)
+                .contentType(JSON);
     }
 
     @Test
@@ -210,6 +218,7 @@ class UserRegisterIntegrationTest {
         .when()
                 .post("/users")
         .then()
-                .statusCode(409);
+                .statusCode(409)
+                .contentType(JSON);
     }
 }

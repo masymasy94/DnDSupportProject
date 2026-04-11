@@ -20,7 +20,8 @@ class InitiativeStartIntegrationTest {
         .when()
                 .post("/encounters/{id}/initiative", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

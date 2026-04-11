@@ -97,7 +97,8 @@ class ConversationCreateIntegrationTest {
         .when()
                 .post("/api/chat/conversations")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

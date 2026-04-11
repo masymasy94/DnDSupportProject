@@ -65,7 +65,8 @@ class ResetPasswordIntegrationTest {
         .when()
                 .put("/auth/password-resets")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -83,6 +84,7 @@ class ResetPasswordIntegrationTest {
         .when()
                 .put("/auth/password-resets")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 }

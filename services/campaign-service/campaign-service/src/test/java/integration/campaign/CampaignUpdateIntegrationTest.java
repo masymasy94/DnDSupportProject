@@ -109,6 +109,7 @@ class CampaignUpdateIntegrationTest {
         .when()
                 .put("/campaigns/{id}", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 }

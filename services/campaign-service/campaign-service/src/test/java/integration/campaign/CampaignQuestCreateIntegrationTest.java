@@ -89,7 +89,8 @@ class CampaignQuestCreateIntegrationTest {
         .when()
                 .post("/campaigns/{id}/quests", 1L) // hardcoded: arbitrary, validation fails first
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -111,7 +112,8 @@ class CampaignQuestCreateIntegrationTest {
         .when()
                 .post("/campaigns/{id}/quests", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

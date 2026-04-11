@@ -17,7 +17,8 @@ class GetIngestionStatusIntegrationTest {
         .when()
                 .get("/api/document-qa/ingestion/{docId}/status", "nonexistent-doc") // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

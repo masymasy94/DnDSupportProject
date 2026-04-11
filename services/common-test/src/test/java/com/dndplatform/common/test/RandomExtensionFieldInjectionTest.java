@@ -3,6 +3,7 @@ package com.dndplatform.common.test;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,6 +22,9 @@ class RandomExtensionFieldInjectionTest {
 
     @InjectRandom
     private SamplePayload randomPayload;
+
+    @InjectRandom
+    private List<String> randomStringList;
 
     @Test
     void shouldInjectRandomStringField() {
@@ -43,6 +47,12 @@ class RandomExtensionFieldInjectionTest {
         assertThat(randomPayload.username()).isNotNull();
         assertThat(randomPayload.email()).isNotNull();
         assertThat(randomPayload.age()).isNotNull();
+    }
+
+    @Test
+    void shouldInjectRandomGenericListField() {
+        assertThat(randomStringList).isNotNull().isNotEmpty();
+        assertThat(randomStringList.get(0)).isInstanceOf(String.class);
     }
 
     record SamplePayload(String username, String email, Integer age) {}

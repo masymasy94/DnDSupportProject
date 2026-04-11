@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 
 @QuarkusTest
 @ExtendWith({PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -34,13 +35,22 @@ class ConversationUpdateReadByIdIntegrationTest {
                 .statusCode(200)
                 .extract().body().jsonPath().getLong("[0].id");
 
-        // when / then
+        // when
         given()
                 .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
         .when()
                 .put("/api/chat/conversations/{id}/read", conversationId)
         .then()
                 .statusCode(204);
+
+        // then — verify read status via GET
+        given()
+                .queryParam("userId", ConversationEntityProvider.CREATOR_USER_ID)
+        .when()
+                .get("/api/chat/conversations/{id}", conversationId)
+        .then()
+                .statusCode(200)
+                .contentType(JSON);
     }
 
     @Test
@@ -52,7 +62,8 @@ class ConversationUpdateReadByIdIntegrationTest {
         .when()
                 .put("/api/chat/conversations/{id}/read", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

@@ -88,7 +88,8 @@ class CampaignCreateIntegrationTest {
         .when()
                 .post("/campaigns")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -109,7 +110,8 @@ class CampaignCreateIntegrationTest {
         .when()
                 .post("/campaigns")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test

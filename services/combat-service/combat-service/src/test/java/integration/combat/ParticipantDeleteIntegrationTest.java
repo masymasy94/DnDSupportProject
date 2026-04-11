@@ -18,7 +18,8 @@ class ParticipantDeleteIntegrationTest {
         .when()
                 .delete("/encounters/{eid}/participants/{pid}", 999_999L, 999_999L) // hardcoded: ids outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

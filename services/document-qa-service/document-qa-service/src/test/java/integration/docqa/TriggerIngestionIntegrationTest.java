@@ -20,7 +20,8 @@ class TriggerIngestionIntegrationTest {
         .when()
                 .post("/api/document-qa/ingestion/{docId}", "some-doc") // hardcoded: arbitrary doc id
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

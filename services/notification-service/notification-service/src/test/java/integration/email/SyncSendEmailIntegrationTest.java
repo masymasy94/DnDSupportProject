@@ -80,7 +80,8 @@ class SyncSendEmailIntegrationTest {
         .when()
                 .post("/emails")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
@@ -101,6 +102,7 @@ class SyncSendEmailIntegrationTest {
         .when()
                 .post("/emails")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 }

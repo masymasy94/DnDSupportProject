@@ -21,7 +21,7 @@ import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.SoftAssertions;
 
 @QuarkusTest
 @ExtendWith({RandomExtension.class, PrepareEntitiesExtension.class, DeleteEntitiesExtension.class})
@@ -64,9 +64,11 @@ class UserFindByIdIntegrationTest {
                 .extract().as(UserViewModel.class);
 
         // then
-        assertThat(response.id()).isEqualTo(registered.id());
-        assertThat(response.username()).isEqualTo(safeUsername);
-        assertThat(response.email()).isEqualTo(safeUsername + "@example.com");
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(response.id()).isEqualTo(registered.id());
+            softly.assertThat(response.username()).isEqualTo(safeUsername);
+            softly.assertThat(response.email()).isEqualTo(safeUsername + "@example.com");
+        });
     }
 
     @Test
@@ -76,6 +78,7 @@ class UserFindByIdIntegrationTest {
         .when()
                 .get("/users/{id}", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 }

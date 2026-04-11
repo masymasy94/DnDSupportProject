@@ -20,7 +20,8 @@ class ActivateUserLlmConfigurationIntegrationTest {
         .when()
                 .put("/api/document-qa/llm/user-configurations/{id}/activate", 999_999L) // hardcoded: id outside any seeded fixture
         .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType(JSON);
     }
 
     @Test

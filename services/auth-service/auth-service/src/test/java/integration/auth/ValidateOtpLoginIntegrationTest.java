@@ -65,6 +65,7 @@ class ValidateOtpLoginIntegrationTest {
         .when()
                 .post("/auth/otp-login-tokens")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 }

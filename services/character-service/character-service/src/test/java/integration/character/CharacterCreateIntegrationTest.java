@@ -23,7 +23,8 @@ class CharacterCreateIntegrationTest {
         .when()
                 .post("/characters")
         .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType(JSON);
     }
 
     @Test
