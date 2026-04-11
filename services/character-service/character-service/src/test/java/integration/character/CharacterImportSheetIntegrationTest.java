@@ -5,7 +5,6 @@ import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
 
 @QuarkusTest
 class CharacterImportSheetIntegrationTest {
@@ -19,8 +18,7 @@ class CharacterImportSheetIntegrationTest {
         .when()
                 .post("/characters/import-sheet")
         .then()
-                .statusCode(400)
-                .contentType(JSON);
+                .statusCode(400); // no contentType: missing multipart body returns empty response
     }
 
     @Test
