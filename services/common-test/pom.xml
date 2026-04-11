@@ -11,9 +11,25 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <junit.version>5.11.4</junit.version>
         <instancio.version>4.8.0</instancio.version>
+        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.version>3.31.4</quarkus.platform.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Import Quarkus BOM so JUnit / testcontainers / quarkus-test-common
+                 versions all align with Quarkus 3.31.4. -->
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -24,7 +40,6 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -57,17 +72,16 @@
             <scope>provided</scope>
         </dependency>
         <!-- Testcontainers PostgreSQL: used by PostgreSQLTestResource to start a real
-             PostgreSQL container per test suite. -->
+             PostgreSQL container per test suite. Version managed by Quarkus BOM. -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>1.20.4</version>
         </dependency>
-        <!-- Quarkus test common: exposes QuarkusTestResourceLifecycleManager interface. -->
+        <!-- Quarkus test common: exposes QuarkusTestResourceLifecycleManager interface.
+             Version managed by Quarkus BOM. -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-common</artifactId>
-            <version>3.31.4</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
